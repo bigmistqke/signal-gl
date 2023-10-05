@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "ESNext",
+    "target": "ESNext",
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "allowJs": true,
+    "lib": ["es2019", "dom"],
+    "rootDir": "src",
+    "moduleResolution": "node",
+    "jsxImportSource": "solid-js",
+    "types": ["solid-js", "solid-js/dom"]
+  }
+}

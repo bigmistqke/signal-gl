@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "start": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "solid-js": "*",
+    "zeptoid": "^1.0.1"
+  },
+  "devDependencies": {
+    "vite": "^4.4.9",
+    "vite-plugin-solid": "^2.7.0"
+  }
+}
