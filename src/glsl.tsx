@@ -1,10 +1,13 @@
 import { createEffect, type Accessor } from 'solid-js'
-import zeptoid from 'zeptoid'
 export * from './GL'
 
 export type ShaderResult = {
   source: string
-  bind: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  bind: (
+    gl: WebGL2RenderingContext,
+    program: WebGLProgram,
+    render: () => void
+  ) => void
 }
 
 const dataTypeToFunctionName = (dataType: string): UniformSetter => {
@@ -28,7 +31,7 @@ const compileStrings = (
       const name = variables[index]?.name
       return name ? [string, name] : string
     }),
-  ].join('\n')
+  ].join('')
 
   const precision = source.match(/precision.*;/)?.[0]
   if (precision) {
@@ -36,46 +39,53 @@ const compileStrings = (
     return [
       pre,
       precision,
+      '\n\n',
       variables
         .flatMap((arg) => `uniform ${arg.dataType} ${arg.name};`)
         .join('\n'),
+      '\n',
       after,
-    ].join('\n')
+    ].join('')
   }
   const version = source.match(/#version.*/)?.[0]
   const [pre, after] = source.split(/#version.*/)
-  console.log('pre\n', pre, '\n after\n', after)
   return [
     version,
-    variables
-      .flatMap((arg) => `uniform ${arg.dataType} ${arg.name};`)
-      .join('\n'),
+    variables.flatMap((arg) => `uniform ${arg.dataType} ${arg.name};`).join(''),
     after || pre,
   ].join('\n')
 }
 
-const createUniform = (id: string, { type, value }: UniformToken) => ({
-  name: `value_${id}`,
+const createVariable = (
+  id: number | string,
+  { type, value, options }: ReturnType<VariableProxy[keyof VariableProxy]>
+) => ({
+  name: `signal${options.name ? `_${options.name}` : ''}_${id}`,
   get value() {
     return value()
   },
+  options,
   dataType: type,
   functionName: dataTypeToFunctionName(type),
 })
-const bindUniform = (
-  uniform: ReturnType<typeof createUniform>,
+const bindVariable = (
+  variable: ReturnType<typeof createVariable>,
   gl: WebGL2RenderingContext,
-  program: WebGLProgram
+  program: WebGLProgram,
+  render: () => void
 ) => {
-  const location = gl.getUniformLocation(program, uniform.name)
-  createEffect(() => gl[uniform.functionName](location, uniform.value))
+  const location = gl.getUniformLocation(program, variable.name)
+  createEffect(() => {
+    gl[variable.functionName](location, variable.value)
+    render()
+  })
 }
 
 let textureIndex = 0
 
 const createSampler2D = (
-  id: string,
-  { type, value, options }: Sampler2DToken
+  id: number | string,
+  { type, value, options }: ReturnType<VariableProxy['sampler2D']>
 ) => {
   // TODO: idk if there is a limit to incrementing textureIndex
   const _textureIndex = textureIndex
@@ -93,7 +103,8 @@ const createSampler2D = (
 const bindSampler2D = (
   sampler2D: ReturnType<typeof createSampler2D>,
   gl: WebGL2RenderingContext,
-  program: WebGLProgram
+  program: WebGLProgram | null,
+  render: () => void
 ) =>
   createEffect(() => {
     const options = sampler2D.options
@@ -133,189 +144,51 @@ const bindSampler2D = (
       gl.getUniformLocation(program, sampler2D.name),
       sampler2D.textureIndex
     )
+
+    render()
   })
 
-export const shader =
-  (strings: TemplateStringsArray, ...values: UniformToken[]) =>
+let uniformIndex = 0
+export const glsl =
+  (
+    strings: TemplateStringsArray,
+    ...values: ReturnType<VariableProxy[keyof VariableProxy]>[]
+  ) =>
   () => {
     // initialize variables
     const variables = values.map((value, index) =>
       value.type === 'sampler2D'
-        ? createSampler2D(zeptoid(), value)
-        : createUniform(zeptoid(), value)
+        ? createSampler2D(++uniformIndex, value)
+        : createVariable(++uniformIndex, value)
     )
 
     // create shader-source
     const source = compileStrings(strings, variables)
+    console.log('source is ', source)
 
-    const bind = (gl: WebGL2RenderingContext, program: WebGLProgram) =>
-      variables.map((variable) =>
-        variable.dataType === 'sampler2D'
-          ? bindSampler2D(
-              variable as ReturnType<typeof createSampler2D>,
-              gl,
-              program
-            )
-          : bindUniform(variable, gl, program)
-      )
+    const bind = (
+      gl: WebGL2RenderingContext,
+      program: WebGLProgram,
+      render: () => void
+    ) => {
+      variables.map((variable) => {
+        if (variable.dataType === 'sampler2D') {
+          bindSampler2D(
+            variable as ReturnType<typeof createSampler2D>,
+            gl,
+            program,
+            render
+          )
+        } else {
+          bindVariable(variable, gl, program, render)
+        }
+      })
+    }
 
     return { source, bind } as ShaderResult
   }
 
-export const float = (
-  value: Accessor<number>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'float',
-    value,
-    options,
-  } as const)
-
-export const int = (
-  value: Accessor<number>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'int',
-    value,
-    options,
-  } as const)
-
-export const bool = (
-  value: Accessor<boolean>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'bool',
-    value,
-    options,
-  } as const)
-
-export const ivec2 = (
-  value: Accessor<[number, number]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'ivec2',
-    value,
-    options,
-  } as const)
-
-export const vec2 = (
-  value: Accessor<[number, number]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'vec2',
-    value,
-    options,
-  } as const)
-
-export const bvec2 = (
-  value: Accessor<[boolean, boolean]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'bvec2',
-    value,
-    options,
-  } as const)
-
-export const ivec3 = (
-  value: Accessor<[number, number, number]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'ivec3',
-    value,
-    options,
-  } as const)
-
-export const vec3 = (
-  value: Accessor<[number, number, number]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'vec3',
-    value,
-    options,
-  } as const)
-
-export const bvec3 = (
-  value: Accessor<[boolean, boolean, boolean]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'bvec3',
-    value,
-    options,
-  } as const)
-
-export const vec4 = (
-  value: Accessor<[number, number, number, number]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'vec4',
-    value,
-    options,
-  } as const)
-
-export const ivec4 = (
-  value: Accessor<[number, number, number, number]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'ivec4',
-    value,
-    options,
-  } as const)
-
-export const bvec4 = (
-  value: Accessor<[boolean, boolean, boolean, boolean]>,
-  options: { type: 'attribute' | 'uniform' }
-) =>
-  ({
-    type: 'bvec4',
-    value,
-    options,
-  } as const)
-
-export const sampler2D = (
-  value: Accessor<ArrayBufferView>,
-  options?: {
-    width?: number
-    height?: number
-    type?: 'float' | 'integer'
-    format?: 'RGBA' | 'RGB' | 'LUMINANCE'
-    magFilter?: 'NEAREST' | 'LINEAR'
-    minFilter?: 'NEAREST' | 'LINEAR'
-    border?: number
-  }
-) =>
-  ({
-    type: 'sampler2D',
-    value,
-    options,
-  } as const)
-
-type UniformToken =
-  | ReturnType<typeof float>
-  | ReturnType<typeof int>
-  | ReturnType<typeof bool>
-  | ReturnType<typeof vec2>
-  | ReturnType<typeof ivec2>
-  | ReturnType<typeof bvec2>
-  | ReturnType<typeof vec3>
-  | ReturnType<typeof ivec3>
-  | ReturnType<typeof bvec3>
-  | ReturnType<typeof vec4>
-  | ReturnType<typeof ivec4>
-  | ReturnType<typeof bvec4>
-  | ReturnType<typeof sampler2D>
-
-type Sampler2DToken = ReturnType<typeof sampler2D>
+type PrimitiveOptions = { type?: 'attribute' | 'uniform'; name?: string }
 
 type UniformSetter =
   | 'uniform1f'
@@ -326,3 +199,59 @@ type UniformSetter =
   | 'uniform3iv'
   | 'uniform4fv'
   | 'uniform4iv'
+
+type VariableCallback<
+  TType extends string,
+  TValue extends any,
+  TTOptions = PrimitiveOptions
+> = (
+  value: Accessor<TValue>,
+  options?: TTOptions
+) => {
+  type: TType
+  value: Accessor<TValue>
+  options: TTOptions
+}
+
+type VariableProxy = {
+  float: VariableCallback<'float', number>
+  int: VariableCallback<'int', number>
+  bool: VariableCallback<'bool', boolean>
+  vec2: VariableCallback<'vec2', [number, number]>
+  ivec2: VariableCallback<'ivec2', [number, number]>
+  bvec2: VariableCallback<'bvec2', [boolean, boolean]>
+  vec3: VariableCallback<'vec3', [number, number, number]>
+  ivec3: VariableCallback<'ivec3', [number, number, number]>
+  bvec3: VariableCallback<'bvec3', [boolean, boolean, boolean]>
+  vec4: VariableCallback<'vec4', [number, number, number, number]>
+  ivec4: VariableCallback<'ivec4', [number, number, number, number]>
+  bvec4: VariableCallback<'bvec4', [boolean, boolean, boolean, boolean]>
+  sampler2D: VariableCallback<
+    'sampler2D',
+    ArrayBufferView,
+    PrimitiveOptions & {
+      width?: number
+      height?: number
+      type?: 'float' | 'integer'
+      format?: 'RGBA' | 'RGB' | 'LUMINANCE'
+      magFilter?: 'NEAREST' | 'LINEAR'
+      minFilter?: 'NEAREST' | 'LINEAR'
+      border?: number
+    }
+  >
+}
+
+export const u = new Proxy({} as VariableProxy, {
+  get(target, prop) {
+    return (
+      ...[value, options]: Parameters<VariableProxy[keyof VariableProxy]>
+    ) => ({
+      value,
+      type: prop,
+      options: {
+        ...options,
+        type: 'uniform',
+      },
+    })
+  },
+})

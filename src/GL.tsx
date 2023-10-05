@@ -32,8 +32,8 @@ export const GL = (
     if (!currentProgram) return
 
     batch(() => {
-      vertex.bind(gl, currentProgram)
-      fragment.bind(gl, currentProgram)
+      vertex.bind(gl, currentProgram, render)
+      fragment.bind(gl, currentProgram, render)
     })
 
     /* Create Vertex buffer (2 triangles) */
