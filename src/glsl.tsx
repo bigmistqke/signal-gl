@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, type Accessor } from 'solid-js'
+import { createEffect, type Accessor } from 'solid-js'
 import zeptoid from 'zeptoid'
 export * from './GL'
 
@@ -19,10 +19,13 @@ const dataTypeToFunctionName = (dataType: string): UniformSetter => {
     'v') as UniformSetter
 }
 
-const compileStrings = (strings: TemplateStringsArray, memo: any) => {
+const compileStrings = (
+  strings: TemplateStringsArray,
+  variables: { dataType: string; name: string }[]
+) => {
   const source = [
     ...strings.flatMap((string, index) => {
-      const name = memo[index]?.name
+      const name = variables[index]?.name
       return name ? [string, name] : string
     }),
   ].join('\n')
@@ -33,16 +36,21 @@ const compileStrings = (strings: TemplateStringsArray, memo: any) => {
     return [
       pre,
       precision,
-      memo.flatMap((arg) => `uniform ${arg.dataType} ${arg.name};`).join('\n'),
+      variables
+        .flatMap((arg) => `uniform ${arg.dataType} ${arg.name};`)
+        .join('\n'),
       after,
     ].join('\n')
   }
   const version = source.match(/#version.*/)?.[0]
-  const [, after] = source.split(/#version.*/)
+  const [pre, after] = source.split(/#version.*/)
+  console.log('pre\n', pre, '\n after\n', after)
   return [
     version,
-    memo.flatMap((arg) => `uniform ${arg.dataType} ${arg.name};`).join('\n'),
-    after,
+    variables
+      .flatMap((arg) => `uniform ${arg.dataType} ${arg.name};`)
+      .join('\n'),
+    after || pre,
   ].join('\n')
 }
 
@@ -54,24 +62,13 @@ const createUniform = (id: string, { type, value }: UniformToken) => ({
   dataType: type,
   functionName: dataTypeToFunctionName(type),
 })
-const updateUniform = (
+const bindUniform = (
   uniform: ReturnType<typeof createUniform>,
-  gl: Accessor<WebGL2RenderingContext | null>,
-  program: Accessor<WebGLProgram | null>
+  gl: WebGL2RenderingContext,
+  program: WebGLProgram
 ) => {
-  const location = createMemo(() => {
-    const _program = program()
-    const _gl = gl()
-    if (!_program || !_gl) return undefined
-    return _gl.getUniformLocation(_program, uniform.name)
-  })
-  createEffect(() => {
-    const _gl = gl()
-    const _location = location()
-    if (_gl && uniform.functionName in _gl && _location) {
-      _gl[uniform.functionName](_location, uniform.value)
-    }
-  })
+  const location = gl.getUniformLocation(program, uniform.name)
+  createEffect(() => gl[uniform.functionName](location, uniform.value))
 }
 
 let textureIndex = 0
@@ -93,18 +90,13 @@ const createSampler2D = (
     },
   }
 }
-const updateSampler2D = (
+const bindSampler2D = (
   sampler2D: ReturnType<typeof createSampler2D>,
-  _gl: Accessor<WebGL2RenderingContext | null>,
-  _program: Accessor<WebGLProgram | null>
+  gl: WebGL2RenderingContext,
+  program: WebGLProgram
 ) =>
   createEffect(() => {
-    const gl = _gl()
-    const program = _program()
     const options = sampler2D.options
-
-    if (!gl || !program) return undefined
-
     const _value = sampler2D.value
 
     // Create a texture and bind it to texture unit 0
@@ -146,108 +138,148 @@ const updateSampler2D = (
 export const shader =
   (strings: TemplateStringsArray, ...values: UniformToken[]) =>
   () => {
-    const [program, setProgram] = createSignal<WebGLProgram | null>(null)
-    const [gl, setGl] = createSignal<WebGL2RenderingContext | null>(null)
-
+    // initialize variables
     const variables = values.map((value, index) =>
       value.type === 'sampler2D'
         ? createSampler2D(zeptoid(), value)
         : createUniform(zeptoid(), value)
     )
 
-    variables.map((variable) => {
-      if (variable.dataType === 'sampler2D') {
-        updateSampler2D(
-          variable as ReturnType<typeof createSampler2D>,
-          gl,
-          program
-        )
-      } else {
-        updateUniform(variable, gl, program)
-      }
-    })
-
     // create shader-source
     const source = compileStrings(strings, variables)
 
-    const link = (gl: WebGL2RenderingContext, program: WebGLProgram) => {
-      setGl(gl)
-      setProgram(program)
-    }
+    const bind = (gl: WebGL2RenderingContext, program: WebGLProgram) =>
+      variables.map((variable) =>
+        variable.dataType === 'sampler2D'
+          ? bindSampler2D(
+              variable as ReturnType<typeof createSampler2D>,
+              gl,
+              program
+            )
+          : bindUniform(variable, gl, program)
+      )
 
-    return { source, bind: link } as ShaderResult
+    return { source, bind } as ShaderResult
   }
 
-export const float = (value: Accessor<number>) =>
+export const float = (
+  value: Accessor<number>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'float',
     value,
+    options,
   } as const)
 
-export const int = (value: Accessor<number>) =>
+export const int = (
+  value: Accessor<number>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'int',
     value,
+    options,
   } as const)
 
-export const bool = (value: Accessor<boolean>) =>
+export const bool = (
+  value: Accessor<boolean>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'bool',
     value,
+    options,
   } as const)
 
-export const ivec2 = (value: Accessor<[number, number]>) =>
+export const ivec2 = (
+  value: Accessor<[number, number]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'ivec2',
     value,
+    options,
   } as const)
 
-export const vec2 = (value: Accessor<[number, number]>) =>
+export const vec2 = (
+  value: Accessor<[number, number]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'vec2',
     value,
+    options,
   } as const)
 
-export const bvec2 = (value: Accessor<[boolean, boolean]>) =>
+export const bvec2 = (
+  value: Accessor<[boolean, boolean]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'bvec2',
     value,
+    options,
   } as const)
 
-export const ivec3 = (value: Accessor<[number, number, number]>) =>
+export const ivec3 = (
+  value: Accessor<[number, number, number]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'ivec3',
     value,
+    options,
   } as const)
 
-export const vec3 = (value: Accessor<[number, number, number]>) =>
+export const vec3 = (
+  value: Accessor<[number, number, number]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'vec3',
     value,
+    options,
   } as const)
 
-export const bvec3 = (value: Accessor<[boolean, boolean, boolean]>) =>
+export const bvec3 = (
+  value: Accessor<[boolean, boolean, boolean]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'bvec3',
     value,
+    options,
   } as const)
 
-export const vec4 = (value: Accessor<[number, number, number, number]>) =>
+export const vec4 = (
+  value: Accessor<[number, number, number, number]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'vec4',
     value,
+    options,
   } as const)
 
-export const ivec4 = (value: Accessor<[number, number, number, number]>) =>
+export const ivec4 = (
+  value: Accessor<[number, number, number, number]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'ivec4',
     value,
+    options,
   } as const)
 
-export const bvec4 = (value: Accessor<[boolean, boolean, boolean, boolean]>) =>
+export const bvec4 = (
+  value: Accessor<[boolean, boolean, boolean, boolean]>,
+  options: { type: 'attribute' | 'uniform' }
+) =>
   ({
     type: 'bvec4',
     value,
+    options,
   } as const)
 
 export const sampler2D = (
