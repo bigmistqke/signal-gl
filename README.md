@@ -68,14 +68,30 @@ function App() {
   const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
   const [vertices] = createSignal(new Float32Array([ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0]))
 
-  const getColor = glsl`
+  const [colors, setColors] = createSignal(
+    new Float32Array(new Array(6 * 3).fill('').map((v) => Math.random())),
+    { equals: false }
+  )
+
+  setInterval(() => {
+    setColors((colors) => {
+      colors[0] += 0.001
+      colors[10] += 0.002
+
+      if (colors[0] > 1) colors[0] = 0
+      if (colors[10] > 1) colors[10] = 0
+
+      return colors
+    })
+  })
+
+  const module = glsl`
     // variable names can be scoped by interpolating strings
     // useful in glsl-module to prevent name collisions
     float ${'getLength'}(float x, float y){
       return length(x - y);
     }
 
-    // public functions can be left unscoped
     vec4 getColor(vec3 color, vec2 coord){
       vec2 cursor = ${uniform.vec2(cursor)};
 
@@ -87,13 +103,12 @@ function App() {
       }else{
         return vec4(color, 1.0);
       }
-    }
-    `
+    }`
 
   const fragment = glsl`#version 300 es
     precision mediump float;
     // compose shaders with interpolation
-    ${getColor}
+    ${module}
 
     in vec2 v_coord; 
     in vec3 v_color;
