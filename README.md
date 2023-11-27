@@ -64,8 +64,6 @@ import { render } from 'solid-js/web'
 
 import { GL, attribute, glsl, uniform } from './signal-gl'
 
-import './index.css'
-
 function App() {
   const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
   const [vertices] = createSignal(new Float32Array([ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0]))
