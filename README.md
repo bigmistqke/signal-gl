@@ -144,3 +144,4 @@ render(() => <App />, document.getElementById('app')!)
 
 https://github.com/bigmistqke/signal.gl/assets/10504064/28e4a945-d792-48df-bae4-349aefc7c723
 
+> tip: handy in combination with (glsl-literal syntax higlighting)[https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal]
