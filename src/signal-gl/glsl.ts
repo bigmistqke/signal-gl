@@ -18,8 +18,7 @@ export type ShaderVariable = ReturnType<
   | typeof createUniform
   | typeof createAttribute
   | typeof createSampler2D
-  | typeof createGlobalDeclaration
-  | typeof createGlobalGet
+  | typeof createScopedVariable
 >
 
 export type ShaderInclude = {
@@ -223,12 +222,15 @@ const bindSampler2D = (
     render()
   })
 
-const createScope = (value: string, _scope: Map<string, string>) => {
-  if (!_scope.has(value)) {
-    _scope.set(value, `${value}_${zeptoid()}`)
+const createScopedVariable = (
+  value: string,
+  scopedVariables: Map<string, string>
+) => {
+  if (!scopedVariables.has(value)) {
+    scopedVariables.set(value, `${value}_${zeptoid()}`)
   }
   return {
-    name: _scope.get(value),
+    name: scopedVariables.get(value),
     options: {
       type: 'scope',
       name: value,
@@ -251,12 +253,12 @@ export const glsl =
   ) =>
   () => {
     // initialize variables
-    const globals = new Map<string, string>()
+    const scopedVariables = new Map<string, string>()
     const variables = values.map((value, index) => {
       if (typeof value === 'function') return value()
 
       return typeof value === 'string'
-        ? createScope(value, globals)
+        ? createScopedVariable(value, scopedVariables)
         : value.options.type === 'attribute'
         ? createAttribute(zeptoid(), value)
         : value.type === 'sampler2D'

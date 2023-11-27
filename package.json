@@ -1,4 +1,5 @@
 {
+  "name": "@bigmistqke/signal-gl",
   "scripts": {
     "start": "vite",
     "build": "vite build"

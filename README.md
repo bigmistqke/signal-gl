@@ -1,7 +1,13 @@
+# 🚦 signal-gl `not yet published`
+
+reactive glsl with tag template literals
+
+## simple example
+
+```tsx
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
-
-import { GL, attribute, glsl, uniform } from './signal-gl'
+import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl/solid'
 
 import './index.css'
 
@@ -53,3 +59,4 @@ function App() {
 }
 
 render(() => <App />, document.getElementById('app')!)
+```
