@@ -8,9 +8,12 @@
     "sourceMap": true,
     "allowJs": true,
     "lib": ["es2019", "dom"],
-    "rootDir": "src",
+    "rootDir": ".",
     "moduleResolution": "node",
     "jsxImportSource": "solid-js",
-    "types": ["solid-js", "solid-js/dom"]
+    "types": ["solid-js", "solid-js/dom"],
+    "paths": {
+      "@bigmistqke/signal-gl/*": ["./lib/*"]
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
-import { GL, attribute, glsl, uniform } from './signal-gl'
+import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl/solid'
 
 import './index.css'
 
@@ -54,13 +54,14 @@ function App() {
 
   const fragment = glsl`#version 300 es
     precision mediump float;
+    ${getColor}
 
     in vec2 v_coord; 
     in vec3 v_color;
     out vec4 outColor;
 
     void main() {
-      outColor = vec4(v_coord[0],v_coord[1], v_coord[0],v_coord[1]);
+      outColor = getColor(v_color, v_coord);
     }`
 
   const vertex = glsl`#version 300 es

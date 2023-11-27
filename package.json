@@ -1,12 +1,15 @@
 {
   "name": "@bigmistqke/signal-gl",
+  "version": "0.0.1",
+  "description": "signal-driven glsl with auto-bindings and tag template literals",
+  "license": "MIT",
+  "author": "bigmistqke",
   "scripts": {
     "start": "vite",
-    "build": "vite build"
+    "dev": "vite",
+    "build:example": "vite build"
   },
   "dependencies": {
-    "@shaderfrog/glsl-parser": "^2.0.1",
-    "shaderkit": "^0.2.0",
     "solid-js": "*",
     "zeptoid": "^1.0.1"
   },
@@ -14,9 +17,30 @@
     "@babel/core": "^7.23.3",
     "@babel/preset-env": "^7.23.3",
     "@total-typescript/ts-reset": "^0.5.1",
+    "@types/node": "^20.10.0",
+    "tsup-preset-solid": "^2.1.0",
+    "typescript": "^5.3.2",
     "vite": "^4.4.9",
     "vite-babel-plugin": "^0.0.2",
     "vite-plugin-babel": "^1.1.3",
     "vite-plugin-solid": "^2.7.0"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {},
+  "browser": {},
+  "exports": {
+    "development": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/dev.js"
+      }
+    },
+    "import": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   }
 }
