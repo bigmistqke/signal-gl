@@ -4,11 +4,18 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@shaderfrog/glsl-parser": "^2.0.1",
+    "shaderkit": "^0.2.0",
     "solid-js": "*",
     "zeptoid": "^1.0.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.23.3",
+    "@babel/preset-env": "^7.23.3",
+    "@total-typescript/ts-reset": "^0.5.1",
     "vite": "^4.4.9",
+    "vite-babel-plugin": "^0.0.2",
+    "vite-plugin-babel": "^1.1.3",
     "vite-plugin-solid": "^2.7.0"
   }
 }

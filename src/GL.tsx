@@ -4,13 +4,15 @@ import {
   type Accessor,
   type ComponentProps,
 } from 'solid-js'
-import type { ShaderResult } from './glsl'
+import type { ShaderResult } from './glsl2'
 
 export const GL = (
   props: ComponentProps<'canvas'> & {
     fragment: Accessor<ShaderResult>
     vertex: Accessor<ShaderResult>
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    animate?: boolean
   }
 ) => {
   let canvas: HTMLCanvasElement
@@ -31,22 +33,7 @@ export const GL = (
 
     if (!currentProgram) return
 
-    batch(() => {
-      vertex.bind(gl, currentProgram, render)
-      fragment.bind(gl, currentProgram, render)
-    })
-
-    /* Create Vertex buffer (2 triangles) */
-    let vertex_position: number
-    let vertex_buffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([
-        -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-      ]),
-      gl.STATIC_DRAW
-    )
+    props.onInit?.(gl, currentProgram)
 
     /* Observe resize-events canvas */
     const resizeObserver = new ResizeObserver(() => {
@@ -65,21 +52,27 @@ export const GL = (
       if (!currentProgram) return
 
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-      // Load program into GPU
       gl.useProgram(currentProgram)
-
-      // Render geometry
-      gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer)
-      gl.vertexAttribPointer(vertex_position, 2, gl.FLOAT, false, 0, 0)
-      gl.enableVertexAttribArray(vertex_position)
-      gl.drawArrays(gl.TRIANGLES, 0, 6)
-      gl.disableVertexAttribArray(vertex_position)
+      queue.forEach((fn) => fn())
 
       props.onRender?.(gl, currentProgram)
     }
 
-    animate()
+    const queue: (() => void)[] = []
+    const onRender = (fn: () => void) => {
+      queue.push(fn)
+      return () => {
+        queue.splice(queue.indexOf(fn), 1)
+      }
+    }
+
+    batch(() => {
+      vertex.bind(gl, currentProgram, render, onRender)
+      fragment.bind(gl, currentProgram, render, onRender)
+      setTimeout(render, 5)
+    })
+
+    if (props.animate) animate()
   })
 
   return <canvas ref={canvas!} {...props} />
@@ -132,9 +125,9 @@ function createShader(
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     console.error(
-      `${
-        type == gl.VERTEX_SHADER ? 'VERTEX' : 'FRAGMENT'
-      }  SHADER:\n ${gl.getShaderInfoLog(shader)}`
+      type == gl.VERTEX_SHADER
+        ? 'VERTEX'
+        : 'FRAGMENT' + ` SHADER:\n ${gl.getShaderInfoLog(shader)}`
     )
 
     return null
