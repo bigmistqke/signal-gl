@@ -68,19 +68,15 @@ const compileStrings = (
     return [
       pre,
       precision,
-      '\n',
       variables.flatMap((variable) => resolveVariable(variable)).join('\n'),
-      '\n',
       after,
-    ].join('')
+    ].join('\n')
   }
   const version = source.match(/#version.*/)?.[0]
   const [pre, after] = source.split(/#version.*/)
   return [
     version,
-    '\n',
     variables.flatMap((variable) => resolveVariable(variable)).join('\n'),
-    '\n',
     after || pre,
   ].join('\n')
 }
@@ -227,17 +223,16 @@ const bindSampler2D = (
     render()
   })
 
-const createScope = (
-  value: ReturnType<typeof scope>,
-  _scope: Map<string, string>
-) => {
-  const key = value.options.name
-  if (!_scope.has(key)) {
-    _scope.set(key, `scoped_${value.options.name}_${zeptoid()}`)
+const createScope = (value: string, _scope: Map<string, string>) => {
+  if (!_scope.has(value)) {
+    _scope.set(value, `${value}_${zeptoid()}`)
   }
   return {
-    name: _scope.get(key),
-    ...value,
+    name: _scope.get(value),
+    options: {
+      type: 'scope',
+      name: value,
+    },
   }
 }
 
@@ -249,19 +244,18 @@ export const glsl =
       | ReturnType<
           | (typeof attribute)[keyof typeof attribute]
           | (typeof uniform)[keyof typeof uniform]
-          | typeof scope
         >
+      | string
       | Accessor<ShaderResult>
     )[]
   ) =>
   () => {
-    console.log('values are ', values)
     // initialize variables
     const globals = new Map<string, string>()
     const variables = values.map((value, index) => {
       if (typeof value === 'function') return value()
 
-      return value.options.type === 'scope'
+      return typeof value === 'string'
         ? createScope(value, globals)
         : value.options.type === 'attribute'
         ? createAttribute(zeptoid(), value)
@@ -271,8 +265,8 @@ export const glsl =
     })
 
     // create shader-source
-    const source = compileStrings(strings, variables)
-    console.log('source:\n\n', source)
+    const source = compileStrings(strings, variables).split(/\s\s+/g).join('\n')
+    console.log('source', source)
 
     const bind = (
       gl: WebGL2RenderingContext,
@@ -281,7 +275,6 @@ export const glsl =
       onRender: (fn: () => void) => void
     ) =>
       variables.forEach((variable) => {
-        console.log('variable::', variable)
         if ('bind' in variable) {
           variable.bind(gl, program, render, onRender)
           return

@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
 import { GL } from './GL'
-import { attribute, glsl, scope, uniform } from './glsl'
+import { attribute, glsl, uniform } from './glsl'
 
 function App() {
   const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
@@ -33,33 +33,35 @@ function App() {
   })
 
   const getColor = glsl`
-int ${scope('test')} = 0;
+    float ${'getLength'}(float x, float y){
+      return length(x - y);
+    }
 
-vec4 getColor(vec3 color, vec2 coord){
-  vec2 cursor = ${uniform.vec2(cursor)};
-  int test = ${scope('test')};
+    vec4 getColor(vec3 color, vec2 coord){
+      vec2 cursor = ${uniform.vec2(cursor)};
 
-  float lengthX = length(coord.x - cursor.x);
-  float lengthY = length(coord.y - cursor.y);
+      float lengthX = ${'getLength'}(cursor.x, coord.x);
+      float lengthY = ${'getLength'}(cursor.y, coord.y);
 
-  if(lengthX < 0.25 && lengthY < 0.25){
-    return vec4(1. - color, 1.0);
-  }else{
-    return vec4(color, 1.0);
-  }
-}`
+      if(lengthX < 0.25 && lengthY < 0.25){
+        return vec4(1. - color, 1.0);
+      }else{
+        return vec4(color, 1.0);
+      }
+    }
+    `
 
   const fragment = glsl`#version 300 es
-precision mediump float;
-${getColor}
+    precision mediump float;
+    ${getColor}
 
-in vec2 v_coord; 
-in vec3 v_color;
-out vec4 outColor;
+    in vec2 v_coord; 
+    in vec3 v_color;
+    out vec4 outColor;
 
-void main() {
-  outColor = getColor(v_color, v_coord);
-}`
+    void main() {
+      outColor = getColor(v_color, v_coord);
+    }`
 
   const vertex = glsl`#version 300 es
   
