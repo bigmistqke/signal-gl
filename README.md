@@ -75,8 +75,6 @@ function App() {
       return length(x - y);
     }
 
-    float ${'scale'} = 0.5;
-
     // public functions can be left unscoped
     vec4 getColor(vec3 color, vec2 coord){
       vec2 cursor = ${uniform.vec2(cursor)};
