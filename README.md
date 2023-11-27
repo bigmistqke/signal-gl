@@ -71,10 +71,13 @@ function App() {
   const [vertices] = createSignal(new Float32Array([ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0]))
 
   const getColor = glsl`
-    // private variable-names can be scoped with ${'variable_name'}
+    // variable names can be scoped by interpolating strings
+    // useful in glsl-module to prevent name collisions
     float ${'getLength'}(float x, float y){
       return length(x - y);
     }
+
+    float ${'scale'} = 0.5;
 
     // public functions can be left unscoped
     vec4 getColor(vec3 color, vec2 coord){
