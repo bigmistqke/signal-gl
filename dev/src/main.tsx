@@ -5,7 +5,7 @@ import {
   Program,
   uniform,
 } from '@bigmistqke/signal-gl/solid'
-import { createEffect, createSignal } from 'solid-js'
+import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
 function App() {
@@ -17,15 +17,13 @@ function App() {
   )
   const [opacity, setOpacity] = createSignal(0.5)
 
-  createEffect(() => console.log('opacity:', opacity()))
-
   const fragment = glsl`#version 300 es
     precision mediump float;
     in vec2 v_coord; 
     out vec4 outColor;
     void main() {
       float opacity = ${uniform.float(opacity)};
-      outColor = vec4(v_coord[0], v_coord[1], v_coord[0], opacity + 0.5);
+      outColor = vec4(v_coord[0], v_coord[1], v_coord[0], opacity);
     }`
 
   const vertex = glsl`#version 300 es
@@ -41,7 +39,7 @@ function App() {
     <GL
       style={{
         width: '100vw',
-        height: '100%',
+        height: '100vh',
       }}
       onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}
     >

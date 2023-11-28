@@ -89,6 +89,8 @@ export const GL = (
           }
         }
 
+        setTimeout(render, 0)
+
         createEffect(() => (props.animate ? animate() : createEffect(render)))
 
         return <canvas ref={setCanvas} {...rest} />
