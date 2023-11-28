@@ -12,7 +12,7 @@ import {
   ValueOf,
 } from './types'
 
-const dataTypeToFunctionName = (dataType: string): UniformSetter => {
+export const dataTypeToFunctionName = (dataType: string): UniformSetter => {
   // TODO: include mat
   if (dataType === 'float') return 'uniform1f'
   if (dataType === 'int') return 'uniform1i'
@@ -43,10 +43,7 @@ const createToken = <
 export const createUniformToken = (
   id: number | string,
   config: ReturnType<ValueOf<Uniform>>
-): UniformToken =>
-  createToken(id, config, {
-    functionName: dataTypeToFunctionName(config.dataType),
-  })
+): UniformToken => createToken(id, config)
 
 export const bindUniformToken = (
   variable: UniformToken,
@@ -102,6 +99,7 @@ export const createSampler2DToken = (
 ): Sampler2DToken =>
   createToken(id, config, {
     textureIndex: textureIndex++,
+    tokenType: 'sampler2D',
   })
 
 export const bindSampler2DToken = (
@@ -153,8 +151,9 @@ export const bindSampler2DToken = (
   })
 
 export const createScopedVariableToken = (
-  value: string,
-  scopedVariables: Map<string, string>
+  scopedVariables: Map<string, string>,
+
+  value: string
 ): ScopedVariableToken => {
   if (!scopedVariables.has(value)) {
     scopedVariables.set(value, `${value}_${zeptoid()}`)

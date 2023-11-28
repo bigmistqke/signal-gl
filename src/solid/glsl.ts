@@ -1,10 +1,6 @@
 import { type Accessor } from 'solid-js'
 import zeptoid from 'zeptoid'
 import {
-  AttributeToken,
-  Sampler2DToken,
-  ScopedVariableToken,
-  UniformToken,
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
@@ -12,8 +8,18 @@ import {
   createSampler2DToken,
   createScopedVariableToken,
   createUniformToken,
+  dataTypeToFunctionName,
 } from './tokens'
-import { Attribute, OnRenderFunction, ShaderResult, Uniform } from './types'
+import {
+  Attribute,
+  AttributeParameters,
+  OnRenderFunction,
+  ShaderResult,
+  Token,
+  Uniform,
+  UniformParameters,
+  ValueOf,
+} from './types'
 export * from './GL'
 
 const resolveToken = (token: Token) =>
@@ -54,17 +60,10 @@ const compileStrings = (strings: TemplateStringsArray, variables: Token[]) => {
 }
 
 type Hole =
-  | ReturnType<(typeof attribute)[keyof typeof attribute]>
-  | ReturnType<(typeof uniform)[keyof typeof uniform]>
+  | ReturnType<ValueOf<Attribute>>
+  | ReturnType<ValueOf<Uniform>>
   | string
   | Accessor<ShaderResult>
-
-type Token =
-  | ShaderResult
-  | ScopedVariableToken
-  | AttributeToken
-  | UniformToken
-  | Sampler2DToken
 
 export const glsl =
   (
@@ -80,7 +79,7 @@ export const glsl =
         typeof hole === 'function'
           ? hole()
           : typeof hole === 'string'
-          ? createScopedVariableToken(hole, scopedVariables)
+          ? createScopedVariableToken(scopedVariables, hole)
           : hole.tokenType === 'attribute'
           ? createAttributeToken(zeptoid(), hole as any)
           : hole.dataType === 'sampler2D'
@@ -129,10 +128,11 @@ export const glsl =
 
 export const uniform = new Proxy({} as Uniform, {
   get(target, dataType) {
-    return (...[value, options]: Parameters<Uniform[keyof Uniform]>) => ({
+    return (...[value, options]: UniformParameters) => ({
       get value() {
         return value()
       },
+      functionName: dataTypeToFunctionName(dataType as string),
       dataType,
       tokenType: 'uniform',
       options,
@@ -142,7 +142,7 @@ export const uniform = new Proxy({} as Uniform, {
 
 export const attribute = new Proxy({} as Attribute, {
   get(target, dataType) {
-    return (...[value, options]: Parameters<Attribute[keyof Attribute]>) => {
+    return (...[value, options]: AttributeParameters) => {
       const size =
         typeof dataType === 'string'
           ? +dataType[dataType.length - 1]
