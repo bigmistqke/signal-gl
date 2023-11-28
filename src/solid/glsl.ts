@@ -19,6 +19,8 @@ import {
 
 /* GLSL TAG TEMPLATE LITERAL */
 
+const DEBUG = import.meta.env.DEV
+
 let textureIndex = 0
 export const glsl =
   (
@@ -56,7 +58,7 @@ export const glsl =
     // create shader-source
     const source = compileStrings(strings, tokens).split(/\s\s+/g).join('\n')
 
-    console.log('source', source)
+    DEBUG && console.log('source', source)
 
     const bind = (
       gl: WebGL2RenderingContext,

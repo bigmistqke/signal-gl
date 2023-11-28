@@ -68,8 +68,6 @@ declare const uniform: Uniform;
 declare const attribute: Attribute;
 
 declare const GL: (props: solid_js.JSX.CanvasHTMLAttributes<HTMLCanvasElement> & {
-    fragment: Accessor<ShaderToken>;
-    vertex: Accessor<ShaderToken>;
     onRender?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
     onInit?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
     animate?: boolean | undefined;
@@ -79,7 +77,8 @@ declare const Program: (props: {
     vertex: Accessor<ShaderToken>;
     onRender?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
     onInit?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
-}) => void;
+    mode: 'TRIANGLES' | 'POINTS' | 'LINES';
+}) => solid_js.JSX.Element;
 
 declare const glsl: (strings: TemplateStringsArray, ...holes: Hole[]) => () => ShaderToken;
 

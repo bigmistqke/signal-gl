@@ -94,6 +94,7 @@ export const Program = (props: {
   vertex: Accessor<ShaderToken>
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  mode: 'TRIANGLES' | 'POINTS' | 'LINES'
 }) => {
   const context = useGL()
   const [renderFunction, setRenderFunction] = createSignal<() => any>()
@@ -115,10 +116,11 @@ export const Program = (props: {
       queue.forEach((fn) => fn())
 
       props.onRender?.(gl, program)
+
+      gl.drawArrays(gl[props.mode], 0, 6)
     }
 
   createEffect(() => {
-    console.log('context is ', context)
     if (!context) {
       console.error('context is undefined: make sure Program is sibling of GL.')
     }
@@ -139,14 +141,13 @@ export const Program = (props: {
     props.onInit?.(gl, currentProgram)
 
     const render = renderFactory(gl, currentProgram)
-
-    setRenderFunction(() => render)
-
     batch(() => {
       vertex.bind(gl, currentProgram, render, onRender)
       fragment.bind(gl, currentProgram, render, onRender)
-      setTimeout(renderFactory, 5)
+      // setTimeout(renderFactory, 5)
     })
+
+    // setRenderFunction(() => render)
   })
 
   return {

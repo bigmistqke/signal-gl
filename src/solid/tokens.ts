@@ -1,4 +1,4 @@
-import { createEffect, mergeProps } from 'solid-js'
+import { createEffect, mergeProps, on } from 'solid-js'
 import zeptoid from 'zeptoid'
 
 import type {
@@ -51,10 +51,12 @@ export const bindUniformToken = (
   render: () => void
 ) => {
   const location = gl.getUniformLocation(program, token.name)
-  createEffect(() => {
-    gl[token.functionName](location, token.value)
-    render()
-  })
+  createEffect(
+    on(
+      () => token.value,
+      () => setTimeout(() => gl[token.functionName](location, token.value), 0)
+    )
+  )
 }
 
 export const bindAttributeToken = (
@@ -74,14 +76,13 @@ export const bindAttributeToken = (
   createEffect(() => {
     gl.bindBuffer(glTarget, buffer)
     gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
-    render()
+    setTimeout(render, 0)
   })
 
   onRender(() => {
     gl.bindBuffer(glTarget, buffer)
     gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(location)
-    if (mode) gl.drawArrays(gl[mode], 0, 6)
   })
 }
 

@@ -95,7 +95,7 @@ function App() {
         ])
       }
     >
-      <Program fragment={fragment} vertex={vertex} />
+      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
     </GL>
   )
 }
