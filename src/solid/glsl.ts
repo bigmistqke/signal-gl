@@ -60,8 +60,6 @@ export const glsl =
         let name = hasNameCache && names[index]
         name = name || zeptoid()
 
-        // if the same TemplateStringsArray has been compiled before
-        // we try to follow the same
         if (!hasNameCache) names[index] = name
 
         if (DEBUG && !name) {
