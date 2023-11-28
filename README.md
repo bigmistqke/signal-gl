@@ -9,7 +9,7 @@
 - `Minimal` abstraction
 - Co-locating `js` and `glsl`
 - Composition of `glsl` snippets
-- Lessen boilerplate with `auto-binding` signals
+- Lessen boilerplate with `auto-binding` uniforms and attributes
 - `Purely runtime`: no additional build tools
 - Small footprint: `2.5kb minified + gzip`
 
