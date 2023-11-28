@@ -156,9 +156,6 @@ export interface Sampler2DToken extends TokenBase {
 export type ScopedVariableToken = {
   name: string
   tokenType: 'scope'
-  options: {
-    name: string
-  }
 }
 
 export type Token =

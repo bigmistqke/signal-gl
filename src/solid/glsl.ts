@@ -4,7 +4,6 @@ import type {
   Hole,
   OnRenderFunction,
   Sampler2DToken,
-  ScopedVariableToken,
   ShaderToken,
   Token,
 } from '@core/types'
@@ -13,13 +12,12 @@ import {
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
-  createScopedToken,
   createToken,
 } from './tokens'
 
 const DEBUG = false
 
-const cache = new WeakMap<TemplateStringsArray, string[]>()
+const nameCache = new WeakMap<TemplateStringsArray, string[]>()
 
 let textureIndex = 0
 export const glsl =
@@ -29,12 +27,12 @@ export const glsl =
     ...holes: Hole[]
   ) =>
   () => {
-    const hasCache = cache.has(strings)
-    if (!hasCache) cache.set(strings, [])
-    const ids = cache.get(strings)!
+    const hasNameCache = nameCache.has(strings)
+    if (!hasNameCache) nameCache.set(strings, [])
+    const names = nameCache.get(strings)!
 
     // initialize variables
-    const scopedVariables = new Map<string, ScopedVariableToken>()
+    const scopedVariableNames = new Map<string, string>()
     const tokens = holes
       .map((hole, index) => {
         if (typeof hole === 'function') {
@@ -42,21 +40,40 @@ export const glsl =
           // it is interpret as a glsl-module / Accessor<ShaderResult>
           return hole()
         }
+
         if (typeof hole === 'string') {
           // if token is a function
           // it is interpret as a scoped variable name
-          return createScopedToken(scopedVariables, hole)
+          const name = hasNameCache
+            ? names[index]!
+            : scopedVariableNames.get(hole) || `${hole}_${zeptoid()}`
+
+          if (!scopedVariableNames.has(hole))
+            scopedVariableNames.set(hole, name)
+          if (!hasNameCache) names[index] = name
+
+          return {
+            name,
+            tokenType: 'scope',
+          }
         }
 
-        const id = hasCache ? ids[index]! : zeptoid()
-        if (!hasCache) ids[index] = id
+        const name = hasNameCache ? names[index]! : zeptoid()
+
+        // if the same TemplateStringsArray has been compiled before
+        // we try to follow the same
+        if (!hasNameCache) names[index] = name
+
+        if (DEBUG && !name) {
+          console.error('id was not found for hole:', hole, 'with index', index)
+        }
 
         switch (hole.tokenType) {
           case 'attribute':
           case 'uniform':
-            return createToken(id, hole)
+            return createToken(name, hole)
           case 'sampler2D':
-            return createToken(id, hole, {
+            return createToken(name, hole, {
               textureIndex: textureIndex++,
             })
         }

@@ -1,12 +1,10 @@
 import { createEffect, createRenderEffect, mergeProps, on } from 'solid-js'
-import zeptoid from 'zeptoid'
 
 import type {
   Attribute,
   AttributeToken,
   OnRenderFunction,
   Sampler2DToken,
-  ScopedVariableToken,
   Uniform,
   UniformToken,
   ValueOf,
@@ -27,22 +25,6 @@ export const createToken = <
     },
     other
   )
-
-export const createScopedToken = (
-  scopedVariables: Map<string, ScopedVariableToken>,
-  value: string
-): ScopedVariableToken => {
-  if (!scopedVariables.has(value)) {
-    scopedVariables.set(value, {
-      name: `${value}_${zeptoid()}`,
-      tokenType: 'scope',
-      options: {
-        name: value,
-      },
-    })
-  }
-  return scopedVariables.get(value)!
-}
 
 export const bindUniformToken = (
   token: UniformToken,
