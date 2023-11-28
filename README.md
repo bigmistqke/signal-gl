@@ -84,7 +84,7 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-### Scope and Modules [[playground]](https://playground.solidjs.com/anonymous/d4004847-49fa-4eec-82e3-33ca08d5e0a5)
+### Scope and Modules [[playground]](https://playground.solidjs.com/anonymous/d0770ee9-2045-464f-8b71-33493bba53d8)
 
 <video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/bad12fc1-45bf-4b8d-82a0-7cdb3e438a73">
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
