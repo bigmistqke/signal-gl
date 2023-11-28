@@ -2,16 +2,15 @@
 
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
 
-`inline` `reactive` `glsl` `auto-binding` `signals` `tag template literals`
+`minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
 
 ## Premise
 
-- Minimal abstraction
+- `Minimal` abstraction
 - Co-locating `js` and `glsl`
-- Composition of glsl snippets
-- Minimizing of boilerplate
-- Auto-binding to signals
-- Small footprint: 2.5kb minified + gzip
+- Composition of `glsl` snippets
+- Lessen boilerplate with `auto-binding` signals
+- Small footprint: `2.5kb minified + gzip`
 
 ## Bindings
 
@@ -29,7 +28,7 @@ yarn add @bigmistqke/signal-gl
 
 ## Use it
 
-### Hello World [code](./dev/src/examples/hello_world.tsx)
+### Hello World [[code]](./dev/src/examples/hello_world.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -85,7 +84,7 @@ render(() => <App />, document.getElementById('app')!)
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
 </video>
 
-### Scope and Modules [code](./dev/src/examples/scope_and_modules.tsx)
+### Scope and Modules [[code]](./dev/src/examples/scope_and_modules.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
