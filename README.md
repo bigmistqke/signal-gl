@@ -25,7 +25,7 @@
 - Composition of `glsl` snippets
 - Lessen boilerplate with `auto-binding` uniforms and attributes
 - `Purely runtime`: no additional build tools
-- Small footprint: `2.5kb minified + gzip`
+- Small footprint: `3kb minified + gzip`
 
 ## Bindings
 
