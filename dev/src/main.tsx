@@ -13,7 +13,7 @@ import { render } from 'solid-js/web'
 import './index.css'
 
 const Plane = (props: {
-  vertices: Accessor<Buffer>
+  vertices: Buffer | Accessor<Buffer>
   fragment: Accessor<ShaderToken>
 }) => {
   const vertex = glsl`#version 300 es
@@ -29,17 +29,6 @@ const Plane = (props: {
 }
 
 function App() {
-  const [vertices] = createSignal(
-    new Float32Array([
-      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-    ])
-  )
-
-  const [vertices2] = createSignal(
-    new Float32Array([
-      -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-    ])
-  )
   const [opacity, setOpacity] = createSignal(0.5)
   const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
 
@@ -87,7 +76,11 @@ function App() {
             float opacity = ${uniform.float(opacity)};
             outColor = vec4(v_coord[0], v_coord[1], v_coord[0], opacity);
           }`}
-        vertices={vertices}
+        vertices={
+          new Float32Array([
+            -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+          ])
+        }
       />
       <Plane
         fragment={glsl`#version 300 es
@@ -100,7 +93,11 @@ function App() {
           void main() {
             outColor = getColor(vec3(1.0, 0.0, 0.0), v_coord);
           }`}
-        vertices={vertices2}
+        vertices={
+          new Float32Array([
+            -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
+          ])
+        }
       />
     </GL>
   )

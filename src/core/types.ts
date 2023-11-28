@@ -50,12 +50,12 @@ type Variable<
   TValue extends any,
   TTOptions = PrimitiveOptions
 > = (
-  value: Accessor<TValue>,
+  value: Accessor<TValue> | TValue,
   options?: TTOptions
 ) => {
   dataType: TType
   tokenType: 'uniform' | 'attribute' | 'sampler2D'
-  value: Accessor<TValue>
+  value: TValue
   options: TTOptions
 }
 
