@@ -31,7 +31,15 @@ export type PrimitiveOptions = {
   name?: string
 }
 
-/* VARIABLE: UNIFORM + ATTRIBUTE */
+/* GLSL TAG TEMPLATE LITERAL */
+
+export type Hole =
+  | ReturnType<ValueOf<Attribute>>
+  | ReturnType<ValueOf<Uniform>>
+  | string
+  | Accessor<ShaderToken>
+
+/* VARIABLE-PROXIES: UNIFORM + ATTRIBUTE */
 
 type Variable<
   TType extends string,

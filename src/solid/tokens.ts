@@ -29,19 +29,19 @@ export const createToken = <
   )
 
 export const createScopedToken = (
-  scopedVariables: Map<string, string>,
+  scopedVariables: Map<string, ScopedVariableToken>,
   value: string
 ): ScopedVariableToken => {
   if (!scopedVariables.has(value)) {
-    scopedVariables.set(value, `${value}_${zeptoid()}`)
+    scopedVariables.set(value, {
+      name: `${value}_${zeptoid()}`,
+      tokenType: 'scope',
+      options: {
+        name: value,
+      },
+    })
   }
-  return {
-    name: scopedVariables.get(value)!,
-    tokenType: 'scope',
-    options: {
-      name: value,
-    },
-  }
+  return scopedVariables.get(value)!
 }
 
 export const bindUniformToken = (

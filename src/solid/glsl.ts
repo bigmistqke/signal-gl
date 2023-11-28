@@ -1,18 +1,14 @@
-import { type Accessor } from 'solid-js'
 import zeptoid from 'zeptoid'
 
 import type {
-  Attribute,
-  AttributeParameters,
+  Hole,
   OnRenderFunction,
   Sampler2DToken,
+  ScopedVariableToken,
   ShaderToken,
   Token,
-  Uniform,
-  UniformParameters,
-  UniformSetter,
-  ValueOf,
 } from '@core/types'
+import { compileStrings } from '@core/webgl'
 import {
   bindAttributeToken,
   bindSampler2DToken,
@@ -21,64 +17,7 @@ import {
   createToken,
 } from './tokens'
 
-/* UTILITIES */
-
-const dataTypeToFunctionName = (dataType: string) => {
-  // TODO: include mat
-  if (dataType === 'float') return 'uniform1f'
-  if (dataType === 'int') return 'uniform1i'
-  if (dataType === 'bool') return 'uniform1i'
-
-  return ('uniform' +
-    dataType[dataType.length - 1] +
-    (dataType[0] === 'b' ? 'b' : dataType[0] === 'i' ? 'i' : 'f') +
-    'v') as UniformSetter
-}
-
-const resolveToken = (token: Token) =>
-  'source' in token
-    ? token.source
-    : token.tokenType === 'attribute'
-    ? `in ${token.dataType} ${token.name};`
-    : token.tokenType === 'uniform'
-    ? `uniform ${token.dataType} ${token.name};`
-    : ''
-
-const compileStrings = (strings: TemplateStringsArray, variables: Token[]) => {
-  const source = [
-    ...strings.flatMap((string, index) => {
-      const variable = variables[index]
-      if (!variable) return string
-      return 'name' in variable ? [string, variable.name] : string
-    }),
-  ].join('')
-
-  const precision = source.match(/precision.*;/)?.[0]
-  if (precision) {
-    const [pre, after] = source.split(/precision.*;/)
-    return [
-      pre,
-      precision,
-      variables.flatMap((variable) => resolveToken(variable)).join('\n'),
-      after,
-    ].join('\n')
-  }
-  const version = source.match(/#version.*/)?.[0]
-  const [pre, after] = source.split(/#version.*/)
-  return [
-    version,
-    variables.flatMap((variable) => resolveToken(variable)).join('\n'),
-    after || pre,
-  ].join('\n')
-}
-
 /* GLSL TAG TEMPLATE LITERAL */
-
-type Hole =
-  | ReturnType<ValueOf<Attribute>>
-  | ReturnType<ValueOf<Uniform>>
-  | string
-  | Accessor<ShaderToken>
 
 let textureIndex = 0
 export const glsl =
@@ -89,7 +28,7 @@ export const glsl =
   ) =>
   () => {
     // initialize variables
-    const scopedVariables = new Map<string, string>()
+    const scopedVariables = new Map<string, ScopedVariableToken>()
     const tokens: Token[] = holes
       .map((hole, index) => {
         if (typeof hole === 'function') {
@@ -116,6 +55,7 @@ export const glsl =
 
     // create shader-source
     const source = compileStrings(strings, tokens).split(/\s\s+/g).join('\n')
+
     console.log('source', source)
 
     const bind = (
@@ -143,39 +83,3 @@ export const glsl =
     }
     return { source, bind, tokenType: 'shader' } as ShaderToken
   }
-
-/* VARIABLES: UNIFORM / ATTRIBUTE */
-
-export const uniform = new Proxy({} as Uniform, {
-  get(target, dataType) {
-    return (...[value, options]: UniformParameters) => ({
-      dataType,
-      functionName: dataTypeToFunctionName(dataType as string),
-      tokenType: dataType === 'sampler2D' ? 'sampler2D' : 'uniform',
-      get value() {
-        return value()
-      },
-      options,
-    })
-  },
-})
-
-export const attribute = new Proxy({} as Attribute, {
-  get(target, dataType) {
-    return (...[value, options]: AttributeParameters) => {
-      const size =
-        typeof dataType === 'string'
-          ? +dataType[dataType.length - 1]!
-          : undefined
-      return {
-        dataType,
-        tokenType: 'attribute',
-        size: size && !isNaN(size) ? size : 1,
-        get value() {
-          return value()
-        },
-        options,
-      }
-    }
-  },
-})

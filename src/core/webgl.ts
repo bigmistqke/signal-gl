@@ -1,3 +1,67 @@
+import type { Token, UniformSetter } from './types'
+
+/* COMPILATION BY SIGNAL-GL */
+
+export const dataTypeToFunctionName = (dataType: string) => {
+  switch (dataType) {
+    case 'float':
+      return 'uniform1f'
+    case 'int':
+      return 'uniform1i'
+    case 'bool':
+      return 'uniform1i'
+    default:
+      return ('uniform' +
+        dataType[dataType.length - 1] +
+        (dataType[0] === 'b' ? 'b' : dataType[0] === 'i' ? 'i' : 'f') +
+        'v') as UniformSetter
+  }
+}
+
+const resolveToken = (token: Token) => {
+  switch (token.tokenType) {
+    case 'shader':
+      return token.source
+    case 'attribute':
+      return `in ${token.dataType} ${token.name};`
+    case 'uniform':
+      return `uniform ${token.dataType} ${token.name};`
+  }
+}
+
+export const compileStrings = (
+  strings: TemplateStringsArray,
+  variables: Token[]
+) => {
+  const source = [
+    ...strings.flatMap((string, index) => {
+      const variable = variables[index]
+      if (!variable) return string
+      return 'name' in variable ? [string, variable.name] : string
+    }),
+  ].join('')
+
+  const precision = source.match(/precision.*;/)?.[0]
+  if (precision) {
+    const [pre, after] = source.split(/precision.*;/)
+    return [
+      pre,
+      precision,
+      variables.flatMap((variable) => resolveToken(variable)).join('\n'),
+      after,
+    ].join('\n')
+  }
+  const version = source.match(/#version.*/)?.[0]
+  const [pre, after] = source.split(/#version.*/)
+  return [
+    version,
+    variables.flatMap((variable) => resolveToken(variable)).join('\n'),
+    after || pre,
+  ].join('\n')
+}
+
+/* COMPILATION BY WEB-GL */
+
 export function createProgram(
   gl: WebGLRenderingContext,
   vertex: string,
