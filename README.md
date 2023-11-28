@@ -68,7 +68,9 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-<video src="https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-5ae703b67d89"/>
+<video alt="screenrecording first example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-5ae703b67d89">
+  <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
+</video>
 
 ## Scope and Modules [code](./dev/src/examples/scope_and_modules.tsx)
 
@@ -173,7 +175,10 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-<video src="https://github.com/bigmistqke/signal.gl/assets/10504064/28e4a945-d792-48df-bae4-349aefc7c723"/>
+<video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/28e4a945-d792-48df-bae4-349aefc7c723" >
+  <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
+</video>
+
 
 > `💡` syntax highlighting for glsl tag template literals with [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
 
