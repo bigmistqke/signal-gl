@@ -18,7 +18,7 @@
   - [GL](#gl-component)
   - [Program](#program-component) 
 
-## #Premise
+## Premise
 
 - `Minimal` abstraction
 - Co-locating `js` and `glsl`
@@ -27,11 +27,11 @@
 - `Purely runtime`: no additional build tools
 - Small footprint: `2.5kb minified + gzip`
 
-## #Bindings
+## Bindings
 
 Currently there are only `solid` bindings, but the dependency on `solid` is minimal. If this idea has any merit it would be trivial to make bindings for other signal implementations.
 
-## #Install
+## Install
 
 ```bash
 npm i @bigmistqke/signal-gl
@@ -41,7 +41,7 @@ pnpm i @bigmistqke/signal-gl
 yarn add @bigmistqke/signal-gl
 ```
 
-## #Use it
+## Use it
 
 ### Hello World [[playground]](https://playground.solidjs.com/anonymous/72a268af-262d-4d9a-84e4-4d60c94157b3)
 
@@ -202,7 +202,7 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-## #API
+## API
 
 ### `glsl`: tag template literal
 
@@ -234,7 +234,7 @@ allowed interpolation-types:
   - `${'scoped-var'}`
   - scope variable name to prevent name-collisions
 
-### #`uniform`: utility
+### `uniform`: utility
 
 ```ts
 uniform.float(signal as Accessor<number>, {} as UniformOptions)
@@ -259,7 +259,7 @@ export type UniformOptions = {
 
 returns a `UniformToken`
 
-### #`attribute`: utility
+### `attribute`: utility
 
 ```ts
 attribute.float(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
@@ -293,7 +293,7 @@ export type AttributeOptions = {
 
 returns an `AttributeToken`
 
-### #`GL`: component
+### `GL`: component
 
 ```tsx
 <GL {...props as GLProps}>
@@ -312,7 +312,7 @@ type GLProps =
 
 - root-element
 
-### #`Program`: component
+### `Program`: component
 
 ```tsx
 <Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
