@@ -1,12 +1,12 @@
 import {
   GL,
   Program,
-  ShaderToken,
   attribute,
   glsl,
   uniform,
+  type ShaderToken,
 } from '@bigmistqke/signal-gl'
-import { Accessor, Index, batch, createSignal, untrack } from 'solid-js'
+import { Index, batch, createSignal, untrack, type Accessor } from 'solid-js'
 import { render } from 'solid-js/web'
 
 import './index.css'
@@ -78,7 +78,7 @@ type Boid = {
 }
 
 function updateBoids(boids: Boid[], width = 200, height = 200, deltaTime = 1) {
-  return boids.map((boid) => {
+  boids.forEach((boid, index) => {
     let { x, y, z, vx, vy, vz } = boid
     x += vx * deltaTime
     y += vy * deltaTime
@@ -86,11 +86,11 @@ function updateBoids(boids: Boid[], width = 200, height = 200, deltaTime = 1) {
     // Wrap around edges
     x = (x + width) % width
     y = (y + height) % height
-    return { x, y, z, vx, vy, vz }
+    boids[index] = { x, y, z, vx, vy, vz }
   })
 }
 
-const AMOUNT = 1000
+const AMOUNT = 3000
 
 function App() {
   const [boids, setBoids] = createSignal<
@@ -110,10 +110,17 @@ function App() {
       vx: Math.random() - 0.5,
       vy: Math.random() - 0.5,
       vz: Math.random() - 0.5,
-    }))
+    })),
+    { equals: false }
   )
 
-  setInterval(() => batch(() => setBoids((boids) => updateBoids(boids))), 10)
+  const loop = () => {
+    requestAnimationFrame(loop)
+    updateBoids(boids())
+    batch(() => setBoids((boids) => boids))
+  }
+
+  loop()
 
   const fragment = (blue: number) => glsl`#version 300 es
    precision mediump float;
@@ -138,8 +145,10 @@ function App() {
         {(boid, index) => {
           return (
             <Plane
-              fragment={fragment(index / untrack(() => boids().length))}
-              scale={[0.03, 0.03]}
+              fragment={fragment(
+                1 - index / untrack(() => boids().length * 1.25)
+              )}
+              scale={[0.025, 0.025]}
               position={[boid().x / 100 - 1, boid().y / 100 - 1]}
             />
           )
