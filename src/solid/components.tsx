@@ -62,7 +62,7 @@ export const GL = (
           })
           resizeObserver.observe(_canvas)
 
-          if (!props.animate) render()
+          if (!props.animate) setTimeout(render, 0)
         })
 
         function animate() {
