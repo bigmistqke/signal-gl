@@ -68,7 +68,7 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-<video src="https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-5ae703b67d89">
+<video src="https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-5ae703b67d89"/>
 
 ## Scope and Modules [code](./dev/src/examples/scope_and_modules.tsx)
 
