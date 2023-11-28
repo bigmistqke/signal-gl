@@ -76,7 +76,7 @@ https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
-import { GL, attribute, glsl, uniform } from './signal-gl'
+import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
 
 function App() {
   const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
