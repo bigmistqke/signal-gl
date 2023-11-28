@@ -55,6 +55,7 @@ export const bindUniformToken = (
     on(
       () => token.value,
       () => {
+        gl.useProgram(program)
         gl[token.functionName](location, token.value)
         render()
       }
@@ -69,7 +70,7 @@ export const bindAttributeToken = (
   render: () => void,
   onRender: OnRenderFunction
 ) => {
-  let { target, mode } = token.options || {}
+  const target = token.options?.target
 
   const buffer = gl.createBuffer()
   const location = gl.getAttribLocation(program, token.name)
