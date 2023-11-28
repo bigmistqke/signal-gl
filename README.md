@@ -15,8 +15,15 @@
 
 ## Bindings
 
-Currently there are only `solid` bindings, but the dependency on `solid` is minimal (only effects).<br/>
-If this idea has any merit we could easily make ports for other signal implementations.
+Currently there are only `solid` bindings, but the dependency on `solid` is minimal. If this idea has any merit it would be trivial to make bindings for other signal implementations.
+
+## Install
+
+```ts
+npm i @bigmistqke/solid-gl
+pnpm i @bigmistqke/solid-gl
+yarn add @bigmistqke/solid-gl
+```
 
 ## Hello World [code](./dev/src/examples/hello_world.tsx)
 
