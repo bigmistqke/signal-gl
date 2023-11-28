@@ -6,8 +6,8 @@
   "author": "bigmistqke",
   "scripts": {
     "start": "vite",
-    "dev": "vite",
-    "build:example": "vite build"
+    "dev": "vite serve dev",
+    "build": "tsup"
   },
   "dependencies": {
     "solid-js": "*",

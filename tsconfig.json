@@ -1,19 +1,25 @@
 {
   "compilerOptions": {
     "strict": true,
-    "module": "ESNext",
     "target": "ESNext",
-    "jsx": "preserve",
-    "esModuleInterop": true,
-    "sourceMap": true,
-    "allowJs": true,
-    "lib": ["es2019", "dom"],
-    "rootDir": ".",
+    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": true,
+    "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "types": ["solid-js", "solid-js/dom"],
+    "types": [],
+    "baseUrl": ".",
     "paths": {
-      "@bigmistqke/signal-gl/*": ["./lib/*"]
+      "@bigmistqke/signal-gl/*": ["./src/*"]
     }
-  }
+  },
+  "exclude": ["node_modules", "dist", "./dev"]
 }
