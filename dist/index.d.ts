@@ -64,7 +64,29 @@ type ShaderToken = {
     bind: (gl: WebGL2RenderingContext, program: WebGLProgram, render: () => void, onRender: OnRenderFunction) => void;
 };
 
+/**
+ * @example
+ * ```ts
+ * const [color] = createSignal([0, 1, 2])
+ * glsl`
+ *  vec3 color = ${uniform.vec3(color)};
+ * `
+ * ```
+ * */
 declare const uniform: Uniform;
+/**
+ * @example
+ * ```ts
+ * const [vertices] = createSignal
+ *  new Float32Array([
+      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+    ])
+ * )
+ * glsl`
+ *  vec2 vertices = ${attribute.vec2(vertices)};
+ * `
+ * ```
+ * */
 declare const attribute: Attribute;
 
 declare const GL: (props: solid_js.JSX.CanvasHTMLAttributes<HTMLCanvasElement> & {

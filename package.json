@@ -11,8 +11,10 @@
     "package": "tsup && npm publish --access public"
   },
   "dependencies": {
-    "solid-js": "*",
     "zeptoid": "^1.0.1"
+  },
+  "peerDependencies": {
+    "solid-js": "*"
   },
   "devDependencies": {
     "@babel/core": "^7.23.3",
