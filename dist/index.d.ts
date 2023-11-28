@@ -74,7 +74,13 @@ declare const GL: (props: solid_js.JSX.CanvasHTMLAttributes<HTMLCanvasElement> &
     onInit?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
     animate?: boolean | undefined;
 }) => solid_js.JSX.Element;
+declare const Program: (props: {
+    fragment: Accessor<ShaderToken>;
+    vertex: Accessor<ShaderToken>;
+    onRender?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
+    onInit?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
+}) => void;
 
 declare const glsl: (strings: TemplateStringsArray, ...holes: Hole[]) => () => ShaderToken;
 
-export { GL, attribute, glsl, uniform };
+export { GL, Program, attribute, glsl, uniform };

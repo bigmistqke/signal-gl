@@ -72,9 +72,9 @@ function App() {
         height: '100vh',
       }}
       onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}
-      fragment={fragment}
-      vertex={vertex}
-    />
+    >
+      <Program fragment={fragment} vertex={vertex} />
+    </GL>
   )
 }
 
@@ -179,9 +179,9 @@ function App() {
           0.5
         setCursor([x, y])
       }}
-      fragment={fragment}
-      vertex={vertex}
-    />
+    >
+      <Program fragment={fragment} vertex={vertex} />
+    </GL>
   )
 }
 
@@ -192,8 +192,8 @@ render(() => <App />, document.getElementById('app')!)
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
 </video>
 
-
 ## `💡` Tip
+
 <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
 
 > vs-code: [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
