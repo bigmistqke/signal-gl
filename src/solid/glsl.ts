@@ -17,7 +17,7 @@ import {
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
-  createScopedVariableToken as createScopedToken,
+  createScopedToken,
   createToken,
 } from './tokens'
 

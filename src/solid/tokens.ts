@@ -28,7 +28,7 @@ export const createToken = <
     other
   )
 
-export const createScopedVariableToken = (
+export const createScopedToken = (
   scopedVariables: Map<string, string>,
   value: string
 ): ScopedVariableToken => {
