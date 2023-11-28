@@ -29,7 +29,7 @@ export const GL = (
   }
 ) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
-  const [canvas, setCanvas] = createSignal<HTMLCanvasElement>(null!)
+  const [canvas, setCanvas] = createSignal<HTMLCanvasElement | undefined>()
 
   return (
     <glContext.Provider
@@ -44,6 +44,9 @@ export const GL = (
 
         onMount(() => {
           const _canvas = canvas()
+          
+          if(!_canvas) return;
+          
           const gl = _canvas.getContext('webgl2')
 
           if (!gl) {

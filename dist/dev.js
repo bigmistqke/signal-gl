@@ -190,7 +190,6 @@ var Program = (props) => {
   const renderFactory = (gl, program) => () => {
     if (!program || !gl)
       return;
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(program);
     queue.forEach((fn) => fn());
     props.onRender?.(gl, program);
@@ -207,15 +206,16 @@ var Program = (props) => {
       return;
     const vertex = props.vertex();
     const fragment = props.fragment();
-    const currentProgram = createProgram(gl, vertex.source, fragment.source);
-    if (!currentProgram)
+    const program = createProgram(gl, vertex.source, fragment.source);
+    if (!program)
       return;
-    props.onInit?.(gl, currentProgram);
-    const render = renderFactory(gl, currentProgram);
+    props.onInit?.(gl, program);
+    const render = renderFactory(gl, program);
     batch(() => {
-      vertex.bind(gl, currentProgram, render, onRender);
-      fragment.bind(gl, currentProgram, render, onRender);
+      vertex.bind(gl, program, render, onRender);
+      fragment.bind(gl, program, render, onRender);
     });
+    setRenderFunction(() => render);
   });
   return {
     get render() {
