@@ -1,13 +1,14 @@
 {
   "name": "@bigmistqke/signal-gl",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "signal-driven glsl with auto-bindings and tag template literals",
   "license": "MIT",
   "author": "bigmistqke",
   "scripts": {
     "start": "vite",
     "dev": "vite serve dev",
-    "build": "tsup"
+    "build": "tsup",
+    "package": "tsup && npm publish --access public"
   },
   "dependencies": {
     "solid-js": "*",
