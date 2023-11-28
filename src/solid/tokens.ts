@@ -14,7 +14,7 @@ import type {
 
 export const createToken = <
   TConfig extends ReturnType<ValueOf<Uniform> | ValueOf<Attribute>>,
-  TOther extends Record<string, any>,
+  TOther extends Record<string, any>
 >(
   id: number | string,
   config: TConfig,
@@ -54,7 +54,10 @@ export const bindUniformToken = (
   createEffect(
     on(
       () => token.value,
-      () => setTimeout(() => gl[token.functionName](location, token.value), 0)
+      () => {
+        gl[token.functionName](location, token.value)
+        render()
+      }
     )
   )
 }
@@ -76,7 +79,7 @@ export const bindAttributeToken = (
   createEffect(() => {
     gl.bindBuffer(glTarget, buffer)
     gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
-    setTimeout(render, 0)
+    render()
   })
 
   onRender(() => {

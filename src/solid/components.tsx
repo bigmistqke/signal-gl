@@ -44,9 +44,9 @@ export const GL = (
 
         onMount(() => {
           const _canvas = canvas()
-          
-          if(!_canvas) return;
-          
+
+          if (!_canvas) return
+
           const gl = _canvas.getContext('webgl2')
 
           if (!gl) {
@@ -69,8 +69,13 @@ export const GL = (
         }
 
         function render() {
+          const _canvas = canvas()
+          const gl = _canvas?.getContext('webgl2')
+          if (!_canvas || !gl) return
+
           const childs = memoChildren()
           if (!childs) return
+
           if (Array.isArray(childs)) {
             childs.forEach((child) => {
               if (child && typeof child === 'object' && 'render' in child) {
@@ -79,12 +84,13 @@ export const GL = (
             })
           } else {
             if (typeof childs === 'object' && 'render' in childs) {
+              console.log('childs is ', childs)
               ;(childs as any).render?.()
             }
           }
         }
 
-        createEffect(() => (props.animate ? animate() : undefined))
+        createEffect(() => (props.animate ? animate() : createEffect(render)))
 
         return <canvas ref={setCanvas} {...rest} />
       })()}
@@ -124,7 +130,9 @@ export const Program = (props: {
 
   createEffect(() => {
     if (!context) {
-      console.error('context is= undefined: make sure Program is sibling of GL.')
+      console.error(
+        'context is= undefined: make sure Program is sibling of GL.'
+      )
     }
   })
 
