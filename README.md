@@ -222,7 +222,7 @@ void main() {
 }`
 ```
 
-#### return type
+#### return-type
 ```ts
 type ShaderToken = {
   tokenType: 'shader'
@@ -264,7 +264,7 @@ attribute.ivec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
 attribute.bvec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
 ```
 
-#### options type
+#### options-type
 
 ```ts
 export type AttributeOptions = {
@@ -281,7 +281,7 @@ export type AttributeOptions = {
 }
 ```
 
-#### return type
+#### return-type
 
 ```ts
 type AttributeToken = {
@@ -314,7 +314,7 @@ uniform.ivec4(signal as Accessor<[number, number, number, number]>, {} as Unifor
 uniform.bvec4(signal as Accessor<[boolean, boolean, boolean, boolean]>, {} as UniformOptions)
 ```
 
-#### options type
+#### options-type
 
 ```ts
 export type UniformOptions = {
@@ -322,7 +322,7 @@ export type UniformOptions = {
 }
 ```
 
-#### return type
+#### return-type
 
 ```ts
 type UniformToken = {
@@ -352,7 +352,7 @@ type UniformToken = {
 
 > ⚠️ root-element
 
-#### props type
+#### props-type
 
 ```ts
 type GLProps =
@@ -371,7 +371,7 @@ type GLProps =
 
 > ⚠️ sibling of `<GL/>`
 
-#### props type
+#### props-type
 
 ```ts
 type ProgramProps = {
