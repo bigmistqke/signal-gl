@@ -58,7 +58,7 @@ function App() {
         setOpacity(1 - e.clientY / e.currentTarget.offsetHeight)
       }
       onProgramCreate={() => {
-        console.log('created another program')
+        console.log('created a program')
       }}
     >
       <Plane
@@ -69,11 +69,12 @@ function App() {
           ])
         }
       />
+
       <Plane
-        fragment={fragment(0)}
+        fragment={fragment(0.5)}
         vertices={
           new Float32Array([
-            -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
+            -0, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
           ])
         }
       />

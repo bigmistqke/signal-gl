@@ -1,4 +1,4 @@
-import { createEffect, createRenderEffect, mergeProps, on } from 'solid-js'
+import { createEffect, mergeProps } from 'solid-js'
 
 import type {
   Attribute,
@@ -9,6 +9,8 @@ import type {
   UniformToken,
   ValueOf,
 } from '@core/types'
+
+const DEBUG = false
 
 export const createToken = <
   TConfig extends ReturnType<ValueOf<Uniform> | ValueOf<Attribute>>,
@@ -30,22 +32,11 @@ export const bindUniformToken = (
   token: UniformToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  render: () => void,
   onRender: OnRenderFunction
 ) => {
   const location = gl.getUniformLocation(program, token.name)
-  createEffect(
-    on(
-      () => token.value,
-      () => {
-        gl.useProgram(program)
-        gl[token.functionName](location, token.value)
-        render()
-      }
-    )
-  )
+
   onRender(() => {
-    const location = gl.getUniformLocation(program, token.name)
     gl[token.functionName](location, token.value)
   })
 }
@@ -54,7 +45,6 @@ export const bindAttributeToken = (
   token: AttributeToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  render: () => void,
   onRender: OnRenderFunction
 ) => {
   const target = token.options?.target
@@ -63,16 +53,12 @@ export const bindAttributeToken = (
 
   const glTarget = target ? gl[target] : gl.ARRAY_BUFFER
 
-  createRenderEffect(() => {
-    gl.bindBuffer(glTarget, buffer)
-    gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
-  })
-
   onRender(() => {
     const location = gl.getAttribLocation(program, token.name)
 
     if (location === -1) {
-      console.error('token is not registered', token.name)
+      DEBUG && console.error('token is not registered', token.name)
+      return
     }
 
     gl.bindBuffer(glTarget, buffer)

@@ -135,7 +135,7 @@ type ProgramProps = {
   mode: 'TRIANGLES' | 'POINTS' | 'LINES'
   /**
    * @unstable
-   * ⚠️ Caching can cause issues currently when used in combination with dynamic and/or conditional glsl-snippets. Only enable cache when the generated source is static. ⚠️
+   * ⚠️ Caching can cause issues when used in combination with dynamic and/or conditional glsl-snippets. Only enable cache when generated source is static. ⚠️
    */
   cacheEnabled?: boolean
 }
@@ -144,12 +144,10 @@ export const Program = (props: ProgramProps) => {
   const context = useGL()
   const [renderFunction, setRenderFunction] = createSignal<() => any>()
 
-  const queue: (() => void)[] = []
-  const onRender = (fn: () => void) => {
-    queue.push(fn)
-    return () => {
-      queue.splice(queue.indexOf(fn), 1)
-    }
+  const onRenderQueue: (() => void)[] = []
+  const addToOnRenderQueue = (fn: () => void) => {
+    onRenderQueue.push(fn)
+    return () => onRenderQueue.splice(onRenderQueue.indexOf(fn), 1)
   }
 
   const renderFactory =
@@ -157,7 +155,7 @@ export const Program = (props: ProgramProps) => {
       if (!program || !gl) return
 
       gl.useProgram(program)
-      queue.forEach((fn) => fn())
+      onRenderQueue.forEach((fn) => fn())
 
       props.onRender?.(gl, program)
 
@@ -182,21 +180,22 @@ export const Program = (props: ProgramProps) => {
 
     const cachedProgram =
       props.cacheEnabled &&
-      programCache.get(vertex.strings)?.get(fragment.strings)
+      programCache.get(vertex.template)?.get(fragment.template)
     const program =
       cachedProgram || createProgram(gl, vertex.source, fragment.source)
+
+    if (!program) return
 
     if (!cachedProgram) {
       context.onProgramCreate?.()
     }
-    if (!program) return
 
     if (props.cacheEnabled) {
-      if (!programCache.get(vertex.strings)) {
-        programCache.set(vertex.strings, new WeakMap())
+      if (!programCache.get(vertex.template)) {
+        programCache.set(vertex.template, new WeakMap())
       }
-      if (!programCache.get(vertex.strings)!.get(fragment.strings)) {
-        programCache.get(vertex.strings)!.set(fragment.strings, program)
+      if (!programCache.get(vertex.template)!.get(fragment.template)) {
+        programCache.get(vertex.template)!.set(fragment.template, program)
       }
     }
 
@@ -205,8 +204,8 @@ export const Program = (props: ProgramProps) => {
     const render = renderFactory(gl, program)
 
     batch(() => {
-      vertex.bind(gl, program, context.render!, onRender)
-      fragment.bind(gl, program, context.render!, onRender)
+      vertex.bind(gl, program, context.render!, addToOnRenderQueue)
+      fragment.bind(gl, program, context.render!, addToOnRenderQueue)
     })
 
     setRenderFunction(() => render)

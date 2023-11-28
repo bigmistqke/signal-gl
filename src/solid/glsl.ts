@@ -7,7 +7,7 @@ import type {
   ShaderToken,
   Token,
 } from '@core/types'
-import { compileStrings } from '@core/webgl'
+import { compileStrings as compileTemplate } from '@core/webgl'
 import {
   bindAttributeToken,
   bindSampler2DToken,
@@ -21,18 +21,13 @@ const nameCache = new WeakMap<TemplateStringsArray, string[]>()
 
 let textureIndex = 0
 export const glsl =
-  (
-    strings: TemplateStringsArray,
-    // ...values: (ShaderVariable | Accessor<ShaderResult>)[]
-    ...holes: Hole[]
-  ) =>
+  (template: TemplateStringsArray, ...holes: Hole[]) =>
   () => {
-    const hasNameCache = nameCache.has(strings)
-    if (!hasNameCache) nameCache.set(strings, [])
-    const names = nameCache.get(strings)!
+    const hasNameCache = nameCache.has(template)
+    if (!hasNameCache) nameCache.set(template, [])
+    const names = nameCache.get(template)!
 
-    // initialize variables
-    const scopedVariableNames = new Map<string, string>()
+    const scopedNames = new Map<string, string>()
     const tokens = holes
       .map((hole, index) => {
         if (typeof hole === 'function') {
@@ -44,11 +39,15 @@ export const glsl =
         if (typeof hole === 'string') {
           // if token is a function
           // it is interpret as a scoped variable name
-          let name = hasNameCache && names[index]
-          name = name || scopedVariableNames.get(hole) || `${hole}_${zeptoid()}`
+          const name =
+            // check for cache
+            (hasNameCache && names[index]) ||
+            // check for scoped names
+            scopedNames.get(hole) ||
+            // create new name
+            `${hole}_${zeptoid()}`
 
-          if (!scopedVariableNames.has(hole))
-            scopedVariableNames.set(hole, name)
+          if (!scopedNames.has(hole)) scopedNames.set(hole, name)
           if (!hasNameCache || !names[index]) names[index] = name
 
           return {
@@ -57,8 +56,7 @@ export const glsl =
           }
         }
 
-        let name = hasNameCache && names[index]
-        name = name || zeptoid()
+        const name = (hasNameCache && names[index]) || zeptoid()
 
         if (!hasNameCache) names[index] = name
 
@@ -78,11 +76,6 @@ export const glsl =
       })
       .filter((hole) => hole !== undefined) as Token[]
 
-    // create shader-source
-    const source = compileStrings(strings, tokens).split(/\s\s+/g).join('\n')
-
-    DEBUG && console.log('source', source)
-
     const bind = (
       gl: WebGL2RenderingContext,
       program: WebGLProgram,
@@ -95,16 +88,27 @@ export const glsl =
             token.bind(gl, program, render, onRender)
             break
           case 'attribute':
-            bindAttributeToken(token, gl, program, render, onRender)
+            bindAttributeToken(token, gl, program, onRender)
             break
           case 'sampler2D':
             bindSampler2DToken(token as Sampler2DToken, gl, program, render)
             break
           case 'uniform':
-            bindUniformToken(token, gl, program, render, onRender)
+            bindUniformToken(token, gl, program, onRender)
             break
         }
       })
     }
-    return { source, bind, tokenType: 'shader', strings } as ShaderToken
+    return {
+      get source() {
+        const source = compileTemplate(template, tokens)
+          .split(/\s\s+/g)
+          .join('\n')
+        DEBUG && console.log('source', source)
+        return source
+      },
+      bind,
+      tokenType: 'shader',
+      template,
+    } as ShaderToken
   }
