@@ -1,6 +1,6 @@
 # 🚦 signal-gl
 
-> 🏗️ work in progress / unpublished / build in the open 🏗️
+> 🏗️ work in progress / build in the open 🏗️
 
 `inline`, `reactive`, `glsl`, `auto-binding`, `signals`, `tag template literals`
 
