@@ -44,13 +44,12 @@ export const glsl =
         if (typeof hole === 'string') {
           // if token is a function
           // it is interpret as a scoped variable name
-          const name = hasNameCache
-            ? names[index]!
-            : scopedVariableNames.get(hole) || `${hole}_${zeptoid()}`
+          let name = hasNameCache && names[index]
+          name = name || scopedVariableNames.get(hole) || `${hole}_${zeptoid()}`
 
           if (!scopedVariableNames.has(hole))
             scopedVariableNames.set(hole, name)
-          if (!hasNameCache) names[index] = name
+          if (!hasNameCache || !names[index]) names[index] = name
 
           return {
             name,
@@ -58,7 +57,8 @@ export const glsl =
           }
         }
 
-        const name = hasNameCache ? names[index]! : zeptoid()
+        let name = hasNameCache && names[index]
+        name = name || zeptoid()
 
         // if the same TemplateStringsArray has been compiled before
         // we try to follow the same
