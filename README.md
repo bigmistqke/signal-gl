@@ -15,8 +15,8 @@
   - [`glsl`](#glsl-tag-template-literal)
   - [`attribute`](#attribute-utility)
   - [`uniform`](#uniform-utility)
-  - [`<GL/>`](#gl-component)
-  - [`<Program/>`](#program-component) 
+  - [`<GL/>`](#gl-jsxelement)
+  - [`<Program/>`](#program-jsxelement) 
 
 ## Premise
 
