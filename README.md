@@ -1,4 +1,4 @@
-# 🚦 signal-gl 🚦
+# 🚦 signal.gl
 
 [![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
 
@@ -19,7 +19,7 @@ Currently there are only `solid` bindings, but the dependency on `solid` is mini
 ## Install
 
 ```bash
-npm i @bigmistqksignal-gl
+npm i @bigmistqke/signal-gl
 # or
 pnpm i @bigmistqke/signal-gl
 # or
