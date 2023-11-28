@@ -111,7 +111,6 @@ export const Program = (props: {
     (gl: WebGL2RenderingContext, program: WebGLProgram) => () => {
       if (!program || !gl) return
 
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
       gl.useProgram(program)
       queue.forEach((fn) => fn())
 
@@ -134,20 +133,20 @@ export const Program = (props: {
     const vertex = props.vertex()
     const fragment = props.fragment()
 
-    const currentProgram = createProgram(gl, vertex.source, fragment.source)
+    const program = createProgram(gl, vertex.source, fragment.source)
 
-    if (!currentProgram) return
+    if (!program) return
 
-    props.onInit?.(gl, currentProgram)
+    props.onInit?.(gl, program)
 
-    const render = renderFactory(gl, currentProgram)
+    const render = renderFactory(gl, program)
+
     batch(() => {
-      vertex.bind(gl, currentProgram, render, onRender)
-      fragment.bind(gl, currentProgram, render, onRender)
-      // setTimeout(renderFactory, 5)
+      vertex.bind(gl, program, render, onRender)
+      fragment.bind(gl, program, render, onRender)
     })
 
-    // setRenderFunction(() => render)
+    setRenderFunction(() => render)
   })
 
   return {
