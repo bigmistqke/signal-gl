@@ -1,6 +1,7 @@
 # 🚦 signal-gl
 
-[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
+![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)
+![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)
 
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
 
@@ -29,7 +30,7 @@ yarn add @bigmistqke/signal-gl
 
 ## Use it
 
-### Hello World [[playground]](https://playground.solidjs.com/anonymous/666af229-e0bc-42a8-8f7f-bd1cca6903d0)
+### Hello World [[playground]](https://playground.solidjs.com/anonymous/72a268af-262d-4d9a-84e4-4d60c94157b3)
 
 <video alt="screenrecording first example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/e306b06e-1b74-4f83-870c-f371c054b6f2">
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
@@ -37,9 +38,9 @@ yarn add @bigmistqke/signal-gl
 
 
 ```tsx
+import { attribute, GL, glsl, Program, uniform } from '@bigmistqke/signal-gl'
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
-import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
 
 function App() {
   const [vertices] = createSignal(
@@ -76,7 +77,7 @@ function App() {
       }}
       onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}
     >
-      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES"/>
+      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
     </GL>
   )
 }
@@ -193,5 +194,6 @@ render(() => <App />, document.getElementById('app')!)
 
 <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
 
-use in combination with tag template literal syntax highlighting.
+> use in combination with tag template literal syntax highlighting.<br/>
 > `vs-code` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
+
