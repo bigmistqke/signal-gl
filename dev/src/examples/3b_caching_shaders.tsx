@@ -6,7 +6,7 @@ import {
   glsl,
   uniform,
 } from '@bigmistqke/signal-gl'
-import { Accessor, Index, createSignal } from 'solid-js'
+import { Accessor, Index, batch, createSignal, untrack } from 'solid-js'
 import { render } from 'solid-js/web'
 
 import './index.css'
@@ -90,6 +90,8 @@ function updateBoids(boids: Boid[], width = 200, height = 200, deltaTime = 1) {
   })
 }
 
+const AMOUNT = 1000
+
 function App() {
   const [boids, setBoids] = createSignal<
     {
@@ -101,7 +103,7 @@ function App() {
       vz: number
     }[]
   >(
-    new Array(100).fill('').map(() => ({
+    new Array(AMOUNT).fill('').map(() => ({
       x: Math.random() * 200 - 50,
       y: Math.random() * 200 - 50,
       z: Math.random() * 200 - 50,
@@ -111,7 +113,7 @@ function App() {
     }))
   )
 
-  setInterval(() => setBoids((boids) => updateBoids(boids)), 10)
+  setInterval(() => batch(() => setBoids((boids) => updateBoids(boids))), 10)
 
   const fragment = (blue: number) => glsl`#version 300 es
    precision mediump float;
@@ -136,8 +138,8 @@ function App() {
         {(boid, index) => {
           return (
             <Plane
-              fragment={fragment(10 / index)}
-              scale={[0.1, 0.1]}
+              fragment={fragment(index / untrack(() => boids().length))}
+              scale={[0.03, 0.03]}
               position={[boid().x / 100 - 1, boid().y / 100 - 1]}
             />
           )
