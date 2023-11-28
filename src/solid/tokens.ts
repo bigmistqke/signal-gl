@@ -1,5 +1,6 @@
 import { createEffect, mergeProps } from 'solid-js'
 import zeptoid from 'zeptoid'
+
 import type {
   Attribute,
   AttributeToken,
@@ -9,7 +10,7 @@ import type {
   Uniform,
   UniformToken,
   ValueOf,
-} from './types'
+} from '@core/types'
 
 export const createToken = <
   TConfig extends ReturnType<ValueOf<Uniform> | ValueOf<Attribute>>,

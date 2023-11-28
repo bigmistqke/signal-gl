@@ -1,13 +1,7 @@
 import { type Accessor } from 'solid-js'
 import zeptoid from 'zeptoid'
-import {
-  bindAttributeToken,
-  bindSampler2DToken,
-  bindUniformToken,
-  createScopedVariableToken,
-  createToken,
-} from './tokens'
-import {
+
+import type {
   Attribute,
   AttributeParameters,
   OnRenderFunction,
@@ -18,8 +12,14 @@ import {
   UniformParameters,
   UniformSetter,
   ValueOf,
-} from './types'
-export * from './GL'
+} from '@core/types'
+import {
+  bindAttributeToken,
+  bindSampler2DToken,
+  bindUniformToken,
+  createScopedVariableToken as createScopedToken,
+  createToken,
+} from './tokens'
 
 /* UTILITIES */
 
@@ -91,24 +91,27 @@ export const glsl =
     // initialize variables
     const scopedVariables = new Map<string, string>()
     const tokens: Token[] = holes
-      .map((hole, index) =>
-        // if token is a function it is interpret as a glsl-module / Accessor<ShaderResult>
-        typeof hole === 'function'
-          ? hole()
-          : // if token is a string it is interpret as a scoped variable name
-          typeof hole === 'string'
-          ? createScopedVariableToken(scopedVariables, hole)
-          : hole.tokenType === 'attribute'
-          ? createToken(zeptoid(), hole)
-          : hole.dataType === 'sampler2D'
-          ? createToken(zeptoid(), hole, {
+      .map((hole, index) => {
+        if (typeof hole === 'function') {
+          // if token is a function
+          // it is interpret as a glsl-module / Accessor<ShaderResult>
+          return hole()
+        }
+        if (typeof hole === 'string') {
+          // if token is a function
+          // it is interpret as a scoped variable name
+          return createScopedToken(scopedVariables, hole)
+        }
+        switch (hole.tokenType) {
+          case 'attribute':
+          case 'uniform':
+            return createToken(zeptoid(), hole)
+          case 'sampler2D':
+            return createToken(zeptoid(), hole, {
               textureIndex: textureIndex++,
-              tokenType: 'sampler2D',
             })
-          : hole.tokenType === 'uniform'
-          ? createToken(zeptoid(), hole as any)
-          : undefined
-      )
+        }
+      })
       .filter((hole) => hole !== undefined)
 
     // create shader-source
@@ -148,7 +151,7 @@ export const uniform = new Proxy({} as Uniform, {
     return (...[value, options]: UniformParameters) => ({
       dataType,
       functionName: dataTypeToFunctionName(dataType as string),
-      tokenType: 'uniform',
+      tokenType: dataType === 'sampler2D' ? 'sampler2D' : 'uniform',
       get value() {
         return value()
       },

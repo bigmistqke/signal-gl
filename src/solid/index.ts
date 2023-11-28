@@ -1,2 +1,2 @@
-export * from './GL'
+export * from './components'
 export * from './glsl'

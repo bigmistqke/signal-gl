@@ -31,18 +31,6 @@ export type PrimitiveOptions = {
   name?: string
 }
 
-/* RETURN TYPE TAG TEMPLATE LITERAL */
-export type ShaderToken = {
-  tokenType: 'shader'
-  source: string
-  bind: (
-    gl: WebGL2RenderingContext,
-    program: WebGLProgram,
-    render: () => void,
-    onRender: OnRenderFunction
-  ) => void
-}
-
 /* VARIABLE: UNIFORM + ATTRIBUTE */
 
 type Variable<
@@ -54,7 +42,7 @@ type Variable<
   options?: TTOptions
 ) => {
   dataType: TType
-  tokenType: 'uniform' | 'attribute'
+  tokenType: 'uniform' | 'attribute' | 'sampler2D'
   value: Accessor<TValue>
   options: TTOptions
 }
@@ -118,17 +106,28 @@ export type Attribute = {
 export type AttributeParameters = Parameters<Attribute[keyof Attribute]>
 
 /* TOKENS */
+
+export type ShaderToken = {
+  tokenType: 'shader'
+  source: string
+  bind: (
+    gl: WebGL2RenderingContext,
+    program: WebGLProgram,
+    render: () => void,
+    onRender: OnRenderFunction
+  ) => void
+}
+
 interface TokenBase {
+  dataType: keyof Uniform | keyof Attribute
+  options: PrimitiveOptions
   name: string
   value: any
-  options: PrimitiveOptions
-  dataType: keyof Uniform | keyof Attribute
-  tokenType: 'attribute' | 'sampler2D' | 'uniform'
 }
 export interface AttributeToken extends TokenBase {
   size: number
-  options: AttributeOptions
   tokenType: 'attribute'
+  options: AttributeOptions
 }
 
 export interface UniformToken extends TokenBase {
@@ -137,8 +136,8 @@ export interface UniformToken extends TokenBase {
 }
 
 export interface Sampler2DToken extends TokenBase {
-  textureIndex: number
   options: Sampler2DOptions
+  textureIndex: number
   tokenType: 'sampler2D'
 }
 

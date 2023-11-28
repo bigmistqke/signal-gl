@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
-import { GL, attribute, glsl, uniform } from '../../../src/solid'
+import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl/solid'
 
 import './index.css'
 
@@ -26,8 +26,8 @@ function App() {
       colors[0] += 0.001
       colors[10] += 0.002
 
-      if (colors[0] > 1) colors[0] = 0
-      if (colors[10] > 1) colors[10] = 0
+      if (colors[0]! > 1) colors[0] = 0
+      if (colors[10]! > 1) colors[10] = 0
 
       return colors
     })

@@ -6,6 +6,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@bigmistqke/signal-gl': path.resolve(__dirname, '../src'),
+      '@core': path.resolve(__dirname, '../src/core'),
     },
   },
   plugins: [
