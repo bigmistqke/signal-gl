@@ -122,7 +122,7 @@ export const Program = (props: {
 
   createEffect(() => {
     if (!context) {
-      console.error('context is undefined: make sure Program is sibling of GL.')
+      console.error('context is= undefined: make sure Program is sibling of GL.')
     }
   })
 

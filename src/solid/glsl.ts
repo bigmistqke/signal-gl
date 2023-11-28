@@ -1,4 +1,4 @@
-import zeptoid from 'zeptoid'
+import zeptoid from 'zeptoid';
 
 import type {
   Hole,
@@ -7,19 +7,19 @@ import type {
   ScopedVariableToken,
   ShaderToken,
   Token,
-} from '@core/types'
-import { compileStrings } from '@core/webgl'
+} from '@core/types';
+import { compileStrings } from '@core/webgl';
 import {
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
   createScopedToken,
   createToken,
-} from './tokens'
+} from './tokens';
 
 /* GLSL TAG TEMPLATE LITERAL */
 
-const DEBUG = import.meta.env.DEV
+const DEBUG = false;
 
 let textureIndex = 0
 export const glsl =
