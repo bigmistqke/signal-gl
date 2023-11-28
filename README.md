@@ -206,7 +206,7 @@ render(() => <App />, document.getElementById('app')!)
 
 ## API
 
-### `glsl`: tag template literal
+### `glsl` tag template literal
 
 - write and compose `glsl`
 - interpolate and auto-bind `attributes` / `uniforms` / `glsl-snippets`
@@ -250,7 +250,7 @@ type Hole =
   | string                                // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
 ```
 
-### `attribute`: utility
+### `attribute` utility
 
 - create `AttributeToken` to be consumed by `glsl`
 
@@ -302,7 +302,7 @@ type AttributeToken = {
 }
 ```
 
-### `uniform`: utility
+### `uniform` utility
 
 - create `UniformToken` to be consumed by `glsl`
 
@@ -351,10 +351,10 @@ type UniformToken = {
 }
 ```
 
-### `<GL/>`: component
+### `<GL/>` JSXElement
 
 - root `JSXElement`
-- contains `canvas` and context-provider
+- contains `canvas` and `context-provider`
 - only valid children is `<Program/>`
 
 ```tsx
@@ -374,7 +374,7 @@ type GLProps =
   }
 ```
 
-### `<Program/>`: component
+### `<Program/>` JSXElement
 
 - sibling of `<GL/>`
 - represents a `WebGLProgram`
