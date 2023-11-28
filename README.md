@@ -5,7 +5,20 @@
 
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
 
-## Premise
+## Overview
+
+- [Premise](#premise)  
+- [Bindings](#bindings)
+- [Install](#install)
+- [Use it](#use-it)
+- [API](#api)
+  - [glsl](#glsl-tag-template-literal)
+  - [uniform](#uniform-utility)
+  - [attribute](#attribute-utility)
+  - [GL](#gl-component)
+  - [Program](#program-component) 
+
+## #Premise
 
 - `Minimal` abstraction
 - Co-locating `js` and `glsl`
@@ -14,11 +27,11 @@
 - `Purely runtime`: no additional build tools
 - Small footprint: `2.5kb minified + gzip`
 
-## Bindings
+## #Bindings
 
 Currently there are only `solid` bindings, but the dependency on `solid` is minimal. If this idea has any merit it would be trivial to make bindings for other signal implementations.
 
-## Install
+## #Install
 
 ```bash
 npm i @bigmistqke/signal-gl
@@ -28,7 +41,7 @@ pnpm i @bigmistqke/signal-gl
 yarn add @bigmistqke/signal-gl
 ```
 
-## Use it
+## #Use it
 
 ### Hello World [[playground]](https://playground.solidjs.com/anonymous/72a268af-262d-4d9a-84e4-4d60c94157b3)
 
@@ -36,11 +49,10 @@ yarn add @bigmistqke/signal-gl
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
 </video>
 
-
 ```tsx
-import { attribute, GL, glsl, Program, uniform } from '@bigmistqke/signal-gl'
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
+import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
 
 function App() {
   const [vertices] = createSignal(
@@ -182,7 +194,7 @@ function App() {
         setCursor([x, y])
       }}
     >
-      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES"/>
+      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
     </GL>
   )
 }
@@ -190,10 +202,135 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
+## #API
+
+### `glsl`: tag template literal
+
+```ts
+glsl`#version 300 es
+${module}
+out vec2 v_coord;  
+out vec3 v_color;
+float ${'scoped-var'} = 0.5;
+void main() {
+  vec2 a_coord = ${attribute.vec2(vertices)};
+  vec2 cursor = ${uniform.vec2(cursor)};
+  v_coord = a_coord * ${'scoped-var'} + cursor;
+  gl_Position = vec4(a_coord, 0, 1) ;
+}`
+```
+
+allowed interpolation-types:
+- `AttributeToken`
+  - `${attribute.float(...)}`
+  - auto-binds a signal to an attribute
+- `UniformToken`
+  - `${uniform.float(...)}`
+  - auto-bind a signal to a uniform
+- `ShaderToken`
+  - `${glsl``}`
+  - compose shaders
+- `string`
+  - `${'scoped-var'}`
+  - scope variable name to prevent name-collisions
+
+### #`uniform`: utility
+
+```ts
+uniform.float(signal as Accessor<number>, {} as UniformOptions)
+uniform.int  (signal as Accessor<number>, {} as UniformOptions)
+uniform.bool (signal as Accessor<boolean>, {} as UniformOptions)
+uniform.vec2 (signal as Accessor<[number, number]>, {} as UniformOptions)
+uniform.ivec2(signal as Accessor<[number, number]>, {} as UniformOptions)
+uniform.bvec2(signal as Accessor<[boolean, boolean]>, {} as UniformOptions)
+uniform.vec3 (signal as Accessor<[number, number, number]>, {} as UniformOptions)
+uniform.ivec3(signal as Accessor<[number, number, number]>, {} as UniformOptions)
+uniform.bvec3(signal as Accessor<[boolean, boolean, boolean]>, {} as UniformOptions)
+uniform.vec4 (signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
+uniform.ivec4(signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
+uniform.bvec4(signal as Accessor<[boolean, boolean, boolean, boolean]>, {} as UniformOptions)
+```
+
+```ts
+export type UniformOptions = {
+  name?: string
+}
+```
+
+returns a `UniformToken`
+
+### #`attribute`: utility
+
+```ts
+attribute.float(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.int  (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.bool (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.vec2 (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.ivec2(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.bvec2(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.vec3 (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.ivec3(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.bvec3(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.vec4 (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.ivec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.bvec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+```
+
+```ts
+export type AttributeOptions = {
+  name?: string
+  target?:
+    | 'ARRAY_BUFFER'
+    | 'ELEMENT_ARRAY_BUFFER'
+    | 'COPY_READ_BUFFER'
+    | 'COPY_WRITE_BUFFER'
+    | 'TRANSFORM_FEEDBACK_BUFFER'
+    | 'UNIFORM_BUFFER'
+    | 'PIXEL_PACK_BUFFER'
+    | 'PIXEL_UNPACK_BUFFER'
+}
+```
+
+returns an `AttributeToken`
+
+### #`GL`: component
+
+```tsx
+<GL {...props as GLProps}>
+  ...
+</GL>
+```
+
+```ts
+type GLProps =
+  ComponentProps<'canvas'> & {
+    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    animate?: boolean
+  }
+```
+
+- root-element
+
+### #`Program`: component
+
+```tsx
+<Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
+```
+
+```ts
+type ProgramProps = {
+  fragment: Accessor<ShaderToken>
+  vertex: Accessor<ShaderToken>
+  mode: 'TRIANGLES' | 'LINES' | 'POINTS'
+}
+```
+
+- has to be sibling of `GL`
+
+
 ## `💡` Tip
 
 <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
 
-> use in combination with tag template literal syntax highlighting.<br/>
-> `vs-code` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
-
+> use in combination with tag template literal syntax highlighting.<br/> > `vs-code` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
