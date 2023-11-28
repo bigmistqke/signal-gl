@@ -193,7 +193,7 @@ render(() => <App />, document.getElementById('app')!)
 </video>
 
 
-## Tip
-> `💡` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
-
+## `💡` Tip
 <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
+
+> vs-code: [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
