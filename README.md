@@ -1,19 +1,32 @@
-# 🚦 signal-gl 
+# 🚦 signal-gl
 
 > 🏗️ work in progress / unpublished / build in the open 🏗️
 
 `inline`, `reactive`, `glsl`, `auto-binding`, `signals`, `tag template literals`
 
-## hello world
+## main premise
+
+- Co-locating `js` and `glsl`
+- Minimizing of boilerplate
+- Auto-binding to signals
+- Composition of glsl snippets
+
+## bindings
+
+Currently there are only `solid` bindings, but the dependencies on `solid` are minimal. If this idea has any merit we could easily make ports for other signal implementations.
+
+## [hello world](./dev/src/examples/hello_world.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
-import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl/solid'
+import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
 
 function App() {
   const [vertices] = createSignal(
-    new Float32Array([ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0 ]),
+    new Float32Array([
+      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+    ]),
     { equals: false }
   )
   const [opacity, setOpacity] = createSignal(0.5)
@@ -56,7 +69,7 @@ render(() => <App />, document.getElementById('app')!)
 
 https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-5ae703b67d89
 
-## scope and modules
+## [scope and modules](./dev/src/examples/scope_and_modules.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -66,7 +79,11 @@ import { GL, attribute, glsl, uniform } from './signal-gl'
 
 function App() {
   const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
-  const [vertices] = createSignal(new Float32Array([ -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0]))
+  const [vertices] = createSignal(
+    new Float32Array([
+      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+    ])
+  )
 
   const [colors, setColors] = createSignal(
     new Float32Array(new Array(6 * 3).fill('').map((v) => Math.random())),
@@ -139,10 +156,12 @@ function App() {
         height: '100vh',
       }}
       onMouseMove={(e) => {
-        const x = e.clientX / e.currentTarget.clientWidth - 0.5;
-        const y = (e.currentTarget.clientHeight - e.clientY) /
-            e.currentTarget.clientHeight - 0.5;
-        setCursor([ x, y ])
+        const x = e.clientX / e.currentTarget.clientWidth - 0.5
+        const y =
+          (e.currentTarget.clientHeight - e.clientY) /
+            e.currentTarget.clientHeight -
+          0.5
+        setCursor([x, y])
       }}
       fragment={fragment}
       vertex={vertex}
