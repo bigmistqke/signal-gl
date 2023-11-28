@@ -250,18 +250,18 @@ type Hole =
 #### usage
 
 ```ts
-attribute.float(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.int  (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.bool (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.vec2 (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.ivec2(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.bvec2(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.vec3 (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.ivec3(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.bvec3(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.vec4 (signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.ivec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
-attribute.bvec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
+attribute.float(Accessor<ArrayBufferView>, AttributeOptions)
+attribute.int  (Accessor<ArrayBufferView>, AttributeOptions)
+attribute.bool (Accessor<ArrayBufferView>, AttributeOptions)
+attribute.vec2 (Accessor<ArrayBufferView>, AttributeOptions)
+attribute.ivec2(Accessor<ArrayBufferView>, AttributeOptions)
+attribute.bvec2(Accessor<ArrayBufferView>, AttributeOptions)
+attribute.vec3 (Accessor<ArrayBufferView>, AttributeOptions)
+attribute.ivec3(Accessor<ArrayBufferView>, AttributeOptions)
+attribute.bvec3(Accessor<ArrayBufferView>, AttributeOptions)
+attribute.vec4 (Accessor<ArrayBufferView>, AttributeOptions)
+attribute.ivec4(Accessor<ArrayBufferView>, AttributeOptions)
+attribute.bvec4(Accessor<ArrayBufferView>, AttributeOptions)
 ```
 
 #### options-type
@@ -300,18 +300,18 @@ type AttributeToken = {
 #### usage
 
 ```ts
-uniform.float(signal as Accessor<number>, {} as UniformOptions)
-uniform.int  (signal as Accessor<number>, {} as UniformOptions)
-uniform.bool (signal as Accessor<boolean>, {} as UniformOptions)
-uniform.vec2 (signal as Accessor<[number, number]>, {} as UniformOptions)
-uniform.ivec2(signal as Accessor<[number, number]>, {} as UniformOptions)
-uniform.bvec2(signal as Accessor<[boolean, boolean]>, {} as UniformOptions)
-uniform.vec3 (signal as Accessor<[number, number, number]>, {} as UniformOptions)
-uniform.ivec3(signal as Accessor<[number, number, number]>, {} as UniformOptions)
-uniform.bvec3(signal as Accessor<[boolean, boolean, boolean]>, {} as UniformOptions)
-uniform.vec4 (signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
-uniform.ivec4(signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
-uniform.bvec4(signal as Accessor<[boolean, boolean, boolean, boolean]>, {} as UniformOptions)
+uniform.float(Accessor<number>, UniformOptions)
+uniform.int  (Accessor<number>, UniformOptions)
+uniform.bool (Accessor<boolean>, UniformOptions)
+uniform.vec2 (Accessor<[number, number]>, UniformOptions)
+uniform.ivec2(Accessor<[number, number]>, UniformOptions)
+uniform.bvec2(Accessor<[boolean, boolean]>, UniformOptions)
+uniform.vec3 (Accessor<[number, number, number]>, UniformOptions)
+uniform.ivec3(Accessor<[number, number, number]>, UniformOptions)
+uniform.bvec3(Accessor<[boolean, boolean, boolean]>, UniformOptions)
+uniform.vec4 (Accessor<[number, number, number, number]>, UniformOptions)
+uniform.ivec4(Accessor<[number, number, number, number]>, UniformOptions)
+uniform.bvec4(Accessor<[boolean, boolean, boolean, boolean]>, UniformOptions)
 ```
 
 #### options-type
