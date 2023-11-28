@@ -134,7 +134,8 @@ type ProgramProps = {
   onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   mode: 'TRIANGLES' | 'POINTS' | 'LINES'
   /**
-   * ⚠️ caching can cause issues currently, especially in combination with dynamic, conditional glsl-snippets ⚠️
+   * @unstable
+   * ⚠️ Caching can cause issues currently when used in combination with dynamic and/or conditional glsl-snippets. Only enable cache when the generated source is static. ⚠️
    */
   cacheEnabled?: boolean
 }
@@ -166,7 +167,7 @@ export const Program = (props: ProgramProps) => {
   createEffect(() => {
     if (!context) {
       console.error(
-        'context is= undefined: make sure Program is sibling of GL.'
+        'context is undefined: make sure <Program/> is sibling of <GL/>'
       )
     }
   })
