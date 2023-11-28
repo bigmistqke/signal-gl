@@ -159,6 +159,7 @@ function App() {
     precision mediump float;
 
     // compose shaders with interpolation
+    // the interpolated shader-snippet is inlined completely: be aware for name-collisions
     ${module}
 
     in vec2 v_coord; 
