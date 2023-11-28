@@ -91,15 +91,6 @@ function createShader(gl, src, type) {
   }
   return shader;
 }
-var dataTypeToFunctionName = (dataType) => {
-  if (dataType === "float")
-    return "uniform1f";
-  if (dataType === "int")
-    return "uniform1i";
-  if (dataType === "bool")
-    return "uniform1i";
-  return "uniform" + dataType[dataType.length - 1] + (dataType[0] === "b" ? "b" : dataType[0] === "i" ? "i" : "f") + "v";
-};
 var createToken = (id, config, other) => mergeProps(
   config,
   {
@@ -107,7 +98,18 @@ var createToken = (id, config, other) => mergeProps(
   },
   other
 );
-var createUniformToken = (id, config) => createToken(id, config);
+var createScopedVariableToken = (scopedVariables, value) => {
+  if (!scopedVariables.has(value)) {
+    scopedVariables.set(value, `${value}_${zeptoid2()}`);
+  }
+  return {
+    name: scopedVariables.get(value),
+    tokenType: "scope",
+    options: {
+      name: value
+    }
+  };
+};
 var bindUniformToken = (variable, gl, program, render) => {
   const location = gl.getUniformLocation(program, variable.name);
   createEffect(() => {
@@ -115,7 +117,6 @@ var bindUniformToken = (variable, gl, program, render) => {
     render();
   });
 };
-var createAttributeToken = (id, config) => createToken(id, config);
 var bindAttributeToken = (token, gl, program, render, onRender) => {
   let { target, size, mode } = token.options;
   const buffer = gl.createBuffer();
@@ -134,11 +135,6 @@ var bindAttributeToken = (token, gl, program, render, onRender) => {
       gl.drawArrays(gl[mode], 0, 6);
   });
 };
-var textureIndex = 0;
-var createSampler2DToken = (id, config) => createToken(id, config, {
-  textureIndex: textureIndex++,
-  tokenType: "sampler2D"
-});
 var bindSampler2DToken = (sampler2D, gl, program, render) => createEffect(() => {
   const { format, width, height, border, minFilter, magFilter } = sampler2D.options;
   const texture = gl.createTexture();
@@ -171,20 +167,17 @@ var bindSampler2DToken = (sampler2D, gl, program, render) => createEffect(() => 
   );
   render();
 });
-var createScopedVariableToken = (scopedVariables, value) => {
-  if (!scopedVariables.has(value)) {
-    scopedVariables.set(value, `${value}_${zeptoid2()}`);
-  }
-  return {
-    name: scopedVariables.get(value),
-    tokenType: "scope",
-    options: {
-      name: value
-    }
-  };
-};
 
 // src/solid/glsl.ts
+var dataTypeToFunctionName = (dataType) => {
+  if (dataType === "float")
+    return "uniform1f";
+  if (dataType === "int")
+    return "uniform1i";
+  if (dataType === "bool")
+    return "uniform1i";
+  return "uniform" + dataType[dataType.length - 1] + (dataType[0] === "b" ? "b" : dataType[0] === "i" ? "i" : "f") + "v";
+};
 var resolveToken = (token) => "source" in token ? token.source : token.tokenType === "attribute" ? `in ${token.dataType} ${token.name};` : token.tokenType === "uniform" ? `uniform ${token.dataType} ${token.name};` : "";
 var compileStrings = (strings, variables) => {
   const source = [
@@ -213,10 +206,14 @@ var compileStrings = (strings, variables) => {
     after || pre
   ].join("\n");
 };
+var textureIndex = 0;
 var glsl = (strings, ...holes) => () => {
   const scopedVariables = /* @__PURE__ */ new Map();
   const tokens = holes.map(
-    (hole, index) => typeof hole === "function" ? hole() : typeof hole === "string" ? createScopedVariableToken(scopedVariables, hole) : hole.tokenType === "attribute" ? createAttributeToken(zeptoid2(), hole) : hole.dataType === "sampler2D" ? createSampler2DToken(zeptoid2(), hole) : hole.tokenType === "uniform" ? createUniformToken(zeptoid2(), hole) : void 0
+    (hole, index) => typeof hole === "function" ? hole() : typeof hole === "string" ? createScopedVariableToken(scopedVariables, hole) : hole.tokenType === "attribute" ? createToken(zeptoid2(), hole) : hole.dataType === "sampler2D" ? createToken(zeptoid2(), hole, {
+      textureIndex: textureIndex++,
+      tokenType: "sampler2D"
+    }) : hole.tokenType === "uniform" ? createToken(zeptoid2(), hole) : void 0
   ).filter((hole) => hole !== void 0);
   const source = compileStrings(strings, tokens).split(/\s\s+/g).join("\n");
   console.log("source", source);
@@ -230,12 +227,7 @@ var glsl = (strings, ...holes) => () => {
       return;
     }
     if ("dataType" in token && token.dataType === "sampler2D") {
-      bindSampler2DToken(
-        token,
-        gl,
-        program,
-        render
-      );
+      bindSampler2DToken(token, gl, program, render);
       return;
     }
     if (token.tokenType === "uniform") {

@@ -11,6 +11,7 @@ import {
   Attribute,
   AttributeParameters,
   OnRenderFunction,
+  Sampler2DToken,
   ShaderResult,
   Token,
   Uniform,
@@ -128,12 +129,7 @@ export const glsl =
           return
         }
         if ('dataType' in token && token.dataType === 'sampler2D') {
-          bindSampler2DToken(
-            token as ReturnType<typeof createSampler2DToken>,
-            gl,
-            program,
-            render
-          )
+          bindSampler2DToken(token as Sampler2DToken, gl, program, render)
           return
         }
         if (token.tokenType === 'uniform') {
