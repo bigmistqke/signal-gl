@@ -81,94 +81,92 @@ return (
 )
 ```
 
-### Scope and Modules [[playground]](https://playground.solidjs.com/anonymous/d0770ee9-2045-464f-8b71-33493bba53d8)
+### Scope and Modules [[playground]](https://playground.solidjs.com/anonymous/5c0165fe-7df2-4035-8f56-b0f98454ac9a)
 
 <video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/bad12fc1-45bf-4b8d-82a0-7cdb3e438a73">
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
 </video>
 
 ```tsx
-const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
+const [cursor, setCursor] = createSignal<[number, number]>([1, 1]);
 const [colors, setColors] = createSignal(
-  new Float32Array(new Array(6 * 3).fill('').map((v) => Math.random())),
-  { equals: false }
-)
+  new Float32Array(new Array(6 * 3).fill("").map((v) => Math.random())),
+  { equals: false },
+);
 const vertices = new Float32Array([
   -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-])
+]);
 
 setInterval(() => {
   setColors((colors) => {
-    colors[0] += 0.001
-    colors[0] = colors[0] % 1 
-    colors[10] += 0.002
-    colors[10] = colors[0] % 1
-    return colors
-  })
-})
+    colors[0] += 0.001;
+    colors[0] = colors[0] % 1;
+    colors[10] += 0.002;
+    colors[10] = colors[0] % 1;
+    return colors;
+  });
+});
 
 const module = glsl`
 
-  // variable names can be scoped by interpolating strings: ${'string'}
-  // useful in glsl-module to prevent name collisions
-  float ${'getLength'}(float x, float y){ return length(x - y); }
+// variable names can be scoped by interpolating strings: ${"string"}
+// useful in glsl-module to prevent name collisions
+float ${"getLength"}(float x, float y){ return length(x - y); }
 
-  vec4 getColor(vec3 color, vec2 coord){
-    vec2 cursor = ${uniform.vec2(cursor)};
-
-    if(
-      ${'getLength'}(cursor.x, coord.x) < 0.25 && 
-      ${'getLength'}(cursor.y, coord.y < 0.25
-    ){
-      return vec4(1. - color, 1.0);
-    }
-    return vec4(color, 1.0);
-  }`
+vec4 getColor(vec3 color, vec2 coord){
+  vec2 cursor = ${uniform.vec2(cursor)};
+  if(
+    ${"getLength"}(cursor.x, coord.x) < 0.25 && 
+    ${"getLength"}(cursor.y, coord.y) < 0.25
+  ){
+    return vec4(1. - color, 1.0);
+  }
+  return vec4(color, 1.0);
+}`;
 
 const fragment = glsl`#version 300 es
-  precision mediump float;
+precision mediump float;
 
-  // compose shaders with interpolation
-  // the interpolated shader-snippet is inlined completely
-  // so be aware for name-collisions
-  ${module}
+// compose shaders with interpolation
+// the interpolated shader-snippet is inlined completely
+// so be aware for name-collisions!
+${module}
 
-  in vec2 v_coord; 
-  in vec3 v_color;
-  out vec4 outColor;
+in vec2 v_coord; 
+in vec3 v_color;
+out vec4 outColor;
 
-  void main() {
-    // getColor is imported from module
-    outColor = getColor(v_color, v_coord);
-  }`
+void main() {
+  // getColor is imported from module
+  outColor = getColor(v_color, v_coord);
+}`;
 
 const vertex = glsl`#version 300 es
 
-  out vec2 v_coord;  
-  out vec3 v_color;
+out vec2 v_coord;  
+out vec3 v_color;
 
-  void main() {
-    vec2 a_coord = ${attribute.vec2(vertices)};
-    v_color = ${attribute.vec3(colors)};
-    v_coord = a_coord - ${uniform.vec2(cursor)};
-    gl_Position = vec4(a_coord, 0, 1) ;
-  }`
+void main() {
+  vec2 a_coord = ${attribute.vec2(vertices)};
+  v_color = ${attribute.vec3(colors)};
+  v_coord = a_coord - ${uniform.vec2(cursor)};
+  gl_Position = vec4(a_coord, 0, 1) ;
+}`;
 
 const onMouseMove = (e) => {
-  const x = e.clientX / e.currentTarget.clientWidth - 0.5
+  const x = e.clientX / e.currentTarget.clientWidth - 0.5;
   const y =
     (e.currentTarget.clientHeight - e.clientY) /
       e.currentTarget.clientHeight -
-    0.5
-  setCursor([x, y])
-}
+    0.5;
+  setCursor([x, y]);
+};
 
 return (
-  <GL onMouseMove={onMouseMove}>
+  <GL style={{ width: "100vw", height: "100vh" }} onMouseMove={onMouseMove}>
     <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
   </GL>
-)
-```
+);```
 
 ## API
 
