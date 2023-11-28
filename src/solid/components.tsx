@@ -84,7 +84,6 @@ export const GL = (
             })
           } else {
             if (typeof childs === 'object' && 'render' in childs) {
-              console.log('childs is ', childs)
               ;(childs as any).render?.()
             }
           }

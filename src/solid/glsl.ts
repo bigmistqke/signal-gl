@@ -17,7 +17,7 @@ import {
   createToken,
 } from './tokens'
 
-const DEBUG = true
+const DEBUG = false
 
 let textureIndex = 0
 export const glsl =
