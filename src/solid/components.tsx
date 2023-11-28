@@ -18,6 +18,7 @@ import { createProgram } from '@core/webgl'
 const glContext = createContext<{
   gl: WebGL2RenderingContext
   render?: () => void
+  onProgramCreate?: () => void
 }>()
 
 const useGL = () => useContext(glContext)
@@ -25,6 +26,7 @@ const useGL = () => useContext(glContext)
 export const GL = (
   props: ComponentProps<'canvas'> & {
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    onProgramCreate?: () => void
     onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
     animate?: boolean
   }
@@ -41,6 +43,9 @@ export const GL = (
         },
         get render() {
           return renderFunction()
+        },
+        get onProgramCreate() {
+          return props.onProgramCreate
         },
       }}
     >
@@ -113,18 +118,28 @@ export const GL = (
   )
 }
 
-const cache: WeakMap<
+const programCache: WeakMap<
   TemplateStringsArray,
   WeakMap<TemplateStringsArray, WebGLProgram>
 > = new WeakMap()
 
-export const Program = (props: {
+/**
+ * hallo
+ */
+
+type ProgramProps = {
   fragment: Accessor<ShaderToken>
   vertex: Accessor<ShaderToken>
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   mode: 'TRIANGLES' | 'POINTS' | 'LINES'
-}) => {
+  /**
+   * ⚠️ caching can cause issues currently, especially in combination with dynamic, conditional glsl-snippets ⚠️
+   */
+  cacheEnabled?: boolean
+}
+
+export const Program = (props: ProgramProps) => {
   const context = useGL()
   const [renderFunction, setRenderFunction] = createSignal<() => any>()
 
@@ -164,17 +179,24 @@ export const Program = (props: {
     const vertex = props.vertex()
     const fragment = props.fragment()
 
+    const cachedProgram =
+      props.cacheEnabled &&
+      programCache.get(vertex.strings)?.get(fragment.strings)
     const program =
-      cache.get(vertex.strings)?.get(fragment.strings) ||
-      createProgram(gl, vertex.source, fragment.source)
+      cachedProgram || createProgram(gl, vertex.source, fragment.source)
 
+    if (!cachedProgram) {
+      context.onProgramCreate?.()
+    }
     if (!program) return
 
-    if (!cache.get(vertex.strings)) {
-      cache.set(vertex.strings, new WeakMap())
-    }
-    if (!cache.get(vertex.strings)!.get(fragment.strings)) {
-      cache.get(vertex.strings)!.set(fragment.strings, program)
+    if (props.cacheEnabled) {
+      if (!programCache.get(vertex.strings)) {
+        programCache.set(vertex.strings, new WeakMap())
+      }
+      if (!programCache.get(vertex.strings)!.get(fragment.strings)) {
+        programCache.get(vertex.strings)!.set(fragment.strings, program)
+      }
     }
 
     props.onInit?.(gl, program)
