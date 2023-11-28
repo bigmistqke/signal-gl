@@ -81,7 +81,7 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-<video alt="screenrecording first example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-5ae703b67d89">
+<video alt="screenrecording first example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/e306b06e-1b74-4f83-870c-f371c054b6f2">
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
 </video>
 
@@ -188,7 +188,8 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-<video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/28e4a945-d792-48df-bae4-349aefc7c723" >
+
+<video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/bad12fc1-45bf-4b8d-82a0-7cdb3e438a73">
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
 </video>
 
