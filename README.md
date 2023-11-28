@@ -50,51 +50,34 @@ yarn add @bigmistqke/signal-gl
 </video>
 
 ```tsx
-import { createSignal } from 'solid-js'
-import { render } from 'solid-js/web'
-import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
+const [opacity, setOpacity] = createSignal(0.5)
+const vertices = new Float32Array([
+    -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+  ])
 
-function App() {
-  const [vertices] = createSignal(
-    new Float32Array([
-      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-    ]),
-    { equals: false }
-  )
-  const [opacity, setOpacity] = createSignal(0.5)
+const fragment = glsl`#version 300 es
+  precision mediump float;
+  in vec2 v_coord; 
+  out vec4 outColor;
+  void main() {
+    float opacity = ${uniform.float(opacity)};
+    outColor = vec4(v_coord[0], v_coord[1], v_coord[0], opacity);
+  }`
 
-  const fragment = glsl`#version 300 es
-    precision mediump float;
-    in vec2 v_coord; 
-    out vec4 outColor;
-    void main() {
-      float opacity = ${uniform.float(opacity)};
-      outColor = vec4(v_coord[0], v_coord[1], v_coord[0], opacity);
-    }`
+const vertex = glsl`#version 300 es
+  out vec2 v_coord;  
+  out vec3 v_color;
+  void main() {
+    vec2 a_coord = ${attribute.vec2(vertices)};
+    v_coord = a_coord;
+    gl_Position = vec4(a_coord, 0, 1) ;
+  }`
 
-  const vertex = glsl`#version 300 es
-    out vec2 v_coord;  
-    out vec3 v_color;
-    void main() {
-      vec2 a_coord = ${attribute.vec2(vertices)};
-      v_coord = a_coord;
-      gl_Position = vec4(a_coord, 0, 1) ;
-    }`
-
-  return (
-    <GL
-      style={{
-        width: '100vw',
-        height: '100vh',
-      }}
-      onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}
-    >
-      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
-    </GL>
-  )
-}
-
-render(() => <App />, document.getElementById('app')!)
+return (
+  <GL onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}>
+    <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+  </GL>
+)
 ```
 
 ### Scope and Modules [[playground]](https://playground.solidjs.com/anonymous/d0770ee9-2045-464f-8b71-33493bba53d8)
@@ -104,105 +87,90 @@ render(() => <App />, document.getElementById('app')!)
 </video>
 
 ```tsx
-import { createSignal } from 'solid-js'
-import { render } from 'solid-js/web'
+const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
+const vertices = new Float32Array([
+  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+])
 
-import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
+const [colors, setColors] = createSignal(
+  new Float32Array(new Array(6 * 3).fill('').map((v) => Math.random())),
+  { equals: false }
+)
 
-function App() {
-  const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
-  const [vertices] = createSignal(
-    new Float32Array([
-      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-    ])
-  )
+setInterval(() => {
+  setColors((colors) => {
+    colors[0] += 0.001
+    colors[10] += 0.002
 
-  const [colors, setColors] = createSignal(
-    new Float32Array(new Array(6 * 3).fill('').map((v) => Math.random())),
-    { equals: false }
-  )
+    if (colors[0] > 1) colors[0] = 0
+    if (colors[10] > 1) colors[10] = 0
 
-  setInterval(() => {
-    setColors((colors) => {
-      colors[0] += 0.001
-      colors[10] += 0.002
-
-      if (colors[0] > 1) colors[0] = 0
-      if (colors[10] > 1) colors[10] = 0
-
-      return colors
-    })
+    return colors
   })
+})
 
-  const module = glsl`
+const module = glsl`
 
-    // variable names can be scoped by interpolating strings: ${'string'}
-    // useful in glsl-module to prevent name collisions
-    float ${'getLength'}(float x, float y){
-      return length(x - y);
+  // variable names can be scoped by interpolating strings: ${'string'}
+  // useful in glsl-module to prevent name collisions
+  float ${'getLength'}(float x, float y){
+    return length(x - y);
+  }
+
+  vec4 getColor(vec3 color, vec2 coord){
+    vec2 cursor = ${uniform.vec2(cursor)};
+
+    float lengthX = ${'getLength'}(cursor.x, coord.x);
+    float lengthY = ${'getLength'}(cursor.y, coord.y);
+
+    if(lengthX < 0.25 && lengthY < 0.25){
+      return vec4(1. - color, 1.0);
+    }else{
+      return vec4(color, 1.0);
     }
+  }`
 
-    vec4 getColor(vec3 color, vec2 coord){
-      vec2 cursor = ${uniform.vec2(cursor)};
+const fragment = glsl`#version 300 es
+  precision mediump float;
 
-      float lengthX = ${'getLength'}(cursor.x, coord.x);
-      float lengthY = ${'getLength'}(cursor.y, coord.y);
+  // compose shaders with interpolation
+  // the interpolated shader-snippet is inlined completely: be aware for name-collisions
+  ${module}
 
-      if(lengthX < 0.25 && lengthY < 0.25){
-        return vec4(1. - color, 1.0);
-      }else{
-        return vec4(color, 1.0);
-      }
-    }`
+  in vec2 v_coord; 
+  in vec3 v_color;
+  out vec4 outColor;
 
-  const fragment = glsl`#version 300 es
-    precision mediump float;
+  void main() {
+    outColor = getColor(v_color, v_coord);
+  }`
 
-    // compose shaders with interpolation
-    // the interpolated shader-snippet is inlined completely: be aware for name-collisions
-    ${module}
+const vertex = glsl`#version 300 es
 
-    in vec2 v_coord; 
-    in vec3 v_color;
-    out vec4 outColor;
+  out vec2 v_coord;  
+  out vec3 v_color;
 
-    void main() {
-      outColor = getColor(v_color, v_coord);
-    }`
+  void main() {
+    vec2 a_coord = ${attribute.vec2(vertices)};
+    v_color = ${attribute.vec3(colors)};
+    v_coord = a_coord - ${uniform.vec2(cursor)};
+    gl_Position = vec4(a_coord, 0, 1) ;
+  }`
 
-  const vertex = glsl`#version 300 es
-
-    out vec2 v_coord;  
-    out vec3 v_color;
-
-    void main() {
-      vec2 a_coord = ${attribute.vec2(vertices)};
-      v_color = ${attribute.vec3(colors)};
-      v_coord = a_coord - ${uniform.vec2(cursor)};
-      gl_Position = vec4(a_coord, 0, 1) ;
-    }`
-
-  return (
-    <GL
-      style={{
-        width: '100vw',
-        height: '100vh',
-      }}
-      onMouseMove={(e) => {
-        const x = e.clientX / e.currentTarget.clientWidth - 0.5
-        const y =
-          (e.currentTarget.clientHeight - e.clientY) /
-            e.currentTarget.clientHeight -
-          0.5
-        setCursor([x, y])
-      }}
-    >
-      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
-    </GL>
-  )
-}
-
-render(() => <App />, document.getElementById('app')!)
+return (
+  <GL
+    onMouseMove={(e) => {
+      const x = e.clientX / e.currentTarget.clientWidth - 0.5
+      const y =
+        (e.currentTarget.clientHeight - e.clientY) /
+          e.currentTarget.clientHeight -
+        0.5
+      setCursor([x, y])
+    }}
+  >
+    <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+  </GL>
+)
 ```
 
 ## API
@@ -242,7 +210,7 @@ type ShaderToken = Accessor<{
 }>
 ```
 
-#### allowed interpolation-types:
+#### interpolation/hole-types:
 ```ts
 type Hole =
   | ReturnType<ValueOf<typeof attribute>> // glsl`${attribute.float(...)}` auto-binds a signal to an attribute
@@ -258,24 +226,51 @@ type Hole =
 #### usage
 
 ```ts
-attribute.float(Accessor<ArrayBufferView>, AttributeOptions)
-attribute.int  (Accessor<ArrayBufferView>, AttributeOptions)
-attribute.bool (Accessor<ArrayBufferView>, AttributeOptions)
-attribute.vec2 (Accessor<ArrayBufferView>, AttributeOptions)
-attribute.ivec2(Accessor<ArrayBufferView>, AttributeOptions)
-attribute.bvec2(Accessor<ArrayBufferView>, AttributeOptions)
-attribute.vec3 (Accessor<ArrayBufferView>, AttributeOptions)
-attribute.ivec3(Accessor<ArrayBufferView>, AttributeOptions)
-attribute.bvec3(Accessor<ArrayBufferView>, AttributeOptions)
-attribute.vec4 (Accessor<ArrayBufferView>, AttributeOptions)
-attribute.ivec4(Accessor<ArrayBufferView>, AttributeOptions)
-attribute.bvec4(Accessor<ArrayBufferView>, AttributeOptions)
+// static
+glsl`
+  vec2 vertice = ${attribute.vec2(new Float32Array([
+    -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+  ]))};
+`
+
+// dynamic
+const [signal] = createSignal(new Float32Array([
+  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+]))
+glsl`
+  vec2 vertice = ${attribute.vec2(signal)};
+`
+```
+
+#### signatures
+
+```ts
+type AccessorOrValue<T> = Accessor<T> | T
+type Buffer =   
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | Float32Array
+  | Float64Array
+
+attribute.float ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.int   ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.bool  ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.vec2  ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.ivec2 ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.bvec2 ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.vec3  ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.ivec3 ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.bvec3 ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.vec4  ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.ivec4 ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.bvec4 ( AccessorOrValue<Buffer>, AttributeOptions )
 ```
 
 #### options-type
 
 ```ts
-export type AttributeOptions = {
+type AttributeOptions = {
   name?: string
   target?:
     | 'ARRAY_BUFFER'
@@ -310,24 +305,41 @@ type AttributeToken = {
 #### usage
 
 ```ts
-uniform.float(Accessor<number>, UniformOptions)
-uniform.int  (Accessor<number>, UniformOptions)
-uniform.bool (Accessor<boolean>, UniformOptions)
-uniform.vec2 (Accessor<[number, number]>, UniformOptions)
-uniform.ivec2(Accessor<[number, number]>, UniformOptions)
-uniform.bvec2(Accessor<[boolean, boolean]>, UniformOptions)
-uniform.vec3 (Accessor<[number, number, number]>, UniformOptions)
-uniform.ivec3(Accessor<[number, number, number]>, UniformOptions)
-uniform.bvec3(Accessor<[boolean, boolean, boolean]>, UniformOptions)
-uniform.vec4 (Accessor<[number, number, number, number]>, UniformOptions)
-uniform.ivec4(Accessor<[number, number, number, number]>, UniformOptions)
-uniform.bvec4(Accessor<[boolean, boolean, boolean, boolean]>, UniformOptions)
+// static
+glsl`
+  float scale = ${uniform.float(1)};
+`
+
+// dynamic
+const [signal] = createSignal(1)
+glsl`
+  float scale = ${uniform.float(signal)};
+`
+```
+
+#### signatures
+
+```ts
+type AccessorOrValue<T> = Accessor<T> | T
+
+uniform.float ( AccessorOrValue<number>,                               UniformOptions )
+uniform.int   ( AccessorOrValue<number>,                               UniformOptions )
+uniform.bool  ( AccessorOrValue<boolean>,                              UniformOptions )
+uniform.vec2  ( AccessorOrValue<[number, number]>,                     UniformOptions )
+uniform.ivec2 ( AccessorOrValue<[number, number]>,                     UniformOptions )
+uniform.bvec2 ( AccessorOrValue<[boolean, boolean]>,                   UniformOptions )
+uniform.vec3  ( AccessorOrValue<[number, number, number]>,             UniformOptions )
+uniform.ivec3 ( AccessorOrValue<[number, number, number]>,             UniformOptions )
+uniform.bvec3 ( AccessorOrValue<[boolean, boolean, boolean]>,          UniformOptions )
+uniform.vec4  ( AccessorOrValue<[number, number, number, number]>,     UniformOptions )
+uniform.ivec4 ( AccessorOrValue<[number, number, number, number]>,     UniformOptions )
+uniform.bvec4 ( AccessorOrValue<[boolean, boolean, boolean, boolean]>, UniformOptions )
 ```
 
 #### options-type
 
 ```ts
-export type UniformOptions = {
+type UniformOptions = {
   name?: string
 }
 ```
