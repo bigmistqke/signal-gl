@@ -27,7 +27,6 @@ type IntBuffer =
 export type OnRenderFunction = (fn: () => void) => () => void
 
 export type PrimitiveOptions = {
-  type?: 'attribute' | 'uniform' | 'scope'
   name?: string
 }
 
@@ -44,7 +43,7 @@ export type Hole =
 type Variable<
   TType extends string,
   TValue extends any,
-  TTOptions = PrimitiveOptions,
+  TTOptions = PrimitiveOptions
 > = (
   value: Accessor<TValue>,
   options?: TTOptions
@@ -86,7 +85,6 @@ export type Sampler2DOptions = PrimitiveOptions & {
 /* ATTRIBUTE */
 
 export type AttributeOptions = PrimitiveOptions & {
-  mode?: 'TRIANGLES' | 'POINTS' | 'LINES'
   target?:
     | 'ARRAY_BUFFER'
     | 'ELEMENT_ARRAY_BUFFER'
