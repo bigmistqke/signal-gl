@@ -1,8 +1,8 @@
-# 🚦 signal-gl
+# 🚦 signal-gl 🚦
 
-> 🏗️ work in progress / build in the open 🏗️
+[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
 
-`inline`, `reactive`, `glsl`, `auto-binding`, `signals`, `tag template literals`
+`inline` `reactive` `glsl` `auto-binding` `signals` `tag template literals`
 
 ## Premise
 
@@ -20,14 +20,16 @@ Currently there are only `solid` bindings, but the dependency on `solid` is mini
 ## Install
 
 ```bash
-npm i @bigmistqke/signal-gl
+npm i @bigmistqksignal-gl
 # or
 pnpm i @bigmistqke/signal-gl
 # or
 yarn add @bigmistqke/signal-gl
 ```
 
-## Hello World [code](./dev/src/examples/hello_world.tsx)
+## Use it
+
+### Hello World [code](./dev/src/examples/hello_world.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -83,7 +85,7 @@ render(() => <App />, document.getElementById('app')!)
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
 </video>
 
-## Scope and Modules [code](./dev/src/examples/scope_and_modules.tsx)
+### Scope and Modules [code](./dev/src/examples/scope_and_modules.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -190,6 +192,8 @@ render(() => <App />, document.getElementById('app')!)
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
 </video>
 
-> `💡` syntax highlighting for glsl tag template literals with [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
+
+## Tip
+> `💡` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
 
 <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
