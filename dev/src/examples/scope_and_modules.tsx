@@ -1,15 +1,18 @@
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
-import { GL, attribute, glsl, uniform } from '@bigmistqke/signal-gl/solid'
+import {
+  GL,
+  Program,
+  attribute,
+  glsl,
+  uniform,
+} from '@bigmistqke/signal-gl/solid'
 
 import './index.css'
 
 function App() {
   const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
-  const [resolution, setResolution] = createSignal(
-    window.innerWidth / window.innerHeight
-  )
   const [vertices] = createSignal(
     new Float32Array([
       -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
@@ -26,8 +29,8 @@ function App() {
       colors[0] += 0.001
       colors[10] += 0.002
 
-      if (colors[0]! > 1) colors[0] = 0
-      if (colors[10]! > 1) colors[10] = 0
+      if (colors[0] > 1) colors[0] = 0
+      if (colors[10] > 1) colors[10] = 0
 
       return colors
     })
@@ -49,8 +52,7 @@ function App() {
       }else{
         return vec4(color, 1.0);
       }
-    }
-    `
+    }`
 
   const fragment = glsl`#version 300 es
     precision mediump float;
@@ -70,17 +72,11 @@ function App() {
     out vec3 v_color;
 
     void main() {
-      vec2 a_coord = ${attribute.vec2(vertices, {
-        mode: 'TRIANGLES',
-      })};
+      vec2 a_coord = ${attribute.vec2(vertices)};
       v_color = ${attribute.vec3(colors)};
       v_coord = a_coord - ${uniform.vec2(cursor)};
       gl_Position = vec4(a_coord, 0, 1) ;
     }`
-
-  window.addEventListener('resize', () =>
-    setResolution(window.innerWidth / window.innerHeight)
-  )
 
   return (
     <GL
@@ -96,9 +92,9 @@ function App() {
             0.5,
         ])
       }
-      fragment={fragment}
-      vertex={vertex}
-    />
+    >
+      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+    </GL>
   )
 }
 
