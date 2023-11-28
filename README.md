@@ -13,11 +13,11 @@
 - [Use it](#use-it)
 - [API](#api)
   - [`glsl`](#glsl-tag-template-literal)
-  - [`attribute`](#attribute-utility)
-  - [`uniform`](#uniform-utility)
-  - [`<GL/>`](#gl-jsxelement)
-  - [`<Program/>`](#program-jsxelement)
-- [Tip](#tip) 
+  - [`attribute`](#attribute-utility-function)
+  - [`uniform`](#uniform-utility-function)
+  - [`<GL/>`](#gl-component)
+  - [`<Program/>`](#program-component)
+- [Tip](#user-content--tip) 
 
 ## Premise
 
