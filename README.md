@@ -1,6 +1,7 @@
 # 🚦 signal-gl
 
-[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc00ff.svg?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
+![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)
+![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)
 
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
 
