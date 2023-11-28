@@ -15,7 +15,7 @@ import {
   createToken,
 } from './tokens'
 
-const DEBUG = false
+const DEBUG = import.meta.env.DEV
 
 const nameCache = new WeakMap<TemplateStringsArray, string[]>()
 
