@@ -19,7 +19,7 @@ Currently there are only `solid` bindings, but the dependency on `solid` is mini
 
 ## Install
 
-```ts
+```bash
 npm i @bigmistqke/signal-gl
 pnpm i @bigmistqke/signal-gl
 yarn add @bigmistqke/signal-gl
