@@ -1,7 +1,7 @@
 # 🚦 signal-gl
 
-![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)
-![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)
+[![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)](https://www.npmjs.com/package/@bigmistqke/signal-gl)
+[![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)](https://github.com/pnpm/pnpm)
 
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
 
@@ -206,6 +206,8 @@ render(() => <App />, document.getElementById('app')!)
 
 ### `glsl`: tag template literal
 
+#### usage
+
 ```ts
 glsl`#version 300 es
 ${module}
@@ -220,7 +222,7 @@ void main() {
 }`
 ```
 
-returns 
+#### return-type
 ```ts
 type ShaderToken = {
   tokenType: 'shader'
@@ -234,15 +236,18 @@ type ShaderToken = {
 }
 ```
 
-allowed interpolation-types:
+#### allowed interpolation-types:
 ```ts
-  | AttributeToken // glsl`${attribute.float(...)}` auto-binds a signal to an attribute
-  | UniformToken   // glsl`${uniform.float(...)}`   auto-bind a signal to a uniform
-  | ShaderToken    // glsl`${glsl`...`}`            compose shaders
-  | string         // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
+type Hole =
+  | ReturnType<ValueOf<typeof attribute>> // glsl`${attribute.float(...)}` auto-binds a signal to an attribute
+  | ReturnType<ValueOf<typeof uniform>>   // glsl`${uniform.float(...)}`   auto-bind a signal to a uniform
+  | Accessor<ShaderToken>                 // glsl`${glsl`...`}`            compose shaders
+  | string                                // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
 ```
 
 ### `attribute`: utility
+
+#### usage
 
 ```ts
 attribute.float(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
@@ -259,6 +264,8 @@ attribute.ivec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
 attribute.bvec4(signal as Accessor<ArrayBufferView>, {} as AttributeOptions)
 ```
 
+#### options-type
+
 ```ts
 export type AttributeOptions = {
   name?: string
@@ -274,7 +281,8 @@ export type AttributeOptions = {
 }
 ```
 
-returns 
+#### return-type
+
 ```ts
 type AttributeToken = {
   dataType: keyof Attribute
@@ -288,6 +296,8 @@ type AttributeToken = {
 ```
 
 ### `uniform`: utility
+
+#### usage
 
 ```ts
 uniform.float(signal as Accessor<number>, {} as UniformOptions)
@@ -304,13 +314,16 @@ uniform.ivec4(signal as Accessor<[number, number, number, number]>, {} as Unifor
 uniform.bvec4(signal as Accessor<[boolean, boolean, boolean, boolean]>, {} as UniformOptions)
 ```
 
+#### options-type
+
 ```ts
 export type UniformOptions = {
   name?: string
 }
 ```
 
-returns 
+#### return-type
+
 ```ts
 type UniformToken = {
   dataType: keyof Uniform
@@ -337,6 +350,10 @@ type UniformToken = {
 </GL>
 ```
 
+> ⚠️ root-element
+
+#### props-type
+
 ```ts
 type GLProps =
   ComponentProps<'canvas'> & {
@@ -346,13 +363,15 @@ type GLProps =
   }
 ```
 
-- root-element
-
 ### `Program`: component
 
 ```tsx
 <Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
 ```
+
+> ⚠️ sibling of `<GL/>`
+
+#### props-type
 
 ```ts
 type ProgramProps = {
@@ -362,11 +381,9 @@ type ProgramProps = {
 }
 ```
 
-- has to be sibling of `GL`
-
-
 ## `💡` Tip
 
 <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
 
-> use in combination with tag template literal syntax highlighting.<br/> > `vs-code` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
+> use in combination with tag template literal syntax highlighting.<br/>
+> `vs-code` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
