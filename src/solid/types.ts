@@ -32,7 +32,8 @@ export type PrimitiveOptions = {
 }
 
 /* RETURN TYPE TAG TEMPLATE LITERAL */
-export type ShaderResult = {
+export type ShaderToken = {
+  tokenType: 'shader'
   source: string
   bind: (
     gl: WebGL2RenderingContext,
@@ -89,7 +90,6 @@ export type Sampler2DOptions = PrimitiveOptions & {
 /* ATTRIBUTE */
 
 export type AttributeOptions = PrimitiveOptions & {
-  size: number
   mode?: 'TRIANGLES' | 'POINTS' | 'LINES'
   target?:
     | 'ARRAY_BUFFER'
@@ -126,12 +126,13 @@ interface TokenBase {
   tokenType: 'attribute' | 'sampler2D' | 'uniform'
 }
 export interface AttributeToken extends TokenBase {
+  size: number
   options: AttributeOptions
   tokenType: 'attribute'
 }
 
 export interface UniformToken extends TokenBase {
-  functionName: string
+  functionName: UniformSetter
   tokenType: 'uniform'
 }
 
@@ -150,7 +151,7 @@ export type ScopedVariableToken = {
 }
 
 export type Token =
-  | ShaderResult
+  | ShaderToken
   | ScopedVariableToken
   | AttributeToken
   | UniformToken

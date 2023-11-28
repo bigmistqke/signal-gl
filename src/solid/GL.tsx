@@ -4,12 +4,12 @@ import {
   type Accessor,
   type ComponentProps,
 } from 'solid-js'
-import type { ShaderResult } from './types'
+import type { ShaderToken } from './types'
 
 export const GL = (
   props: ComponentProps<'canvas'> & {
-    fragment: Accessor<ShaderResult>
-    vertex: Accessor<ShaderResult>
+    fragment: Accessor<ShaderToken>
+    vertex: Accessor<ShaderToken>
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
     onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
     animate?: boolean

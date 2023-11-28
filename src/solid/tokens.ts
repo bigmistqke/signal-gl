@@ -1,6 +1,6 @@
 import { createEffect, mergeProps } from 'solid-js'
 import zeptoid from 'zeptoid'
-import {
+import type {
   Attribute,
   AttributeToken,
   OnRenderFunction,
@@ -44,14 +44,14 @@ export const createScopedVariableToken = (
 }
 
 export const bindUniformToken = (
-  variable: UniformToken,
+  token: UniformToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
   render: () => void
 ) => {
-  const location = gl.getUniformLocation(program, variable.name)
+  const location = gl.getUniformLocation(program, token.name)
   createEffect(() => {
-    gl[variable.functionName](location, variable.value)
+    gl[token.functionName](location, token.value)
     render()
   })
 }
@@ -63,7 +63,7 @@ export const bindAttributeToken = (
   render: () => void,
   onRender: OnRenderFunction
 ) => {
-  let { target, size, mode } = token.options
+  let { target, mode } = token.options || {}
 
   const buffer = gl.createBuffer()
   const location = gl.getAttribLocation(program, token.name)
@@ -78,7 +78,7 @@ export const bindAttributeToken = (
 
   onRender(() => {
     gl.bindBuffer(glTarget, buffer)
-    gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0)
+    gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(location)
     if (mode) gl.drawArrays(gl[mode], 0, 6)
   })

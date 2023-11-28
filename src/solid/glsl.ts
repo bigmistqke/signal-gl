@@ -12,7 +12,7 @@ import {
   AttributeParameters,
   OnRenderFunction,
   Sampler2DToken,
-  ShaderResult,
+  ShaderToken,
   Token,
   Uniform,
   UniformParameters,
@@ -78,7 +78,7 @@ type Hole =
   | ReturnType<ValueOf<Attribute>>
   | ReturnType<ValueOf<Uniform>>
   | string
-  | Accessor<ShaderResult>
+  | Accessor<ShaderToken>
 
 let textureIndex = 0
 export const glsl =
@@ -90,11 +90,13 @@ export const glsl =
   () => {
     // initialize variables
     const scopedVariables = new Map<string, string>()
-    const tokens = holes
+    const tokens: Token[] = holes
       .map((hole, index) =>
+        // if token is a function it is interpret as a glsl-module / Accessor<ShaderResult>
         typeof hole === 'function'
           ? hole()
-          : typeof hole === 'string'
+          : // if token is a string it is interpret as a scoped variable name
+          typeof hole === 'string'
           ? createScopedVariableToken(scopedVariables, hole)
           : hole.tokenType === 'attribute'
           ? createToken(zeptoid(), hole)
@@ -107,7 +109,7 @@ export const glsl =
           ? createToken(zeptoid(), hole as any)
           : undefined
       )
-      .filter((hole) => hole !== undefined) as Token[]
+      .filter((hole) => hole !== undefined)
 
     // create shader-source
     const source = compileStrings(strings, tokens).split(/\s\s+/g).join('\n')
@@ -118,26 +120,25 @@ export const glsl =
       program: WebGLProgram,
       render: () => void,
       onRender: OnRenderFunction
-    ) =>
+    ) => {
       tokens.forEach((token) => {
-        if ('bind' in token) {
-          token.bind(gl, program, render, onRender)
-          return
-        }
-        if (token.tokenType === 'attribute') {
-          bindAttributeToken(token, gl, program, render, onRender)
-          return
-        }
-        if ('dataType' in token && token.dataType === 'sampler2D') {
-          bindSampler2DToken(token as Sampler2DToken, gl, program, render)
-          return
-        }
-        if (token.tokenType === 'uniform') {
-          bindUniformToken(token, gl, program, render)
+        switch (token.tokenType) {
+          case 'shader':
+            token.bind(gl, program, render, onRender)
+            break
+          case 'attribute':
+            bindAttributeToken(token, gl, program, render, onRender)
+            break
+          case 'sampler2D':
+            bindSampler2DToken(token as Sampler2DToken, gl, program, render)
+            break
+          case 'uniform':
+            bindUniformToken(token, gl, program, render)
+            break
         }
       })
-
-    return { source, bind } as ShaderResult
+    }
+    return { source, bind, tokenType: 'shader' } as ShaderToken
   }
 
 /* VARIABLES: UNIFORM / ATTRIBUTE */
@@ -145,12 +146,12 @@ export const glsl =
 export const uniform = new Proxy({} as Uniform, {
   get(target, dataType) {
     return (...[value, options]: UniformParameters) => ({
+      dataType,
+      functionName: dataTypeToFunctionName(dataType as string),
+      tokenType: 'uniform',
       get value() {
         return value()
       },
-      functionName: dataTypeToFunctionName(dataType as string),
-      dataType,
-      tokenType: 'uniform',
       options,
     })
   },
@@ -164,15 +165,13 @@ export const attribute = new Proxy({} as Attribute, {
           ? +dataType[dataType.length - 1]!
           : undefined
       return {
+        dataType,
+        tokenType: 'attribute',
+        size: size && !isNaN(size) ? size : 1,
         get value() {
           return value()
         },
-        dataType,
-        tokenType: 'attribute',
-        options: {
-          ...options,
-          size: size && !isNaN(size) ? size : 1,
-        },
+        options,
       }
     }
   },
