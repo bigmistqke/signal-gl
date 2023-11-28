@@ -112,20 +112,21 @@ var bindUniformToken = (variable, gl, program, render) => {
 };
 var createAttributeToken = (id, config) => createToken(id, config);
 var bindAttributeToken = (token, gl, program, render, onRender) => {
+  let { target, size, mode } = token.options;
   const buffer = gl.createBuffer();
   const location = gl.getAttribLocation(program, token.name);
-  const target = token.options.target ? gl[token.options.target] : gl.ARRAY_BUFFER;
+  const glTarget = target ? gl[target] : gl.ARRAY_BUFFER;
   createEffect(() => {
-    gl.bindBuffer(target, buffer);
-    gl.bufferData(target, token.value, gl.STATIC_DRAW);
+    gl.bindBuffer(glTarget, buffer);
+    gl.bufferData(glTarget, token.value, gl.STATIC_DRAW);
     render();
   });
   onRender(() => {
-    gl.bindBuffer(target, buffer);
-    gl.vertexAttribPointer(location, token.options.size, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(glTarget, buffer);
+    gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(location);
-    if (token.options.mode)
-      gl.drawArrays(gl[token.options.mode], 0, 6);
+    if (mode)
+      gl.drawArrays(gl[mode], 0, 6);
   });
 };
 var textureIndex = 0;
@@ -134,31 +135,30 @@ var createSampler2DToken = (id, config) => createToken(id, config, {
   tokenType: "sampler2D"
 });
 var bindSampler2DToken = (sampler2D, gl, program, render) => createEffect(() => {
-  const options = sampler2D.options;
-  const _value = sampler2D.value;
+  const { format, width, height, border, minFilter, magFilter } = sampler2D.options;
   const texture = gl.createTexture();
   gl.activeTexture(gl.TEXTURE0 + sampler2D.textureIndex);
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(
     gl.TEXTURE_2D,
     0,
-    sampler2D.options?.format ? gl[sampler2D.options.format] : gl.RGBA,
-    sampler2D.options?.width || 2,
-    sampler2D.options?.height || 1,
-    sampler2D.options?.border || 0,
-    sampler2D.options?.format ? gl[sampler2D.options.format] : gl.RGBA,
+    format ? gl[format] : gl.RGBA,
+    width || 2,
+    height || 1,
+    border || 0,
+    format ? gl[format] : gl.RGBA,
     gl.UNSIGNED_BYTE,
-    _value
+    sampler2D.value
   );
   gl.texParameteri(
     gl.TEXTURE_2D,
     gl.TEXTURE_MIN_FILTER,
-    options?.minFilter ? gl[options.minFilter] : gl.NEAREST
+    minFilter ? gl[minFilter] : gl.NEAREST
   );
   gl.texParameteri(
     gl.TEXTURE_2D,
     gl.TEXTURE_MAG_FILTER,
-    options?.magFilter ? gl[options.magFilter] : gl.NEAREST
+    magFilter ? gl[magFilter] : gl.NEAREST
   );
   gl[sampler2D.dataType === "float" ? "uniform1f" : "uniform1i"](
     gl.getUniformLocation(program, sampler2D.name),

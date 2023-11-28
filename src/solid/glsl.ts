@@ -4,11 +4,8 @@ import {
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
-  createAttributeToken,
-  createSampler2DToken,
   createScopedVariableToken,
-  createUniformToken,
-  dataTypeToFunctionName,
+  createToken,
 } from './tokens'
 import {
   Attribute,
@@ -18,9 +15,24 @@ import {
   Token,
   Uniform,
   UniformParameters,
+  UniformSetter,
   ValueOf,
 } from './types'
 export * from './GL'
+
+/* UTILITIES */
+
+const dataTypeToFunctionName = (dataType: string) => {
+  // TODO: include mat
+  if (dataType === 'float') return 'uniform1f'
+  if (dataType === 'int') return 'uniform1i'
+  if (dataType === 'bool') return 'uniform1i'
+
+  return ('uniform' +
+    dataType[dataType.length - 1] +
+    (dataType[0] === 'b' ? 'b' : dataType[0] === 'i' ? 'i' : 'f') +
+    'v') as UniformSetter
+}
 
 const resolveToken = (token: Token) =>
   'source' in token
@@ -59,12 +71,15 @@ const compileStrings = (strings: TemplateStringsArray, variables: Token[]) => {
   ].join('\n')
 }
 
+/* GLSL TAG TEMPLATE LITERAL */
+
 type Hole =
   | ReturnType<ValueOf<Attribute>>
   | ReturnType<ValueOf<Uniform>>
   | string
   | Accessor<ShaderResult>
 
+let textureIndex = 0
 export const glsl =
   (
     strings: TemplateStringsArray,
@@ -81,11 +96,14 @@ export const glsl =
           : typeof hole === 'string'
           ? createScopedVariableToken(scopedVariables, hole)
           : hole.tokenType === 'attribute'
-          ? createAttributeToken(zeptoid(), hole as any)
+          ? createToken(zeptoid(), hole)
           : hole.dataType === 'sampler2D'
-          ? createSampler2DToken(zeptoid(), hole)
+          ? createToken(zeptoid(), hole, {
+              textureIndex: textureIndex++,
+              tokenType: 'sampler2D',
+            })
           : hole.tokenType === 'uniform'
-          ? createUniformToken(zeptoid(), hole as any)
+          ? createToken(zeptoid(), hole as any)
           : undefined
       )
       .filter((hole) => hole !== undefined) as Token[]
@@ -125,6 +143,8 @@ export const glsl =
 
     return { source, bind } as ShaderResult
   }
+
+/* VARIABLES: UNIFORM / ATTRIBUTE */
 
 export const uniform = new Proxy({} as Uniform, {
   get(target, dataType) {

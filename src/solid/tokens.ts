@@ -7,24 +7,11 @@ import {
   Sampler2DToken,
   ScopedVariableToken,
   Uniform,
-  UniformSetter,
   UniformToken,
   ValueOf,
 } from './types'
 
-export const dataTypeToFunctionName = (dataType: string): UniformSetter => {
-  // TODO: include mat
-  if (dataType === 'float') return 'uniform1f'
-  if (dataType === 'int') return 'uniform1i'
-  if (dataType === 'bool') return 'uniform1i'
-
-  return ('uniform' +
-    dataType[dataType.length - 1] +
-    (dataType[0] === 'b' ? 'b' : dataType[0] === 'i' ? 'i' : 'f') +
-    'v') as UniformSetter
-}
-
-const createToken = <
+export const createToken = <
   TConfig extends ReturnType<ValueOf<Uniform> | ValueOf<Attribute>>,
   TOther extends Record<string, any>,
 >(
@@ -40,10 +27,21 @@ const createToken = <
     other
   )
 
-export const createUniformToken = (
-  id: number | string,
-  config: ReturnType<ValueOf<Uniform>>
-): UniformToken => createToken(id, config)
+export const createScopedVariableToken = (
+  scopedVariables: Map<string, string>,
+  value: string
+): ScopedVariableToken => {
+  if (!scopedVariables.has(value)) {
+    scopedVariables.set(value, `${value}_${zeptoid()}`)
+  }
+  return {
+    name: scopedVariables.get(value)!,
+    tokenType: 'scope',
+    options: {
+      name: value,
+    },
+  }
+}
 
 export const bindUniformToken = (
   variable: UniformToken,
@@ -58,11 +56,6 @@ export const bindUniformToken = (
   })
 }
 
-export const createAttributeToken = (
-  id: number | string,
-  config: ReturnType<ValueOf<Attribute>>
-): AttributeToken => createToken(id, config)
-
 export const bindAttributeToken = (
   token: AttributeToken,
   gl: WebGL2RenderingContext,
@@ -70,37 +63,26 @@ export const bindAttributeToken = (
   render: () => void,
   onRender: OnRenderFunction
 ) => {
+  let { target, size, mode } = token.options
+
   const buffer = gl.createBuffer()
   const location = gl.getAttribLocation(program, token.name)
 
-  const target = token.options.target
-    ? gl[token.options.target]
-    : gl.ARRAY_BUFFER
+  const glTarget = target ? gl[target] : gl.ARRAY_BUFFER
 
   createEffect(() => {
-    gl.bindBuffer(target, buffer)
-    gl.bufferData(target, token.value, gl.STATIC_DRAW)
+    gl.bindBuffer(glTarget, buffer)
+    gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
     render()
   })
 
   onRender(() => {
-    gl.bindBuffer(target, buffer)
-    gl.vertexAttribPointer(location, token.options.size, gl.FLOAT, false, 0, 0)
+    gl.bindBuffer(glTarget, buffer)
+    gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(location)
-    if (token.options.mode) gl.drawArrays(gl[token.options.mode], 0, 6)
+    if (mode) gl.drawArrays(gl[mode], 0, 6)
   })
 }
-
-let textureIndex = 0
-
-export const createSampler2DToken = (
-  id: number | string,
-  config: ReturnType<Uniform['sampler2D']>
-): Sampler2DToken =>
-  createToken(id, config, {
-    textureIndex: textureIndex++,
-    tokenType: 'sampler2D',
-  })
 
 export const bindSampler2DToken = (
   sampler2D: Sampler2DToken,
@@ -109,8 +91,8 @@ export const bindSampler2DToken = (
   render: () => void
 ) =>
   createEffect(() => {
-    const options = sampler2D.options
-    const _value = sampler2D.value
+    const { format, width, height, border, minFilter, magFilter } =
+      sampler2D.options
 
     // Create a texture and bind it to texture unit 0
     const texture = gl.createTexture()
@@ -120,25 +102,25 @@ export const bindSampler2DToken = (
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
-      sampler2D.options?.format ? gl[sampler2D.options.format] : gl.RGBA,
-      sampler2D.options?.width || 2,
-      sampler2D.options?.height || 1,
-      sampler2D.options?.border || 0,
-      sampler2D.options?.format ? gl[sampler2D.options.format] : gl.RGBA,
+      format ? gl[format] : gl.RGBA,
+      width || 2,
+      height || 1,
+      border || 0,
+      format ? gl[format] : gl.RGBA,
       gl.UNSIGNED_BYTE,
-      _value
+      sampler2D.value
     )
 
     // Set texture parameters
     gl.texParameteri(
       gl.TEXTURE_2D,
       gl.TEXTURE_MIN_FILTER,
-      options?.minFilter ? gl[options.minFilter] : gl.NEAREST
+      minFilter ? gl[minFilter] : gl.NEAREST
     )
     gl.texParameteri(
       gl.TEXTURE_2D,
       gl.TEXTURE_MAG_FILTER,
-      options?.magFilter ? gl[options.magFilter] : gl.NEAREST
+      magFilter ? gl[magFilter] : gl.NEAREST
     )
 
     // Bind the texture to the uniform sampler
@@ -149,20 +131,3 @@ export const bindSampler2DToken = (
 
     render()
   })
-
-export const createScopedVariableToken = (
-  scopedVariables: Map<string, string>,
-
-  value: string
-): ScopedVariableToken => {
-  if (!scopedVariables.has(value)) {
-    scopedVariables.set(value, `${value}_${zeptoid()}`)
-  }
-  return {
-    name: scopedVariables.get(value)!,
-    tokenType: 'scope',
-    options: {
-      name: value,
-    },
-  }
-}

@@ -89,6 +89,7 @@ export type Sampler2DOptions = PrimitiveOptions & {
 /* ATTRIBUTE */
 
 export type AttributeOptions = PrimitiveOptions & {
+  size: number
   mode?: 'TRIANGLES' | 'POINTS' | 'LINES'
   target?:
     | 'ARRAY_BUFFER'

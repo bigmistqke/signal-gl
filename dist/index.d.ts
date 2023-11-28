@@ -44,6 +44,7 @@ type Sampler2DOptions = PrimitiveOptions & {
     border?: number;
 };
 type AttributeOptions = PrimitiveOptions & {
+    size: number;
     mode?: 'TRIANGLES' | 'POINTS' | 'LINES';
     target?: 'ARRAY_BUFFER' | 'ELEMENT_ARRAY_BUFFER' | 'COPY_READ_BUFFER' | 'COPY_WRITE_BUFFER' | 'TRANSFORM_FEEDBACK_BUFFER' | 'UNIFORM_BUFFER' | 'PIXEL_PACK_BUFFER' | 'PIXEL_UNPACK_BUFFER';
 };
