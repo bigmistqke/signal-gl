@@ -53,16 +53,16 @@ export const bindAttributeToken = (
 
   const glTarget = target ? gl[target] : gl.ARRAY_BUFFER
 
-  onRender(() => {
-    const location = gl.getAttribLocation(program, token.name)
-
-    if (location === -1) {
-      DEBUG && console.error('token is not registered', token.name)
-      return
-    }
-
+  const location = gl.getAttribLocation(program, token.name)
+  if (location === -1) {
+    DEBUG && console.error('token is not registered', token.name)
+  }
+  createEffect(() => {
     gl.bindBuffer(glTarget, buffer)
     gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
+  })
+
+  onRender(() => {
     gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(location)
   })
