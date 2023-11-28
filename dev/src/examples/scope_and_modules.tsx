@@ -1,13 +1,7 @@
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
-import {
-  GL,
-  Program,
-  attribute,
-  glsl,
-  uniform,
-} from '@bigmistqke/signal-gl/solid'
+import { GL, Program, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
 
 import './index.css'
 

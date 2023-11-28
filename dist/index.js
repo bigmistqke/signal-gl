@@ -147,6 +147,8 @@ var GL = (props) => {
             gl.viewport(0, 0, _canvas.width, _canvas.height);
           });
           resizeObserver.observe(_canvas);
+          if (!props.animate)
+            render();
         });
         function animate() {
           render();

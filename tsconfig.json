@@ -18,7 +18,7 @@
     "types": [],
     "baseUrl": ".",
     "paths": {
-      "@bigmistqke/signal-gl/*": ["./src/*"],
+      "@bigmistqke/signal-gl": ["./src"],
       "@core/*": ["./src/core/*"]
     }
   },

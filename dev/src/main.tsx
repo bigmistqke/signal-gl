@@ -1,12 +1,8 @@
-import {
-  attribute,
-  GL,
-  glsl,
-  Program,
-  uniform,
-} from '@bigmistqke/signal-gl/solid'
+import { attribute, GL, glsl, Program, uniform } from '@bigmistqke/signal-gl'
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
+
+import './index.css'
 
 function App() {
   const [vertices] = createSignal(
@@ -41,7 +37,9 @@ function App() {
         width: '100vw',
         height: '100vh',
       }}
-      onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}
+      onMouseMove={(e) =>
+        setOpacity(1 - e.clientY / e.currentTarget.offsetHeight)
+      }
     >
       <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
     </GL>
