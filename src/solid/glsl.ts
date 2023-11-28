@@ -1,6 +1,10 @@
 import { type Accessor } from 'solid-js'
 import zeptoid from 'zeptoid'
 import {
+  AttributeToken,
+  Sampler2DToken,
+  ScopedVariableToken,
+  UniformToken,
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
@@ -9,28 +13,24 @@ import {
   createScopedVariableToken,
   createUniformToken,
 } from './tokens'
-import { Attribute, ShaderResult, ShaderVariable, Uniform } from './types'
+import { Attribute, OnRenderFunction, ShaderResult, Uniform } from './types'
 export * from './GL'
 
-const resolveVariable = (variable: ShaderVariable | ShaderResult) =>
-  'source' in variable
-    ? variable.source
-    : variable.options.type === 'attribute'
-    ? `in ${variable.type} ${variable.name};`
-    : variable.options.type === 'uniform'
-    ? `uniform ${variable.type} ${variable.name};`
+const resolveToken = (token: Token) =>
+  'source' in token
+    ? token.source
+    : token.tokenType === 'attribute'
+    ? `in ${token.dataType} ${token.name};`
+    : token.tokenType === 'uniform'
+    ? `uniform ${token.dataType} ${token.name};`
     : ''
 
-const compileStrings = (
-  strings: TemplateStringsArray,
-  variables: (ShaderVariable | ShaderResult)[]
-) => {
+const compileStrings = (strings: TemplateStringsArray, variables: Token[]) => {
   const source = [
     ...strings.flatMap((string, index) => {
       const variable = variables[index]
       if (!variable) return string
-      const name = variable.name
-      return name ? [string, name] : string
+      return 'name' in variable ? [string, variable.name] : string
     }),
   ].join('')
 
@@ -40,7 +40,7 @@ const compileStrings = (
     return [
       pre,
       precision,
-      variables.flatMap((variable) => resolveVariable(variable)).join('\n'),
+      variables.flatMap((variable) => resolveToken(variable)).join('\n'),
       after,
     ].join('\n')
   }
@@ -48,69 +48,79 @@ const compileStrings = (
   const [pre, after] = source.split(/#version.*/)
   return [
     version,
-    variables.flatMap((variable) => resolveVariable(variable)).join('\n'),
+    variables.flatMap((variable) => resolveToken(variable)).join('\n'),
     after || pre,
   ].join('\n')
 }
+
+type Hole =
+  | ReturnType<(typeof attribute)[keyof typeof attribute]>
+  | ReturnType<(typeof uniform)[keyof typeof uniform]>
+  | string
+  | Accessor<ShaderResult>
+
+type Token =
+  | ShaderResult
+  | ScopedVariableToken
+  | AttributeToken
+  | UniformToken
+  | Sampler2DToken
 
 export const glsl =
   (
     strings: TemplateStringsArray,
     // ...values: (ShaderVariable | Accessor<ShaderResult>)[]
-    ...values: (
-      | ReturnType<
-          | (typeof attribute)[keyof typeof attribute]
-          | (typeof uniform)[keyof typeof uniform]
-        >
-      | string
-      | Accessor<ShaderResult>
-    )[]
+    ...holes: Hole[]
   ) =>
   () => {
     // initialize variables
     const scopedVariables = new Map<string, string>()
-    const variables = values.map((value, index) => {
-      if (typeof value === 'function') return value()
-
-      return typeof value === 'string'
-        ? createScopedVariableToken(value, scopedVariables)
-        : value.options.type === 'attribute'
-        ? createAttributeToken(zeptoid(), value)
-        : value.type === 'sampler2D'
-        ? createSampler2DToken(zeptoid(), value)
-        : createUniformToken(zeptoid(), value)
-    })
+    const tokens = holes
+      .map((hole, index) =>
+        typeof hole === 'function'
+          ? hole()
+          : typeof hole === 'string'
+          ? createScopedVariableToken(hole, scopedVariables)
+          : hole.tokenType === 'attribute'
+          ? createAttributeToken(zeptoid(), hole as any)
+          : hole.dataType === 'sampler2D'
+          ? createSampler2DToken(zeptoid(), hole)
+          : hole.tokenType === 'uniform'
+          ? createUniformToken(zeptoid(), hole as any)
+          : undefined
+      )
+      .filter((hole) => hole !== undefined) as Token[]
 
     // create shader-source
-    const source = compileStrings(strings, variables).split(/\s\s+/g).join('\n')
+    const source = compileStrings(strings, tokens).split(/\s\s+/g).join('\n')
     console.log('source', source)
 
     const bind = (
       gl: WebGL2RenderingContext,
       program: WebGLProgram,
       render: () => void,
-      onRender: (fn: () => void) => void
+      onRender: OnRenderFunction
     ) =>
-      variables.forEach((variable) => {
-        if ('bind' in variable) {
-          variable.bind(gl, program, render, onRender)
+      tokens.forEach((token) => {
+        if ('bind' in token) {
+          token.bind(gl, program, render, onRender)
           return
         }
-        if (variable.options.type === 'attribute') {
-          bindAttributeToken(variable, gl, program, render, onRender)
+        if (token.tokenType === 'attribute') {
+          bindAttributeToken(token, gl, program, render, onRender)
           return
         }
-        if ('type' in variable && variable.type === 'sampler2D') {
+        if ('type' in token && token.dataType === 'sampler2D') {
           bindSampler2DToken(
-            variable as ReturnType<typeof createSampler2DToken>,
+            token as ReturnType<typeof createSampler2DToken>,
             gl,
             program,
             render
           )
           return
         }
-        if (variable.options.type === 'uniform') {
-          bindUniformToken(variable, gl, program, render)
+        if (token.tokenType === 'uniform') {
+          bindUniformToken(token, gl, program, render)
         }
       })
 
@@ -120,12 +130,12 @@ export const glsl =
 export const uniform = new Proxy({} as Uniform, {
   get(target, dataType) {
     return (...[value, options]: Parameters<Uniform[keyof Uniform]>) => ({
-      value,
-      type: dataType,
-      options: {
-        ...options,
-        type: 'uniform',
+      get value() {
+        return value()
       },
+      dataType,
+      tokenType: 'uniform',
+      options,
     })
   },
 })
@@ -138,12 +148,14 @@ export const attribute = new Proxy({} as Attribute, {
           ? +dataType[dataType.length - 1]
           : undefined
       return {
-        value,
-        type: dataType,
+        get value() {
+          return value()
+        },
+        dataType,
+        tokenType: 'attribute',
         options: {
           ...options,
           size: size && !isNaN(size) ? size : 1,
-          type: 'attribute',
         },
       }
     }

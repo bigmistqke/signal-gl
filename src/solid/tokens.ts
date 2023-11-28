@@ -1,6 +1,16 @@
-import { createEffect } from 'solid-js'
+import { createEffect, mergeProps } from 'solid-js'
 import zeptoid from 'zeptoid'
-import { Attribute, Uniform, UniformSetter } from './types'
+import {
+  Attribute,
+  AttributeToken,
+  OnRenderFunction,
+  Sampler2DToken,
+  ScopedVariableToken,
+  Uniform,
+  UniformSetter,
+  UniformToken,
+  ValueOf,
+} from './types'
 
 const dataTypeToFunctionName = (dataType: string): UniformSetter => {
   // TODO: include mat
@@ -14,26 +24,37 @@ const dataTypeToFunctionName = (dataType: string): UniformSetter => {
     'v') as UniformSetter
 }
 
+const createToken = <
+  TConfig extends ReturnType<ValueOf<Uniform> | ValueOf<Attribute>>,
+  TOther extends Record<string, any>,
+>(
+  id: number | string,
+  config: TConfig,
+  other?: TOther
+) =>
+  mergeProps(
+    config,
+    {
+      name: `${config.options?.name || ''}_${id}`,
+    },
+    other
+  )
+
 export const createUniformToken = (
   id: number | string,
-  { type, value, options }: ReturnType<Uniform[keyof Uniform]>
-) => ({
-  name: `signal${options.name ? `_${options.name}` : ''}_${id}`,
-  get value() {
-    return value()
-  },
-  options,
-  type,
-  functionName: dataTypeToFunctionName(type),
-})
+  config: ReturnType<ValueOf<Uniform>>
+): UniformToken =>
+  createToken(id, config, {
+    functionName: dataTypeToFunctionName(config.dataType),
+  })
+
 export const bindUniformToken = (
-  variable: ReturnType<typeof createUniformToken>,
+  variable: UniformToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
   render: () => void
 ) => {
   const location = gl.getUniformLocation(program, variable.name)
-
   createEffect(() => {
     gl[variable.functionName](location, variable.value)
     render()
@@ -42,50 +63,34 @@ export const bindUniformToken = (
 
 export const createAttributeToken = (
   id: number | string,
-  { type, value, options }: ReturnType<Attribute[keyof Attribute]>
-) => ({
-  name: `signal${options.name ? `_${options.name}` : ''}_${id}`,
-  get value() {
-    return value()
-  },
-  options: {
-    ...options,
-    type: 'attribute',
-  },
-  type,
-})
+  config: ReturnType<ValueOf<Attribute>>
+): AttributeToken => createToken(id, config)
+
 export const bindAttributeToken = (
-  variable: ReturnType<typeof createAttributeToken>,
+  token: AttributeToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
   render: () => void,
-  onRender: (fn: () => void) => () => void
+  onRender: OnRenderFunction
 ) => {
   const buffer = gl.createBuffer()
-  const location = gl.getAttribLocation(program, variable.name)
+  const location = gl.getAttribLocation(program, token.name)
 
-  const target = variable.options.target
-    ? gl[variable.options.target]
+  const target = token.options.target
+    ? gl[token.options.target]
     : gl.ARRAY_BUFFER
 
   createEffect(() => {
     gl.bindBuffer(target, buffer)
-    gl.bufferData(target, variable.value, gl.STATIC_DRAW)
+    gl.bufferData(target, token.value, gl.STATIC_DRAW)
     render()
   })
 
   onRender(() => {
     gl.bindBuffer(target, buffer)
-    gl.vertexAttribPointer(
-      location,
-      variable.options.size,
-      gl.FLOAT,
-      false,
-      0,
-      0
-    )
+    gl.vertexAttribPointer(location, token.options.size, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(location)
-    if (variable.options.mode) gl.drawArrays(gl[variable.options.mode], 0, 6)
+    if (token.options.mode) gl.drawArrays(gl[token.options.mode], 0, 6)
   })
 }
 
@@ -93,23 +98,14 @@ let textureIndex = 0
 
 export const createSampler2DToken = (
   id: number | string,
-  { type, value, options }: ReturnType<Uniform['sampler2D']>
-) => {
-  // TODO: idk if there is a limit to incrementing textureIndex
-  const _textureIndex = textureIndex
-  textureIndex++
-  return {
-    name: `value_${id}`,
-    type,
-    options,
-    textureIndex: _textureIndex,
-    get value() {
-      return value()
-    },
-  }
-}
+  config: ReturnType<Uniform['sampler2D']>
+): Sampler2DToken =>
+  createToken(id, config, {
+    textureIndex: textureIndex++,
+  })
+
 export const bindSampler2DToken = (
-  sampler2D: ReturnType<typeof createSampler2DToken>,
+  sampler2D: Sampler2DToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
   render: () => void
@@ -148,7 +144,7 @@ export const bindSampler2DToken = (
     )
 
     // Bind the texture to the uniform sampler
-    gl[options?.type === 'float' ? 'uniform1f' : 'uniform1i'](
+    gl[sampler2D.dataType === 'float' ? 'uniform1f' : 'uniform1i'](
       gl.getUniformLocation(program, sampler2D.name),
       sampler2D.textureIndex
     )
@@ -159,14 +155,14 @@ export const bindSampler2DToken = (
 export const createScopedVariableToken = (
   value: string,
   scopedVariables: Map<string, string>
-) => {
+): ScopedVariableToken => {
   if (!scopedVariables.has(value)) {
     scopedVariables.set(value, `${value}_${zeptoid()}`)
   }
   return {
-    name: scopedVariables.get(value),
+    name: scopedVariables.get(value)!,
+    tokenType: 'scope',
     options: {
-      type: 'scope',
       name: value,
     },
   }

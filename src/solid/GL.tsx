@@ -4,7 +4,7 @@ import {
   type Accessor,
   type ComponentProps,
 } from 'solid-js'
-import type { ShaderResult } from './glsl'
+import type { ShaderResult } from './types'
 
 export const GL = (
   props: ComponentProps<'canvas'> & {

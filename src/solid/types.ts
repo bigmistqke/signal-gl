@@ -1,28 +1,15 @@
 import { Accessor } from 'solid-js'
 
+export type ValueOf<T extends Record<string, any>> = T[keyof T]
+
 export type ShaderResult = {
   source: string
   bind: (
     gl: WebGL2RenderingContext,
     program: WebGLProgram,
     render: () => void,
-    onRender: Accessor<(fn: () => void) => void>
+    onRender: OnRenderFunction
   ) => void
-}
-
-type ValidShaderVersions = '1.017' | '3.0.0'
-
-export type ShaderVariable = ReturnType<
-  | typeof createUniform
-  | typeof createAttribute
-  | typeof createSampler2D
-  | typeof createScopedVariable
->
-
-export type ShaderInclude = {
-  source: string
-  variables: ShaderVariable[]
-  version: ValidShaderVersions
 }
 
 export type PrimitiveOptions = {
@@ -56,9 +43,20 @@ type VariableCallback<
   value: Accessor<TValue>,
   options?: TTOptions
 ) => {
-  type: TType
+  dataType: TType
+  tokenType: 'uniform' | 'attribute'
   value: Accessor<TValue>
   options: TTOptions
+}
+
+export type Sampler2DOptions = PrimitiveOptions & {
+  width?: number
+  height?: number
+  type?: 'float' | 'integer'
+  format?: 'RGBA' | 'RGB' | 'LUMINANCE'
+  magFilter?: 'NEAREST' | 'LINEAR'
+  minFilter?: 'NEAREST' | 'LINEAR'
+  border?: number
 }
 
 export type Uniform = {
@@ -74,22 +72,10 @@ export type Uniform = {
   vec4: VariableCallback<'vec4', [number, number, number, number]>
   ivec4: VariableCallback<'ivec4', [number, number, number, number]>
   bvec4: VariableCallback<'bvec4', [boolean, boolean, boolean, boolean]>
-  sampler2D: VariableCallback<
-    'sampler2D',
-    ArrayBufferView,
-    PrimitiveOptions & {
-      width?: number
-      height?: number
-      type?: 'float' | 'integer'
-      format?: 'RGBA' | 'RGB' | 'LUMINANCE'
-      magFilter?: 'NEAREST' | 'LINEAR'
-      minFilter?: 'NEAREST' | 'LINEAR'
-      border?: number
-    }
-  >
+  sampler2D: VariableCallback<'sampler2D', ArrayBufferView, SamplerZDOptions>
 }
 
-type AttributeOptions = PrimitiveOptions & {
+export type AttributeOptions = PrimitiveOptions & {
   mode?: 'TRIANGLES' | 'POINTS' | 'LINES'
   target?:
     | 'ARRAY_BUFFER'
@@ -101,7 +87,6 @@ type AttributeOptions = PrimitiveOptions & {
     | 'PIXEL_PACK_BUFFER'
     | 'PIXEL_UNPACK_BUFFER'
 }
-
 export type Attribute = {
   float: VariableCallback<'float', Buffer, AttributeOptions>
   int: VariableCallback<'int', IntBuffer, AttributeOptions>
@@ -116,3 +101,33 @@ export type Attribute = {
   ivec4: VariableCallback<'ivec4', IntBuffer, AttributeOptions>
   bvec4: VariableCallback<'bvec4', IntBuffer, AttributeOptions>
 }
+
+interface Token {
+  name: string
+  value: any
+  options: PrimitiveOptions
+  dataType: keyof Uniform | keyof Attribute
+  tokenType: 'attribute' | 'sampler2D' | 'uniform'
+}
+export interface AttributeToken extends Token {
+  options: AttributeOptions
+}
+
+export interface UniformToken extends Token {
+  functionName: string
+}
+
+export interface Sampler2DToken extends Token {
+  textureIndex: number
+  options: Sampler2DOptions
+}
+
+export type ScopedVariableToken = {
+  name: string
+  tokenType: 'scope'
+  options: {
+    name: string
+  }
+}
+
+export type OnRenderFunction = (fn: () => void) => () => void
