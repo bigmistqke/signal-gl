@@ -20,9 +20,9 @@ Currently there are only `solid` bindings, but the dependency on `solid` is mini
 ## Install
 
 ```ts
-npm i @bigmistqke/solid-gl
-pnpm i @bigmistqke/solid-gl
-yarn add @bigmistqke/solid-gl
+npm i @bigmistqke/signal-gl
+pnpm i @bigmistqke/signal-gl
+yarn add @bigmistqke/signal-gl
 ```
 
 ## Hello World [code](./dev/src/examples/hello_world.tsx)
