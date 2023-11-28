@@ -16,7 +16,8 @@
   - [`attribute`](#attribute-utility)
   - [`uniform`](#uniform-utility)
   - [`<GL/>`](#gl-jsxelement)
-  - [`<Program/>`](#program-jsxelement) 
+  - [`<Program/>`](#program-jsxelement)
+- [Tip](#tip) 
 
 ## Premise
 
@@ -175,7 +176,7 @@ return (
 
 ## API
 
-### `glsl` tag template literal
+### `glsl` _tag template literal_
 
 - write and compose `glsl`
 - interpolate and auto-bind `attributes` / `uniforms` / `glsl-snippets`
@@ -219,7 +220,7 @@ type Hole =
   | string                                // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
 ```
 
-### `attribute` utility
+### `attribute` _utility-function_
 
 - create `AttributeToken` to be consumed by `glsl`
 
@@ -298,7 +299,7 @@ type AttributeToken = {
 }
 ```
 
-### `uniform` utility
+### `uniform` _utility-function_
 
 - create `UniformToken` to be consumed by `glsl`
 
@@ -364,7 +365,7 @@ type UniformToken = {
 }
 ```
 
-### `<GL/>` JSXElement
+### `<GL/>` _component_
 
 - root `JSXElement`
 - contains `canvas` and `context-provider`
@@ -389,7 +390,7 @@ type GLProps =
   }
 ```
 
-### `<Program/>` JSXElement
+### `<Program/>`  _component_
 
 - sibling of `<GL/>`
 - represents a `WebGLProgram`
@@ -412,7 +413,7 @@ type ProgramProps = {
 
 ## `💡` Tip
 
-<img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
-
+> <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
+>
 > use in combination with tag template literal syntax highlighting.<br/>
-> `vs-code` [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
+> [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal) for `vs-code` 
