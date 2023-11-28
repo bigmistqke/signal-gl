@@ -13,8 +13,8 @@
 - [Use it](#use-it)
 - [API](#api)
   - [glsl](#glsl-tag-template-literal)
-  - [uniform](#uniform-utility)
   - [attribute](#attribute-utility)
+  - [uniform](#uniform-utility)
   - [GL](#gl-component)
   - [Program](#program-component) 
 
@@ -220,44 +220,27 @@ void main() {
 }`
 ```
 
-allowed interpolation-types:
-- `AttributeToken`
-  - `${attribute.float(...)}`
-  - auto-binds a signal to an attribute
-- `UniformToken`
-  - `${uniform.float(...)}`
-  - auto-bind a signal to a uniform
-- `ShaderToken`
-  - `${glsl``}`
-  - compose shaders
-- `string`
-  - `${'scoped-var'}`
-  - scope variable name to prevent name-collisions
-
-### `uniform`: utility
-
+returns 
 ```ts
-uniform.float(signal as Accessor<number>, {} as UniformOptions)
-uniform.int  (signal as Accessor<number>, {} as UniformOptions)
-uniform.bool (signal as Accessor<boolean>, {} as UniformOptions)
-uniform.vec2 (signal as Accessor<[number, number]>, {} as UniformOptions)
-uniform.ivec2(signal as Accessor<[number, number]>, {} as UniformOptions)
-uniform.bvec2(signal as Accessor<[boolean, boolean]>, {} as UniformOptions)
-uniform.vec3 (signal as Accessor<[number, number, number]>, {} as UniformOptions)
-uniform.ivec3(signal as Accessor<[number, number, number]>, {} as UniformOptions)
-uniform.bvec3(signal as Accessor<[boolean, boolean, boolean]>, {} as UniformOptions)
-uniform.vec4 (signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
-uniform.ivec4(signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
-uniform.bvec4(signal as Accessor<[boolean, boolean, boolean, boolean]>, {} as UniformOptions)
-```
-
-```ts
-export type UniformOptions = {
-  name?: string
+type ShaderToken = {
+  tokenType: 'shader'
+  source: string
+  bind: (
+    gl: WebGL2RenderingContext,
+    program: WebGLProgram,
+    render: () => void,
+    onRender: OnRenderFunction
+  ) => void
 }
 ```
 
-returns a `UniformToken`
+allowed interpolation-types:
+```ts
+  | AttributeToken // glsl`${attribute.float(...)}` auto-binds a signal to an attribute
+  | UniformToken   // glsl`${uniform.float(...)}`   auto-bind a signal to a uniform
+  | ShaderToken    // glsl`${glsl`...`}`            compose shaders
+  | string         // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
+```
 
 ### `attribute`: utility
 
@@ -291,7 +274,60 @@ export type AttributeOptions = {
 }
 ```
 
-returns an `AttributeToken`
+returns 
+```ts
+type AttributeToken = {
+  dataType: keyof Attribute
+  functionName: UniformSetter
+  name: string
+  options: AttributeOptions
+  size: number
+  tokenType: 'attribute'
+  value: any
+}
+```
+
+### `uniform`: utility
+
+```ts
+uniform.float(signal as Accessor<number>, {} as UniformOptions)
+uniform.int  (signal as Accessor<number>, {} as UniformOptions)
+uniform.bool (signal as Accessor<boolean>, {} as UniformOptions)
+uniform.vec2 (signal as Accessor<[number, number]>, {} as UniformOptions)
+uniform.ivec2(signal as Accessor<[number, number]>, {} as UniformOptions)
+uniform.bvec2(signal as Accessor<[boolean, boolean]>, {} as UniformOptions)
+uniform.vec3 (signal as Accessor<[number, number, number]>, {} as UniformOptions)
+uniform.ivec3(signal as Accessor<[number, number, number]>, {} as UniformOptions)
+uniform.bvec3(signal as Accessor<[boolean, boolean, boolean]>, {} as UniformOptions)
+uniform.vec4 (signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
+uniform.ivec4(signal as Accessor<[number, number, number, number]>, {} as UniformOptions)
+uniform.bvec4(signal as Accessor<[boolean, boolean, boolean, boolean]>, {} as UniformOptions)
+```
+
+```ts
+export type UniformOptions = {
+  name?: string
+}
+```
+
+returns 
+```ts
+type UniformToken = {
+  dataType: keyof Uniform
+  functionName: UniformSetter
+  name: string
+  options: PrimitiveOptions
+  tokenType: 'uniform'
+  value: any
+} | {
+  dataType: keyof Uniform | keyof Attribute
+  name: string
+  options: Sampler2DOptions
+  textureIndex: number
+  tokenType: 'sampler2D'
+  value: any
+}
+```
 
 ### `GL`: component
 
