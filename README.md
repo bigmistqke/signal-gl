@@ -229,7 +229,7 @@ void main() {
 
 #### return-type
 ```ts
-type ShaderToken = {
+type ShaderToken = Accessor<{
   tokenType: 'shader'
   source: string
   bind: (
@@ -238,7 +238,7 @@ type ShaderToken = {
     render: () => void,
     onRender: OnRenderFunction
   ) => void
-}
+}>
 ```
 
 #### allowed interpolation-types:
