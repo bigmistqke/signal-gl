@@ -122,7 +122,7 @@ var glContext = createContext();
 var useGL = () => useContext(glContext);
 var GL = (props) => {
   const [childrenProps, rest] = splitProps(props, ["children"]);
-  const [canvas, setCanvas] = createSignal(null);
+  const [canvas, setCanvas] = createSignal();
   return createComponent(glContext.Provider, {
     value: {
       get gl() {
@@ -134,6 +134,8 @@ var GL = (props) => {
         const memoChildren = children(() => childrenProps.children);
         onMount(() => {
           const _canvas = canvas();
+          if (!_canvas)
+            return;
           const gl = _canvas.getContext("webgl2");
           if (!gl) {
             console.error("webgl2 is not supported");
