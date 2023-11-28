@@ -21,7 +21,9 @@ Currently there are only `solid` bindings, but the dependency on `solid` is mini
 
 ```bash
 npm i @bigmistqke/signal-gl
+# or
 pnpm i @bigmistqke/signal-gl
+# or
 yarn add @bigmistqke/signal-gl
 ```
 
