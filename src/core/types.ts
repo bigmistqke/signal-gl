@@ -16,7 +16,12 @@ export type UniformSetter =
   | 'uniform4fv'
   | 'uniform4iv'
 
-type Buffer = Int8Array | Int16Array | Int32Array | Float32Array | Float64Array
+export type Buffer =
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | Float32Array
+  | Float64Array
 type IntBuffer =
   | Int8Array
   | Int16Array
