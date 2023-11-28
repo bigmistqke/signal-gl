@@ -119,8 +119,9 @@ export type AttributeParameters = Parameters<Attribute[keyof Attribute]>
 /* TOKENS */
 
 export type ShaderToken = {
-  tokenType: 'shader'
   source: string
+  strings: TemplateStringsArray
+  tokenType: 'shader'
   bind: (
     gl: WebGL2RenderingContext,
     program: WebGLProgram,

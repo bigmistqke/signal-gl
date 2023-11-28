@@ -93,7 +93,7 @@ export const GL = (
           if (Array.isArray(childs)) {
             childs.forEach((child) => {
               if (child && typeof child === 'object' && 'render' in child) {
-                ;(child as any).render()
+                ;(child as any).render?.()
               }
             })
           } else {
@@ -113,7 +113,11 @@ export const GL = (
   )
 }
 
-let id = 0
+const cache: WeakMap<
+  TemplateStringsArray,
+  WeakMap<TemplateStringsArray, WebGLProgram>
+> = new WeakMap()
+
 export const Program = (props: {
   fragment: Accessor<ShaderToken>
   vertex: Accessor<ShaderToken>
@@ -121,7 +125,6 @@ export const Program = (props: {
   onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   mode: 'TRIANGLES' | 'POINTS' | 'LINES'
 }) => {
-  const _id = id++
   const context = useGL()
   const [renderFunction, setRenderFunction] = createSignal<() => any>()
 
@@ -161,9 +164,18 @@ export const Program = (props: {
     const vertex = props.vertex()
     const fragment = props.fragment()
 
-    const program = createProgram(gl, vertex.source, fragment.source)
+    const program =
+      cache.get(vertex.strings)?.get(fragment.strings) ||
+      createProgram(gl, vertex.source, fragment.source)
 
     if (!program) return
+
+    if (!cache.get(vertex.strings)) {
+      cache.set(vertex.strings, new WeakMap())
+    }
+    if (!cache.get(vertex.strings)!.get(fragment.strings)) {
+      cache.get(vertex.strings)!.set(fragment.strings, program)
+    }
 
     props.onInit?.(gl, program)
 

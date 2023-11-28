@@ -1,4 +1,4 @@
-import { createEffect, mergeProps, on } from 'solid-js'
+import { createEffect, createRenderEffect, mergeProps, on } from 'solid-js'
 import zeptoid from 'zeptoid'
 
 import type {
@@ -23,7 +23,7 @@ export const createToken = <
   mergeProps(
     config,
     {
-      name: `${config.options?.name || ''}_${id}`,
+      name: '_' + id,
     },
     other
   )
@@ -48,7 +48,8 @@ export const bindUniformToken = (
   token: UniformToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  render: () => void
+  render: () => void,
+  onRender: OnRenderFunction
 ) => {
   const location = gl.getUniformLocation(program, token.name)
   createEffect(
@@ -61,6 +62,10 @@ export const bindUniformToken = (
       }
     )
   )
+  onRender(() => {
+    const location = gl.getUniformLocation(program, token.name)
+    gl[token.functionName](location, token.value)
+  })
 }
 
 export const bindAttributeToken = (
@@ -73,18 +78,23 @@ export const bindAttributeToken = (
   const target = token.options?.target
 
   const buffer = gl.createBuffer()
-  const location = gl.getAttribLocation(program, token.name)
 
   const glTarget = target ? gl[target] : gl.ARRAY_BUFFER
 
-  createEffect(() => {
+  createRenderEffect(() => {
     gl.bindBuffer(glTarget, buffer)
     gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
-    render()
   })
 
   onRender(() => {
+    const location = gl.getAttribLocation(program, token.name)
+
+    if (location === -1) {
+      console.error('token is not registered', token.name)
+    }
+
     gl.bindBuffer(glTarget, buffer)
+    gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
     gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(location)
   })

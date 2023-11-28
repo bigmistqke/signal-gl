@@ -19,6 +19,8 @@ import {
 
 const DEBUG = false
 
+const cache = new WeakMap<TemplateStringsArray, string[]>()
+
 let textureIndex = 0
 export const glsl =
   (
@@ -27,6 +29,10 @@ export const glsl =
     ...holes: Hole[]
   ) =>
   () => {
+    const hasCache = cache.has(strings)
+    if (!hasCache) cache.set(strings, [])
+    const ids = cache.get(strings)!
+
     // initialize variables
     const scopedVariables = new Map<string, ScopedVariableToken>()
     const tokens = holes
@@ -41,12 +47,16 @@ export const glsl =
           // it is interpret as a scoped variable name
           return createScopedToken(scopedVariables, hole)
         }
+
+        const id = hasCache ? ids[index]! : zeptoid()
+        if (!hasCache) ids[index] = id
+
         switch (hole.tokenType) {
           case 'attribute':
           case 'uniform':
-            return createToken(zeptoid(), hole)
+            return createToken(id, hole)
           case 'sampler2D':
-            return createToken(zeptoid(), hole, {
+            return createToken(id, hole, {
               textureIndex: textureIndex++,
             })
         }
@@ -76,10 +86,10 @@ export const glsl =
             bindSampler2DToken(token as Sampler2DToken, gl, program, render)
             break
           case 'uniform':
-            bindUniformToken(token, gl, program, render)
+            bindUniformToken(token, gl, program, render, onRender)
             break
         }
       })
     }
-    return { source, bind, tokenType: 'shader' } as ShaderToken
+    return { source, bind, tokenType: 'shader', strings } as ShaderToken
   }
