@@ -89,23 +89,20 @@ return (
 
 ```tsx
 const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
-const vertices = new Float32Array([
-  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-])
-
 const [colors, setColors] = createSignal(
   new Float32Array(new Array(6 * 3).fill('').map((v) => Math.random())),
   { equals: false }
 )
+const vertices = new Float32Array([
+  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+])
 
 setInterval(() => {
   setColors((colors) => {
     colors[0] += 0.001
+    colors[0] = colors[0] % 1 
     colors[10] += 0.002
-
-    if (colors[0] > 1) colors[0] = 0
-    if (colors[10] > 1) colors[10] = 0
-
+    colors[10] = colors[0] % 1
     return colors
   })
 })
@@ -114,28 +111,26 @@ const module = glsl`
 
   // variable names can be scoped by interpolating strings: ${'string'}
   // useful in glsl-module to prevent name collisions
-  float ${'getLength'}(float x, float y){
-    return length(x - y);
-  }
+  float ${'getLength'}(float x, float y){ return length(x - y); }
 
   vec4 getColor(vec3 color, vec2 coord){
     vec2 cursor = ${uniform.vec2(cursor)};
 
-    float lengthX = ${'getLength'}(cursor.x, coord.x);
-    float lengthY = ${'getLength'}(cursor.y, coord.y);
-
-    if(lengthX < 0.25 && lengthY < 0.25){
+    if(
+      ${'getLength'}(cursor.x, coord.x) < 0.25 && 
+      ${'getLength'}(cursor.y, coord.y < 0.25
+    ){
       return vec4(1. - color, 1.0);
-    }else{
-      return vec4(color, 1.0);
     }
+    return vec4(color, 1.0);
   }`
 
 const fragment = glsl`#version 300 es
   precision mediump float;
 
   // compose shaders with interpolation
-  // the interpolated shader-snippet is inlined completely: be aware for name-collisions
+  // the interpolated shader-snippet is inlined completely
+  // so be aware for name-collisions
   ${module}
 
   in vec2 v_coord; 
@@ -143,6 +138,7 @@ const fragment = glsl`#version 300 es
   out vec4 outColor;
 
   void main() {
+    // getColor is imported from module
     outColor = getColor(v_color, v_coord);
   }`
 
@@ -158,17 +154,17 @@ const vertex = glsl`#version 300 es
     gl_Position = vec4(a_coord, 0, 1) ;
   }`
 
+const onMouseMove = (e) => {
+  const x = e.clientX / e.currentTarget.clientWidth - 0.5
+  const y =
+    (e.currentTarget.clientHeight - e.clientY) /
+      e.currentTarget.clientHeight -
+    0.5
+  setCursor([x, y])
+}
+
 return (
-  <GL
-    onMouseMove={(e) => {
-      const x = e.clientX / e.currentTarget.clientWidth - 0.5
-      const y =
-        (e.currentTarget.clientHeight - e.clientY) /
-          e.currentTarget.clientHeight -
-        0.5
-      setCursor([x, y])
-    }}
-  >
+  <GL onMouseMove={onMouseMove}>
     <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
   </GL>
 )
