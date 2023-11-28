@@ -29,7 +29,7 @@ export const glsl =
   () => {
     // initialize variables
     const scopedVariables = new Map<string, ScopedVariableToken>()
-    const tokens: Token[] = holes
+    const tokens = holes
       .map((hole, index) => {
         if (typeof hole === 'function') {
           // if token is a function
@@ -51,7 +51,7 @@ export const glsl =
             })
         }
       })
-      .filter((hole) => hole !== undefined)
+      .filter((hole) => hole !== undefined) as Token[]
 
     // create shader-source
     const source = compileStrings(strings, tokens).split(/\s\s+/g).join('\n')

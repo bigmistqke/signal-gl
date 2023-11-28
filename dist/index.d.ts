@@ -9,13 +9,10 @@ type PrimitiveOptions = {
     type?: 'attribute' | 'uniform' | 'scope';
     name?: string;
 };
-type ShaderResult = {
-    source: string;
-    bind: (gl: WebGL2RenderingContext, program: WebGLProgram, render: () => void, onRender: OnRenderFunction) => void;
-};
+type Hole = ReturnType<ValueOf<Attribute>> | ReturnType<ValueOf<Uniform>> | string | Accessor<ShaderToken>;
 type Variable<TType extends string, TValue extends any, TTOptions = PrimitiveOptions> = (value: Accessor<TValue>, options?: TTOptions) => {
     dataType: TType;
-    tokenType: 'uniform' | 'attribute';
+    tokenType: 'uniform' | 'attribute' | 'sampler2D';
     value: Accessor<TValue>;
     options: TTOptions;
 };
@@ -44,7 +41,6 @@ type Sampler2DOptions = PrimitiveOptions & {
     border?: number;
 };
 type AttributeOptions = PrimitiveOptions & {
-    size: number;
     mode?: 'TRIANGLES' | 'POINTS' | 'LINES';
     target?: 'ARRAY_BUFFER' | 'ELEMENT_ARRAY_BUFFER' | 'COPY_READ_BUFFER' | 'COPY_WRITE_BUFFER' | 'TRANSFORM_FEEDBACK_BUFFER' | 'UNIFORM_BUFFER' | 'PIXEL_PACK_BUFFER' | 'PIXEL_UNPACK_BUFFER';
 };
@@ -62,19 +58,23 @@ type Attribute = {
     ivec4: Variable<'ivec4', IntBuffer, AttributeOptions>;
     bvec4: Variable<'bvec4', IntBuffer, AttributeOptions>;
 };
+type ShaderToken = {
+    tokenType: 'shader';
+    source: string;
+    bind: (gl: WebGL2RenderingContext, program: WebGLProgram, render: () => void, onRender: OnRenderFunction) => void;
+};
+
+declare const uniform: Uniform;
+declare const attribute: Attribute;
 
 declare const GL: (props: solid_js.JSX.CanvasHTMLAttributes<HTMLCanvasElement> & {
-    fragment: Accessor<ShaderResult>;
-    vertex: Accessor<ShaderResult>;
+    fragment: Accessor<ShaderToken>;
+    vertex: Accessor<ShaderToken>;
     onRender?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
     onInit?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
     animate?: boolean | undefined;
 }) => solid_js.JSX.Element;
-declare function createProgram(gl: WebGLRenderingContext, vertex: string, fragment: string): WebGLProgram | null;
 
-type Hole = ReturnType<ValueOf<Attribute>> | ReturnType<ValueOf<Uniform>> | string | Accessor<ShaderResult>;
-declare const glsl: (strings: TemplateStringsArray, ...holes: Hole[]) => () => ShaderResult;
-declare const uniform: Uniform;
-declare const attribute: Attribute;
+declare const glsl: (strings: TemplateStringsArray, ...holes: Hole[]) => () => ShaderToken;
 
-export { GL, attribute, createProgram, glsl, uniform };
+export { GL, attribute, glsl, uniform };
