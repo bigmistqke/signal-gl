@@ -17,6 +17,7 @@ import { createProgram } from '@core/webgl'
 
 const glContext = createContext<{
   gl: WebGL2RenderingContext
+  render?: () => void
 }>()
 
 const useGL = () => useContext(glContext)
@@ -30,12 +31,16 @@ export const GL = (
 ) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
   const [canvas, setCanvas] = createSignal<HTMLCanvasElement | undefined>()
+  const [renderFunction, setRenderFunction] = createSignal<() => void>()
 
   return (
     <glContext.Provider
       value={{
         get gl() {
           return canvas()?.getContext('webgl2')!
+        },
+        get render() {
+          return renderFunction()
         },
       }}
     >
@@ -75,6 +80,8 @@ export const GL = (
           const gl = _canvas?.getContext('webgl2')
           if (!_canvas || !gl) return
 
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
           const childs = memoChildren()
           if (!childs) return
 
@@ -91,6 +98,8 @@ export const GL = (
           }
         }
 
+        setRenderFunction(() => render)
+
         createEffect(() => (props.animate ? animate() : createEffect(render)))
 
         return <canvas ref={setCanvas} {...rest} />
@@ -99,6 +108,7 @@ export const GL = (
   )
 }
 
+let id = 0
 export const Program = (props: {
   fragment: Accessor<ShaderToken>
   vertex: Accessor<ShaderToken>
@@ -106,6 +116,7 @@ export const Program = (props: {
   onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   mode: 'TRIANGLES' | 'POINTS' | 'LINES'
 }) => {
+  const _id = id++
   const context = useGL()
   const [renderFunction, setRenderFunction] = createSignal<() => any>()
 
@@ -140,7 +151,7 @@ export const Program = (props: {
   createEffect(() => {
     const gl = context?.gl
 
-    if (!gl) return
+    if (!gl || !context.render) return
 
     const vertex = props.vertex()
     const fragment = props.fragment()
@@ -154,8 +165,8 @@ export const Program = (props: {
     const render = renderFactory(gl, program)
 
     batch(() => {
-      vertex.bind(gl, program, render, onRender)
-      fragment.bind(gl, program, render, onRender)
+      vertex.bind(gl, program, context.render!, onRender)
+      fragment.bind(gl, program, context.render!, onRender)
     })
 
     setRenderFunction(() => render)
