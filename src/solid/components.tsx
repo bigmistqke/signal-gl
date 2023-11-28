@@ -61,6 +61,8 @@ export const GL = (
             gl.viewport(0, 0, _canvas.width, _canvas.height)
           })
           resizeObserver.observe(_canvas)
+
+          if (!props.animate) render()
         })
 
         function animate() {
@@ -88,8 +90,6 @@ export const GL = (
             }
           }
         }
-
-        setTimeout(render, 0)
 
         createEffect(() => (props.animate ? animate() : createEffect(render)))
 
