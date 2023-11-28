@@ -109,7 +109,7 @@ export const glsl =
           bindAttributeToken(token, gl, program, render, onRender)
           return
         }
-        if ('type' in token && token.dataType === 'sampler2D') {
+        if ('dataType' in token && token.dataType === 'sampler2D') {
           bindSampler2DToken(
             token as ReturnType<typeof createSampler2DToken>,
             gl,
@@ -145,7 +145,7 @@ export const attribute = new Proxy({} as Attribute, {
     return (...[value, options]: AttributeParameters) => {
       const size =
         typeof dataType === 'string'
-          ? +dataType[dataType.length - 1]
+          ? +dataType[dataType.length - 1]!
           : undefined
       return {
         get value() {
