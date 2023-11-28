@@ -28,7 +28,7 @@ yarn add @bigmistqke/signal-gl
 
 ## Use it
 
-### Hello World [[code]](./dev/src/examples/hello_world.tsx)
+### Hello World [[playground]](https://playground.solidjs.com/anonymous/666af229-e0bc-42a8-8f7f-bd1cca6903d0)
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -84,7 +84,7 @@ render(() => <App />, document.getElementById('app')!)
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
 </video>
 
-### Scope and Modules [[code]](./dev/src/examples/scope_and_modules.tsx)
+### Scope and Modules [[playground]](https://playground.solidjs.com/anonymous/d4004847-49fa-4eec-82e3-33ca08d5e0a5)
 
 ```tsx
 import { createSignal } from 'solid-js'
