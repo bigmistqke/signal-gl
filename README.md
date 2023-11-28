@@ -6,10 +6,12 @@
 
 ## Premise
 
+- Minimal abstraction
 - Co-locating `js` and `glsl`
+- Composition of glsl snippets
 - Minimizing of boilerplate
 - Auto-binding to signals
-- Composition of glsl snippets
+- Small footprint: 2.5kb minified + gzip
 
 ## Bindings
 
@@ -178,7 +180,6 @@ render(() => <App />, document.getElementById('app')!)
 <video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/28e4a945-d792-48df-bae4-349aefc7c723" >
   <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
 </video>
-
 
 > `💡` syntax highlighting for glsl tag template literals with [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal)
 
