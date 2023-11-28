@@ -159,6 +159,7 @@ function App() {
     precision mediump float;
 
     // compose shaders with interpolation
+    // the interpolated shader-snippet is inlined completely: be aware for name-collisions
     ${module}
 
     in vec2 v_coord; 
@@ -229,7 +230,7 @@ void main() {
 
 #### return-type
 ```ts
-type ShaderToken = {
+type ShaderToken = Accessor<{
   tokenType: 'shader'
   source: string
   bind: (
@@ -238,7 +239,7 @@ type ShaderToken = {
     render: () => void,
     onRender: OnRenderFunction
   ) => void
-}
+}>
 ```
 
 #### allowed interpolation-types:
@@ -357,6 +358,8 @@ type UniformToken = {
 - contains `canvas` and `context-provider`
 - only valid children is `<Program/>`
 
+#### usage
+
 ```tsx
 <GL {...props as GLProps}>
   ...
@@ -378,6 +381,8 @@ type GLProps =
 
 - sibling of `<GL/>`
 - represents a `WebGLProgram`
+
+#### usage
 
 ```tsx
 <Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
