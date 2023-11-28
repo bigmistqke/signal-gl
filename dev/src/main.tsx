@@ -72,9 +72,7 @@ function App() {
     out vec3 v_color;
 
     void main() {
-      vec2 a_coord = ${attribute.vec2(vertices, {
-        mode: 'TRIANGLES',
-      })};
+      vec2 a_coord = ${attribute.vec2(vertices)};
       v_color = ${attribute.vec3(colors)};
       v_coord = a_coord - ${uniform.vec2(cursor)};
       gl_Position = vec4(a_coord, 0, 1) ;
