@@ -17,8 +17,6 @@ import {
   createToken,
 } from './tokens';
 
-/* GLSL TAG TEMPLATE LITERAL */
-
 const DEBUG = false;
 
 let textureIndex = 0
