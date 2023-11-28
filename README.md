@@ -13,9 +13,10 @@
 
 ## bindings
 
-Currently there are only `solid` bindings, but the dependencies on `solid` are minimal. If this idea has any merit we could easily make ports for other signal implementations.
+Currently there are only `solid` bindings, but the dependency on `solid` is minimal (only effects).<br/>
+If this idea has any merit we could easily make ports for other signal implementations.
 
-## [hello world](./dev/src/examples/hello_world.tsx)
+## hello world [code](./dev/src/examples/hello_world.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -69,7 +70,7 @@ render(() => <App />, document.getElementById('app')!)
 
 https://github.com/bigmistqke/signal.gl/assets/10504064/d0b05162-ee8c-4767-b0cc-5ae703b67d89
 
-## [scope and modules](./dev/src/examples/scope_and_modules.tsx)
+## Scope and Modules [code](./dev/src/examples/scope_and_modules.tsx)
 
 ```tsx
 import { createSignal } from 'solid-js'
