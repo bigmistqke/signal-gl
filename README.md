@@ -15,8 +15,8 @@
   - [`glsl`](#glsl-tag-template-literal)
   - [`attribute`](#attribute-utility)
   - [`uniform`](#uniform-utility)
-  - [`GL`](#gl-component)
-  - [`Program`](#program-component) 
+  - [`<GL/>`](#gl-component)
+  - [`<Program/>`](#program-component) 
 
 ## Premise
 
@@ -135,7 +135,8 @@ function App() {
   })
 
   const module = glsl`
-    // variable names can be scoped by interpolating strings
+
+    // variable names can be scoped by interpolating strings: ${'string'}
     // useful in glsl-module to prevent name collisions
     float ${'getLength'}(float x, float y){
       return length(x - y);
@@ -156,6 +157,7 @@ function App() {
 
   const fragment = glsl`#version 300 es
     precision mediump float;
+
     // compose shaders with interpolation
     ${module}
 
@@ -206,6 +208,9 @@ render(() => <App />, document.getElementById('app')!)
 
 ### `glsl`: tag template literal
 
+- write and compose `glsl`
+- interpolate and auto-bind `attributes` / `uniforms` / `glsl-snippets`
+
 #### usage
 
 ```ts
@@ -246,6 +251,8 @@ type Hole =
 ```
 
 ### `attribute`: utility
+
+- create `AttributeToken` to be consumed by `glsl`
 
 #### usage
 
@@ -297,6 +304,8 @@ type AttributeToken = {
 
 ### `uniform`: utility
 
+- create `UniformToken` to be consumed by `glsl`
+
 #### usage
 
 ```ts
@@ -342,15 +351,17 @@ type UniformToken = {
 }
 ```
 
-### `GL`: component
+### `<GL/>`: component
+
+- root `JSXElement`
+- contains `canvas` and context-provider
+- only valid children is `<Program/>`
 
 ```tsx
 <GL {...props as GLProps}>
   ...
 </GL>
 ```
-
-> ⚠️ root-element
 
 #### props-type
 
@@ -363,13 +374,14 @@ type GLProps =
   }
 ```
 
-### `Program`: component
+### `<Program/>`: component
+
+- sibling of `<GL/>`
+- represents a `WebGLProgram`
 
 ```tsx
 <Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
 ```
-
-> ⚠️ sibling of `<GL/>`
 
 #### props-type
 
