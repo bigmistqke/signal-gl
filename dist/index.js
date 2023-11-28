@@ -153,6 +153,10 @@ var GL = (props) => {
           requestAnimationFrame(animate);
         }
         function render() {
+          const _canvas = canvas();
+          const gl = _canvas?.getContext("webgl2");
+          if (!_canvas || !gl)
+            return;
           const childs = memoChildren();
           if (!childs)
             return;
@@ -168,7 +172,7 @@ var GL = (props) => {
             }
           }
         }
-        createEffect(() => props.animate ? animate() : void 0);
+        createEffect(() => props.animate ? animate() : createEffect(render));
         return (() => {
           const _el$ = _tmpl$();
           use(setCanvas, _el$);
@@ -249,7 +253,10 @@ var bindUniformToken = (token, gl, program, render) => {
   createEffect(
     on(
       () => token.value,
-      () => setTimeout(() => gl[token.functionName](location, token.value), 0)
+      () => {
+        gl[token.functionName](location, token.value);
+        render();
+      }
     )
   );
 };
@@ -261,7 +268,7 @@ var bindAttributeToken = (token, gl, program, render, onRender) => {
   createEffect(() => {
     gl.bindBuffer(glTarget, buffer);
     gl.bufferData(glTarget, token.value, gl.STATIC_DRAW);
-    setTimeout(render, 0);
+    render();
   });
   onRender(() => {
     gl.bindBuffer(glTarget, buffer);
