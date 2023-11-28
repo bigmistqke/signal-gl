@@ -1,7 +1,7 @@
 # 🚦 signal-gl
 
-![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)
-![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)
+[![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)](https://www.npmjs.com/package/@bigmistqke/signal-gl)
+[![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)](https://github.com/pnpm/pnpm)
 
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
 
