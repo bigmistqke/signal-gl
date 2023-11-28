@@ -12,11 +12,11 @@
 - [Install](#install)
 - [Use it](#use-it)
 - [API](#api)
-  - [glsl](#glsl-tag-template-literal)
-  - [attribute](#attribute-utility)
-  - [uniform](#uniform-utility)
-  - [GL](#gl-component)
-  - [Program](#program-component) 
+  - [`glsl`](#glsl-tag-template-literal)
+  - [`attribute`](#attribute-utility)
+  - [`uniform`](#uniform-utility)
+  - [`GL`](#gl-component)
+  - [`Program`](#program-component) 
 
 ## Premise
 
