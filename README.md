@@ -357,6 +357,8 @@ type UniformToken = {
 - contains `canvas` and `context-provider`
 - only valid children is `<Program/>`
 
+#### usage
+
 ```tsx
 <GL {...props as GLProps}>
   ...
@@ -378,6 +380,8 @@ type GLProps =
 
 - sibling of `<GL/>`
 - represents a `WebGLProgram`
+
+#### usage
 
 ```tsx
 <Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
