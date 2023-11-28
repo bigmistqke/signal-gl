@@ -58,9 +58,7 @@ function App() {
     out vec2 v_coord;  
     out vec3 v_color;
     void main() {
-      vec2 a_coord = ${attribute.vec2(vertices, {
-        mode: 'TRIANGLES',
-      })};
+      vec2 a_coord = ${attribute.vec2(vertices)};
       v_coord = a_coord;
       gl_Position = vec4(a_coord, 0, 1) ;
     }`
@@ -73,7 +71,7 @@ function App() {
       }}
       onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}
     >
-      <Program fragment={fragment} vertex={vertex} />
+      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES"/>
     </GL>
   )
 }
@@ -157,9 +155,7 @@ function App() {
     out vec3 v_color;
 
     void main() {
-      vec2 a_coord = ${attribute.vec2(vertices, {
-        mode: 'TRIANGLES',
-      })};
+      vec2 a_coord = ${attribute.vec2(vertices)};
       v_color = ${attribute.vec3(colors)};
       v_coord = a_coord - ${uniform.vec2(cursor)};
       gl_Position = vec4(a_coord, 0, 1) ;
@@ -180,7 +176,7 @@ function App() {
         setCursor([x, y])
       }}
     >
-      <Program fragment={fragment} vertex={vertex} />
+      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES"/>
     </GL>
   )
 }
