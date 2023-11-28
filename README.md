@@ -31,6 +31,11 @@ yarn add @bigmistqke/signal-gl
 
 ### Hello World [[playground]](https://playground.solidjs.com/anonymous/666af229-e0bc-42a8-8f7f-bd1cca6903d0)
 
+<video alt="screenrecording first example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/e306b06e-1b74-4f83-870c-f371c054b6f2">
+  <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
+</video>
+
+
 ```tsx
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
@@ -79,11 +84,11 @@ function App() {
 render(() => <App />, document.getElementById('app')!)
 ```
 
-<video alt="screenrecording first example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/e306b06e-1b74-4f83-870c-f371c054b6f2">
-  <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/30b0c5ad-fd5d-4a58-812e-24734a43c52d"/>
-</video>
-
 ### Scope and Modules [[playground]](https://playground.solidjs.com/anonymous/d4004847-49fa-4eec-82e3-33ca08d5e0a5)
+
+<video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/bad12fc1-45bf-4b8d-82a0-7cdb3e438a73">
+  <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
+</video>
 
 ```tsx
 import { createSignal } from 'solid-js'
@@ -183,11 +188,6 @@ function App() {
 
 render(() => <App />, document.getElementById('app')!)
 ```
-
-
-<video alt="screenrecording second example" src="https://github.com/bigmistqke/signal.gl/assets/10504064/bad12fc1-45bf-4b8d-82a0-7cdb3e438a73">
-  <img src="https://github.com/bigmistqke/signal.gl/assets/10504064/80b5b147-9a18-4352-a243-1778d91715e4"/>
-</video>
 
 ## `💡` Tip
 
