@@ -42,7 +42,7 @@ function App() {
       if(lengthX < 0.25 && lengthY < 0.25){
         return vec4(1. - color, 1.0);
       }else{
-        return vec4(vec3(0.0), 0.0);
+        discard;
       }
     }`
 
@@ -63,7 +63,7 @@ function App() {
     void main() {
       vec2 a_coord = ${attribute.vec2(vertices)};
       v_coord = a_coord;
-      gl_Position = vec4(a_coord, 0, 1) ;
+      gl_Position = vec4(a_coord, 0, 1.0);
     }`
 
   const vertex2 = glsl`#version 300 es
@@ -72,7 +72,7 @@ function App() {
     void main() {
       vec2 a_coord = ${attribute.vec2(vertices2)};
       v_coord = a_coord;
-      gl_Position = vec4(a_coord, 1, 1) ;
+      gl_Position = vec4(a_coord, -1.0, 1.0);
     }`
 
   return (
