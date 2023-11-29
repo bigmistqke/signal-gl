@@ -166,7 +166,8 @@ return (
   <GL style={{ width: "100vw", height: "100vh" }} onMouseMove={onMouseMove}>
     <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
   </GL>
-);```
+);
+```
 
 ## API
 
@@ -350,7 +351,7 @@ type UniformToken = {
   tokenType: 'uniform'
   value: any
 } | {
-  dataType: keyof Uniform | keyof Attribute
+  dataType: 'sampler2D'
   name: string
   options: Sampler2DOptions
   textureIndex: number
