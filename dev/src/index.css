@@ -1,5 +1,9 @@
 body {
   padding: 0px;
   margin: 0px;
-  background-color: black;
+}
+
+canvas {
+  width: 100vw;
+  height: 100vh;
 }

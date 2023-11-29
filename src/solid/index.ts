@@ -1,4 +1,5 @@
 export * from '@core/proxies'
 export * from '@core/types'
+export { createGL, createProgram } from '@core/webgl'
 export * from './components'
 export * from './glsl'

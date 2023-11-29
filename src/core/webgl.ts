@@ -107,6 +107,7 @@ export const createGL = (config: {
     config.canvas.width = config.canvas.clientWidth
     config.canvas.height = config.canvas.clientHeight
     gl.viewport(0, 0, config.canvas.width, config.canvas.height)
+    render()
   })
   resizeObserver.observe(config.canvas)
 
@@ -142,13 +143,17 @@ export const createGL = (config: {
 }
 
 export const createProgram = (config: {
-  gl: WebGL2RenderingContext
+  canvas: HTMLCanvasElement
   vertex: ShaderToken
   fragment: ShaderToken
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   mode: 'TRIANGLES' | 'LINES' | 'POINTS'
-  cacheEnabled: boolean
+  cacheEnabled?: boolean
 }) => {
+  const gl = config.canvas.getContext('webgl2')
+
+  if (!gl) return
+
   const onRenderQueue: (() => void)[] = []
   const addToOnRenderQueue = (fn: () => void) => {
     onRenderQueue.push(fn)
@@ -159,25 +164,25 @@ export const createProgram = (config: {
 
   const program =
     cachedProgram ||
-    createWebGLProgram(config.gl, config.vertex.source, config.fragment.source)
+    createWebGLProgram(gl, config.vertex.source, config.fragment.source)
 
   if (!program) return
 
   if (config.cacheEnabled) setProgramCache({ ...config, program })
 
-  config.vertex.bind(config.gl, program, addToOnRenderQueue)
-  config.fragment.bind(config.gl, program, addToOnRenderQueue)
+  config.vertex.bind(gl, program, addToOnRenderQueue)
+  config.fragment.bind(gl, program, addToOnRenderQueue)
 
   return {
     render: () => {
-      if (!program || !config.gl) return
+      if (!program || !gl) return
 
-      config.gl.useProgram(program)
+      gl.useProgram(program)
       onRenderQueue.forEach((fn) => fn())
 
-      config.onRender?.(config.gl, program)
+      config.onRender?.(gl, program)
 
-      config.gl.drawArrays(config.gl[config.mode], 0, 6)
+      gl.drawArrays(gl[config.mode], 0, 6)
     },
   }
 }

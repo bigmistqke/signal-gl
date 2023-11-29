@@ -50,6 +50,7 @@ export const GL = (props: GLProps) => {
               return programs() as any[]
             },
           })
+
           if (!gl) return
 
           const animate = () => {
