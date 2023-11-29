@@ -85,7 +85,12 @@ export type UniformProxy = {
   vec4: Variable<'uniform', 'vec4', [number, number, number, number]>
   ivec4: Variable<'uniform', 'ivec4', [number, number, number, number]>
   bvec4: Variable<'uniform', 'bvec4', [boolean, boolean, boolean, boolean]>
-  sampler2D: Variable<'uniform', 'sampler2D', ArrayBufferView, Sampler2DOptions>
+  sampler2D: Variable<
+    'sampler2D',
+    'sampler2D',
+    ArrayBufferView,
+    Sampler2DOptions
+  >
 }
 export type UniformParameters = Parameters<UniformProxy[keyof UniformProxy]>
 export type UniformReturnType = ReturnType<ValueOf<UniformProxy>>
