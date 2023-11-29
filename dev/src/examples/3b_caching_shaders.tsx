@@ -91,7 +91,7 @@ function updateBoids(boids: Boid[], width = 200, height = 200, deltaTime = 1) {
   }
 }
 
-const AMOUNT = 20000
+const AMOUNT = 5000
 
 function App() {
   const [boids, setBoids] = createSignal<
