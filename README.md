@@ -312,7 +312,7 @@ type GLProps =
   }
 ```
 
-### `<Program/>`  _component_
+### `<Program/>` _component_
 
 - sibling of [`<GL/>`](#gl-component)
 - represents a `WebGLProgram`
