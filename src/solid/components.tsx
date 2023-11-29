@@ -15,6 +15,7 @@ import type { ShaderToken } from '@core/types'
 import { createGL, createProgram } from '@core/webgl'
 
 const glContext = createContext<{
+  canvas: HTMLCanvasElement
   gl: WebGL2RenderingContext
   onProgramCreate?: () => void
 }>()
@@ -34,6 +35,7 @@ export const GL = (props: GLProps) => {
   return (
     <glContext.Provider
       value={{
+        canvas,
         gl: canvas.getContext('webgl2')!,
         get onProgramCreate() {
           return props.onProgramCreate
@@ -92,7 +94,7 @@ export const Program = (props: ProgramProps) => {
     const fragment = props.fragment()
 
     return createProgram({
-      gl: context.gl,
+      canvas: context.canvas,
       fragment: fragment,
       vertex: vertex,
       mode: props.mode,
