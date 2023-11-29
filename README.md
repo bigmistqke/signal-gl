@@ -207,7 +207,7 @@ type AttributeOptions = {
 }
 ```
 
-#### return-type: AttributeToken
+#### return-type: `AttributeToken`
 
 ```ts
 type AttributeToken = {
@@ -223,7 +223,7 @@ type AttributeToken = {
 
 ### `uniform` _utility-function_
 
-- returns [`UniformToken` | `Sampler2DToken`](#return-type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
+- returns [`UniformToken | Sampler2DToken`](#return-type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
 #### usage
 
@@ -267,7 +267,7 @@ type UniformOptions = {
 }
 ```
 
-#### return-type: `UniformToken` | `Sampler2DToken`
+#### return-type: `UniformToken | Sampler2DToken`
 
 ```ts
 type UniformToken = {
