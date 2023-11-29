@@ -69,8 +69,7 @@ export const bindAttributeToken = (
 export const bindSampler2DToken = (
   sampler2D: Sampler2DToken,
   gl: WebGL2RenderingContext,
-  program: WebGLProgram,
-  render: () => void
+  program: WebGLProgram
 ) =>
   createEffect(() => {
     const { format, width, height, border, minFilter, magFilter } =
@@ -110,6 +109,4 @@ export const bindSampler2DToken = (
       gl.getUniformLocation(program, sampler2D.name),
       sampler2D.textureIndex
     )
-
-    render()
   })

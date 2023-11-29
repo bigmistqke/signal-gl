@@ -106,7 +106,6 @@ export const glsl =
     const bind = (
       gl: WebGL2RenderingContext,
       program: WebGLProgram,
-      render: () => void,
       onRender: OnRenderFunction
     ) => {
       tokens.forEach((token) => {
@@ -115,10 +114,10 @@ export const glsl =
             bindAttributeToken(token, gl, program, onRender)
             break
           case 'sampler2D':
-            bindSampler2DToken(token, gl, program, render)
+            bindSampler2DToken(token, gl, program)
             break
           case 'shader':
-            token.bind(gl, program, render, onRender)
+            token.bind(gl, program, onRender)
             break
           case 'uniform':
             bindUniformToken(token, gl, program, onRender)

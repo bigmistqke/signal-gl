@@ -1,9 +1,8 @@
 import {
-  JSXElement,
-  batch,
   children,
   createContext,
   createEffect,
+  createMemo,
   createSignal,
   onMount,
   splitProps,
@@ -13,11 +12,10 @@ import {
 } from 'solid-js'
 
 import type { ShaderToken } from '@core/types'
-import { createProgram } from '@core/webgl'
+import { createGL, createProgram } from '@core/webgl'
 
 const glContext = createContext<{
   gl: WebGL2RenderingContext
-  render?: () => void
   onProgramCreate?: () => void
 }>()
 
@@ -33,16 +31,12 @@ export const GL = (
 ) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
   const [canvas, setCanvas] = createSignal<HTMLCanvasElement | undefined>()
-  const [renderFunction, setRenderFunction] = createSignal<() => void>()
 
   return (
     <glContext.Provider
       value={{
         get gl() {
           return canvas()?.getContext('webgl2')!
-        },
-        get render() {
-          return renderFunction()
         },
         get onProgramCreate() {
           return props.onProgramCreate
@@ -57,60 +51,22 @@ export const GL = (
 
           if (!_canvas) return
 
-          const gl = _canvas.getContext('webgl2')
-
-          if (!gl) {
-            console.error('webgl2 is not supported')
-            return
-          }
-
-          /* Observe resize-events canvas */
-          const resizeObserver = new ResizeObserver(() => {
-            _canvas.width = _canvas.clientWidth
-            _canvas.height = _canvas.clientHeight
-            gl.viewport(0, 0, _canvas.width, _canvas.height)
+          const gl = createGL({
+            canvas: _canvas,
+            programs: memoChildren() as any[],
           })
-          resizeObserver.observe(_canvas)
 
-          if (!props.animate) setTimeout(render, 0)
-        })
+          if (!gl) return
 
-        function animate() {
-          render()
-          requestAnimationFrame(animate)
-        }
-
-        function render() {
-          const _canvas = canvas()
-          const gl = _canvas?.getContext('webgl2')
-          if (!_canvas || !gl) return
-
-          gl.clearColor(0.0, 0.0, 0.0, 1.0) // Clear to black, fully opaque
-          gl.clearDepth(1.0) // Clear everything
-          gl.enable(gl.DEPTH_TEST) // Enable depth testing
-          gl.depthFunc(gl.LEQUAL) // Near things obscure far things
-
-          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-          const childs = memoChildren()
-          if (!childs) return
-
-          if (Array.isArray(childs)) {
-            childs.forEach((child) => {
-              if (child && typeof child === 'object' && 'render' in child) {
-                ;(child as any).render?.()
-              }
-            })
-          } else {
-            if (typeof childs === 'object' && 'render' in childs) {
-              ;(childs as any).render?.()
-            }
+          const animate = () => {
+            if (props.animate) requestAnimationFrame(animate)
+            gl.render()
           }
-        }
 
-        setRenderFunction(() => render)
-
-        createEffect(() => (props.animate ? animate() : createEffect(render)))
+          createEffect(() =>
+            props.animate ? animate() : createEffect(gl.render)
+          )
+        })
 
         return <canvas ref={setCanvas} {...rest} />
       })()}
@@ -122,10 +78,6 @@ const programCache: WeakMap<
   TemplateStringsArray,
   WeakMap<TemplateStringsArray, WebGLProgram>
 > = new WeakMap()
-
-/**
- * hallo
- */
 
 type ProgramProps = {
   fragment: Accessor<ShaderToken>
@@ -142,25 +94,6 @@ type ProgramProps = {
 
 export const Program = (props: ProgramProps) => {
   const context = useGL()
-  const [renderFunction, setRenderFunction] = createSignal<() => any>()
-
-  const onRenderQueue: (() => void)[] = []
-  const addToOnRenderQueue = (fn: () => void) => {
-    onRenderQueue.push(fn)
-    return () => onRenderQueue.splice(onRenderQueue.indexOf(fn), 1)
-  }
-
-  const renderFactory =
-    (gl: WebGL2RenderingContext, program: WebGLProgram) => () => {
-      if (!program || !gl) return
-
-      gl.useProgram(program)
-      onRenderQueue.forEach((fn) => fn())
-
-      props.onRender?.(gl, program)
-
-      gl.drawArrays(gl[props.mode], 0, 6)
-    }
 
   createEffect(() => {
     if (!context) {
@@ -170,50 +103,19 @@ export const Program = (props: ProgramProps) => {
     }
   })
 
-  createEffect(() => {
-    const gl = context?.gl
-
-    if (!gl || !context.render) return
+  return createMemo(() => {
+    if (!context?.gl) return
 
     const vertex = props.vertex()
     const fragment = props.fragment()
 
-    const cachedProgram =
-      props.cacheEnabled &&
-      programCache.get(vertex.template)?.get(fragment.template)
-    const program =
-      cachedProgram || createProgram(gl, vertex.source, fragment.source)
-
-    if (!program) return
-
-    if (!cachedProgram) {
-      context.onProgramCreate?.()
-    }
-
-    if (props.cacheEnabled) {
-      if (!programCache.get(vertex.template)) {
-        programCache.set(vertex.template, new WeakMap())
-      }
-      if (!programCache.get(vertex.template)!.get(fragment.template)) {
-        programCache.get(vertex.template)!.set(fragment.template, program)
-      }
-    }
-
-    props.onInit?.(gl, program)
-
-    const render = renderFactory(gl, program)
-
-    batch(() => {
-      vertex.bind(gl, program, context.render!, addToOnRenderQueue)
-      fragment.bind(gl, program, context.render!, addToOnRenderQueue)
+    return createProgram({
+      gl: context.gl,
+      fragment: fragment,
+      vertex: vertex,
+      mode: props.mode,
+      cacheEnabled: !!props.cacheEnabled,
+      onRender: props.onRender,
     })
-
-    setRenderFunction(() => render)
   })
-
-  return {
-    get render() {
-      return renderFunction()
-    },
-  } as any as JSXElement
 }

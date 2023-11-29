@@ -145,7 +145,6 @@ export type ShaderToken = {
   bind: (
     gl: WebGL2RenderingContext,
     program: WebGLProgram,
-    render: () => void,
     onRender: OnRenderFunction
   ) => void
 }
