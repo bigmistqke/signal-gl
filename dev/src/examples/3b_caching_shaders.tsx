@@ -10,6 +10,7 @@ import { Index, batch, createSignal, untrack, type Accessor } from 'solid-js'
 import { render } from 'solid-js/web'
 
 import './index.css'
+
 const planeVertices = new Float32Array(
   [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0].map(
     (v) => v / 2
@@ -78,19 +79,19 @@ type Boid = {
 }
 
 function updateBoids(boids: Boid[], width = 200, height = 200, deltaTime = 1) {
-  boids.forEach((boid, index) => {
-    let { x, y, z, vx, vy, vz } = boid
+  for (let i = 0; i < boids.length; i++) {
+    let { x, y, z, vx, vy, vz } = boids[i]!
     x += vx * deltaTime
     y += vy * deltaTime
     z += vz * deltaTime
     // Wrap around edges
     x = (x + width) % width
     y = (y + height) % height
-    boids[index] = { x, y, z, vx, vy, vz }
-  })
+    boids[i] = { x, y, z, vx, vy, vz }
+  }
 }
 
-const AMOUNT = 3000
+const AMOUNT = 20000
 
 function App() {
   const [boids, setBoids] = createSignal<
@@ -119,7 +120,6 @@ function App() {
     updateBoids(boids())
     batch(() => setBoids((boids) => boids))
   }
-
   loop()
 
   const fragment = (blue: number) => glsl`#version 300 es
@@ -128,7 +128,7 @@ function App() {
    out vec4 outColor;
    void main() {
      float blue = ${uniform.float(blue)};
-     outColor = vec4(v_coord[0], v_coord[1], blue, 0.5);
+     outColor = vec4(v_coord[0], 0.0, blue, 0.25);
    }`
 
   return (
@@ -145,10 +145,8 @@ function App() {
         {(boid, index) => {
           return (
             <Plane
-              fragment={fragment(
-                1 - index / untrack(() => boids().length * 1.25)
-              )}
-              scale={[0.025, 0.025]}
+              fragment={fragment(0.5 - index / untrack(() => boids().length))}
+              scale={[0.0125, 0.0125]}
               position={[boid().x / 100 - 1, boid().y / 100 - 1]}
             />
           )
