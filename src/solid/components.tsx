@@ -29,14 +29,13 @@ export const GL = (
     animate?: boolean
   }
 ) => {
-  const [childrenProps, rest] = splitProps(props, ['children'])
-  const [canvas, setCanvas] = createSignal<HTMLCanvasElement | undefined>()
+  const [getCanvas, setCanvas] = createSignal<HTMLCanvasElement | undefined>()
 
   return (
     <glContext.Provider
       value={{
         get gl() {
-          return canvas()?.getContext('webgl2')!
+          return getCanvas()?.getContext('webgl2')!
         },
         get onProgramCreate() {
           return props.onProgramCreate
@@ -44,25 +43,24 @@ export const GL = (
       }}
     >
       {(() => {
-        const memoChildren = children(() => childrenProps.children)
+        const [childrenProps, rest] = splitProps(props, ['children'])
+
+        const programs = children(() => childrenProps.children)
 
         onMount(() => {
-          const _canvas = canvas()
-
-          if (!_canvas) return
+          const canvas = getCanvas()
+          if (!canvas) return
 
           const gl = createGL({
-            canvas: _canvas,
-            programs: memoChildren() as any[],
+            canvas,
+            programs: programs() as any[],
           })
-
           if (!gl) return
 
           const animate = () => {
             if (props.animate) requestAnimationFrame(animate)
             gl.render()
           }
-
           createEffect(() =>
             props.animate ? animate() : createEffect(gl.render)
           )
@@ -73,11 +71,6 @@ export const GL = (
     </glContext.Provider>
   )
 }
-
-const programCache: WeakMap<
-  TemplateStringsArray,
-  WeakMap<TemplateStringsArray, WebGLProgram>
-> = new WeakMap()
 
 type ProgramProps = {
   fragment: Accessor<ShaderToken>

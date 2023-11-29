@@ -35,10 +35,7 @@ export const bindUniformToken = (
   onRender: OnRenderFunction
 ) => {
   const location = gl.getUniformLocation(program, token.name)
-
-  onRender(() => {
-    gl[token.functionName](location, token.value)
-  })
+  onRender(() => gl[token.functionName](location, token.value))
 }
 
 export const bindAttributeToken = (
@@ -48,15 +45,12 @@ export const bindAttributeToken = (
   onRender: OnRenderFunction
 ) => {
   const target = token.options?.target
-
   const buffer = gl.createBuffer()
-
   const glTarget = target ? gl[target] : gl.ARRAY_BUFFER
-
   const location = gl.getAttribLocation(program, token.name)
-  if (location === -1) {
+
+  if (location === -1)
     DEBUG && console.error('token is not registered', token.name)
-  }
 
   onRender(() => {
     gl.bindBuffer(glTarget, buffer)
