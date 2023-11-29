@@ -1,8 +1,8 @@
 import type {
-  Attribute,
   AttributeParameters,
-  Uniform,
+  AttributeProxy,
   UniformParameters,
+  UniformProxy,
 } from './types'
 import { dataTypeToFunctionName } from './webgl'
 
@@ -21,7 +21,7 @@ import { dataTypeToFunctionName } from './webgl'
  * `
  * ```
  * */
-export const uniform = new Proxy({} as Uniform, {
+export const uniform = new Proxy({} as UniformProxy, {
   get(target, dataType) {
     return (...[value, options]: UniformParameters) => ({
       dataType,
@@ -56,7 +56,7 @@ export const uniform = new Proxy({} as Uniform, {
  * `
  * ```
  * */
-export const attribute = new Proxy({} as Attribute, {
+export const attribute = new Proxy({} as AttributeProxy, {
   get(target, dataType) {
     return (...[value, options]: AttributeParameters) => {
       const size =

@@ -1,11 +1,16 @@
 import zeptoid from 'zeptoid'
 
 import type {
-  Hole,
+  AttributeReturnType,
+  Check as Extends,
+  GLSLError,
+  IsUnion,
   OnRenderFunction,
   Sampler2DToken,
   ShaderToken,
+  TemplateValue,
   Token,
+  UniformReturnType,
 } from '@core/types'
 import { compileStrings as compileTemplate } from '@core/webgl'
 import {
@@ -17,11 +22,36 @@ import {
 
 const DEBUG = import.meta.env.DEV
 
+/**
+ *  TYPEHELPERS
+ *    rules:
+ *      1. `uniforms, attributes and scoped variable names (strings) can not be unions`
+ *          this way we prevent multiple instances of the same glsl-snippet to have mismatched configurations
+ *          which could cause issues in cached mode
+ * */
+
+type ShouldNotUnion<T> = Extends<
+  T,
+  [UniformReturnType, AttributeReturnType, string]
+>
+
+type CheckInterpolatedValues<T extends any[]> = {
+  [K in keyof T]: ShouldNotUnion<T[K]> extends true
+    ? IsUnion<Extract<T[K], any>> extends true
+      ? GLSLError<`unions not allowed in interpolations`>
+      : T[K]
+    : T[K]
+}
+
+/*  */
 const nameCache = new WeakMap<TemplateStringsArray, string[]>()
 
 let textureIndex = 0
 export const glsl =
-  (template: TemplateStringsArray, ...holes: Hole[]) =>
+  <T extends TemplateValue[]>(
+    template: TemplateStringsArray,
+    ...holes: CheckInterpolatedValues<T>
+  ) =>
   () => {
     const hasNameCache = nameCache.has(template)
     if (!hasNameCache) nameCache.set(template, [])

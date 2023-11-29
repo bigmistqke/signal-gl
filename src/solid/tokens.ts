@@ -1,11 +1,11 @@
 import { createEffect, mergeProps } from 'solid-js'
 
 import type {
-  Attribute,
+  AttributeProxy,
   AttributeToken,
   OnRenderFunction,
   Sampler2DToken,
-  Uniform,
+  UniformProxy,
   UniformToken,
   ValueOf,
 } from '@core/types'
@@ -13,7 +13,7 @@ import type {
 const DEBUG = false
 
 export const createToken = <
-  TConfig extends ReturnType<ValueOf<Uniform> | ValueOf<Attribute>>,
+  TConfig extends ReturnType<ValueOf<UniformProxy> | ValueOf<AttributeProxy>>,
   TOther extends Record<string, any>
 >(
   id: number | string,
