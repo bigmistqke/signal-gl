@@ -20,6 +20,8 @@ import {
 } from './tokens'
 
 const DEBUG = import.meta.env.DEV
+const nameCacheMap = new WeakMap<TemplateStringsArray, string[]>()
+let textureIndex = 0
 
 /**
  *  RULES
@@ -40,9 +42,6 @@ type CheckTemplateValues<T extends any[]> = {
     : T[K]
 }
 
-const nameCache = new WeakMap<TemplateStringsArray, string[]>()
-let textureIndex = 0
-
 /**
  * pass effect from signal implementation
  */
@@ -53,9 +52,9 @@ export const createGlsl =
     ...holes: CheckTemplateValues<T>
   ) =>
   () => {
-    const hasNameCache = nameCache.has(template)
-    if (!hasNameCache) nameCache.set(template, [])
-    const names = nameCache.get(template)!
+    const hasNameCache = nameCacheMap.has(template)
+    if (!hasNameCache) nameCacheMap.set(template, [])
+    const nameCache = nameCacheMap.get(template)!
 
     const scopedNames = new Map<string, string>()
     const tokens = holes
@@ -71,14 +70,14 @@ export const createGlsl =
           // it is interpret as a scoped variable name
           const name =
             // check for cache
-            (hasNameCache && names[index]) ||
+            (hasNameCache && nameCache[index]) ||
             // check for scoped names
             scopedNames.get(hole) ||
             // create new name
             `${hole}_${zeptoid()}`
 
           if (!scopedNames.has(hole)) scopedNames.set(hole, name)
-          if (!hasNameCache || !names[index]) names[index] = name
+          if (!hasNameCache || !nameCache[index]) nameCache[index] = name
 
           return {
             name,
@@ -86,9 +85,10 @@ export const createGlsl =
           }
         }
 
-        const name = (hasNameCache && names[index]) || zeptoid()
+        // generate name if cache is disabled or it's not included in
+        const name = (hasNameCache && nameCache[index]) || zeptoid()
 
-        if (!hasNameCache) names[index] = name
+        if (!hasNameCache) nameCache[index] = name
 
         if (DEBUG && !name) {
           console.error('id was not found for hole:', hole, 'with index', index)
