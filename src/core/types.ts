@@ -63,6 +63,7 @@ type Variable<
   value: Accessor<TValue> | TValue,
   options?: TTOptions
 ) => {
+  name: string
   dataType: TDataType
   tokenType: TTokenType
   value: TValue

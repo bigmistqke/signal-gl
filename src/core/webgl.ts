@@ -47,7 +47,9 @@ export const compileStrings = (
     return [
       pre,
       precision,
-      variables.flatMap((variable) => resolveToken(variable)).join('\n'),
+      Array.from(
+        new Set(variables.flatMap((variable) => resolveToken(variable)))
+      ).join('\n'),
       after,
     ].join('\n')
   }
@@ -55,7 +57,9 @@ export const compileStrings = (
   const [pre, after] = source.split(/#version.*/)
   return [
     version,
-    variables.flatMap((variable) => resolveToken(variable)).join('\n'),
+    Array.from(
+      new Set(variables.flatMap((variable) => resolveToken(variable)))
+    ).join('\n'),
     after || pre,
   ].join('\n')
 }

@@ -86,7 +86,7 @@ export const createGlsl =
         }
 
         // generate name if cache is disabled or it's not included in
-        const name = (hasNameCache && nameCache[index]) || zeptoid()
+        const name = (hasNameCache && nameCache[index]) || hole.name
 
         if (!hasNameCache) nameCache[index] = name
 
