@@ -90,8 +90,8 @@ return (
 ### `glsl` _tag template literal_
 
 - write and compose `glsl`
-- interpolation [see](#interpolation)
-  - auto-bind and link `attributes` / `uniforms` by interpolationg [`attribute`](#attribute-utility-function) and [`uniform`](#uniform-utility-function) calls
+- interpolation
+  - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-utility-function) and [`uniform`](#uniform-utility-function) calls
   - link glsl-snippets into one shader by interpolating [`glsl`](glsl-tag-template-literals) tag template literals
   - create scoped variable names by interpolating `strings`
 - returns [`ShaderToken`](#return-type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
