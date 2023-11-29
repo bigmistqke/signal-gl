@@ -141,6 +141,8 @@ return (
 
 _How to render multiple shaders into a single image._
 
+https://github.com/bigmistqke/signal-gl/assets/10504064/bf7b1310-eb64-4769-9b28-67e1074c2b40
+
 ```tsx
 const [opacity, setOpacity] = createSignal(0.5)
 const [cursor, setCursor] = createSignal<[number, number]>([1, 1])
@@ -231,6 +233,8 @@ return (
 ### Caching Shaders [[playground]](https://playground.solidjs.com/anonymous/6c2aa463-f3c8-4067-b050-584563be0138)
 
 _When cacheEnabled is set to true, `<Program/>` will check if the given fragment/vertex `glsl` tag template literal has already been used to produce a webgl-program and, if it exists, will use this program instead of compiling a new one. Currently this functionality is marked as `unstable` since it does not yet work nicely with [composing shaders from snippets](#multiple-shaders-playground)_
+
+https://github.com/bigmistqke/signal-gl/assets/10504064/dba045a1-bb1f-4383-a557-4f1a04508e0b
 
 ```tsx
 const Plane = (props: {d
