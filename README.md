@@ -11,6 +11,8 @@
 - [Bindings](#bindings)
 - [Install](#install)
 - [Use it](#use-it)
+  - [Hello World](#hello-world)
+  - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
   - [`glsl`](#glsl-tag-template-literal)
   - [`attribute`](#attribute-utility-function)
@@ -81,7 +83,7 @@ return (
 )
 ```
 
-> [more examples](./dev/src/examples/README.md)
+### [more examples](./dev/src/examples/README.md)
 
 ## API
 
