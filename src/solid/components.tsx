@@ -1,9 +1,9 @@
 import {
+  JSXElement,
   children,
   createContext,
   createEffect,
   createMemo,
-  createSignal,
   onMount,
   splitProps,
   useContext,
@@ -21,39 +21,34 @@ const glContext = createContext<{
 
 const useGL = () => useContext(glContext)
 
-export const GL = (
-  props: ComponentProps<'canvas'> & {
-    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-    onProgramCreate?: () => void
-    onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-    animate?: boolean
-  }
-) => {
-  const [getCanvas, setCanvas] = createSignal<HTMLCanvasElement | undefined>()
+type GLProps = ComponentProps<'canvas'> & {
+  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  onProgramCreate?: () => void
+  onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  animate?: boolean
+}
 
+export const GL = (props: GLProps) => {
+  const [childrenProps, rest] = splitProps(props, ['children'])
+  const canvas = (<canvas {...rest} />) as HTMLCanvasElement
   return (
     <glContext.Provider
       value={{
-        get gl() {
-          return getCanvas()?.getContext('webgl2')!
-        },
+        gl: canvas.getContext('webgl2')!,
         get onProgramCreate() {
           return props.onProgramCreate
         },
       }}
     >
       {(() => {
-        const [childrenProps, rest] = splitProps(props, ['children'])
-
         const programs = children(() => childrenProps.children)
 
         onMount(() => {
-          const canvas = getCanvas()
-          if (!canvas) return
-
           const gl = createGL({
             canvas,
-            programs: programs() as any[],
+            get programs() {
+              return programs() as any[]
+            },
           })
           if (!gl) return
 
@@ -66,7 +61,7 @@ export const GL = (
           )
         })
 
-        return <canvas ref={setCanvas} {...rest} />
+        return canvas
       })()}
     </glContext.Provider>
   )
@@ -88,17 +83,10 @@ type ProgramProps = {
 export const Program = (props: ProgramProps) => {
   const context = useGL()
 
-  createEffect(() => {
-    if (!context) {
-      console.error(
-        'context is undefined: make sure <Program/> is sibling of <GL/>'
-      )
-    }
-  })
+  if (!context)
+    throw 'context is undefined: make sure <Program/> is sibling of <GL/>'
 
   return createMemo(() => {
-    if (!context?.gl) return
-
     const vertex = props.vertex()
     const fragment = props.fragment()
 
@@ -110,5 +98,5 @@ export const Program = (props: ProgramProps) => {
       cacheEnabled: !!props.cacheEnabled,
       onRender: props.onRender,
     })
-  })
+  }) as any as JSXElement // cast to JSX
 }
