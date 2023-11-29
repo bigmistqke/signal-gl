@@ -34,8 +34,8 @@ export const bindUniformToken = (
   program: WebGLProgram,
   onRender: OnRenderFunction
 ) => {
-  const location = gl.getUniformLocation(program, token.name)
-  onRender(() => gl[token.functionName](location, token.value))
+  const location = gl.getUniformLocation(program, token.name)!
+  onRender(location, () => gl[token.functionName](location, token.value))
 }
 
 export const bindAttributeToken = (
@@ -52,7 +52,7 @@ export const bindAttributeToken = (
   if (location === -1)
     DEBUG && console.error('token is not registered', token.name)
 
-  onRender(() => {
+  onRender(location, () => {
     gl.bindBuffer(glTarget, buffer)
     gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
     gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)

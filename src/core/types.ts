@@ -35,7 +35,10 @@ export type Buffer =
 
 type IntBuffer = Int8Array | Int16Array | Int32Array
 
-export type OnRenderFunction = (fn: () => void) => () => void
+export type OnRenderFunction = (
+  location: WebGLUniformLocation | number,
+  fn: () => void
+) => () => void
 
 export type PrimitiveOptions = {
   name?: string

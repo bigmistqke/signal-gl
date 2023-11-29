@@ -158,10 +158,14 @@ export const createProgram = (config: {
 
   if (!gl) return
 
-  const onRenderQueue: (() => void)[] = []
-  const addToOnRenderQueue = (fn: () => void) => {
-    onRenderQueue.push(fn)
-    return () => onRenderQueue.splice(onRenderQueue.indexOf(fn), 1)
+  const onRenderQueue: Map<WebGLUniformLocation | number, () => void> =
+    new Map()
+  const addToOnRenderQueue = (
+    location: WebGLUniformLocation | number,
+    fn: () => void
+  ) => {
+    onRenderQueue.set(location, fn)
+    return () => onRenderQueue.delete(location)
   }
 
   const cachedProgram = config.cacheEnabled && getProgramCache(config)
