@@ -12,8 +12,11 @@ export const dataTypeToFunctionName = (dataType: string) => {
       return 'uniform1i'
     default:
       return ('uniform' +
+        // 1 | 2 | 3 | 4
         dataType[dataType.length - 1] +
-        (dataType[0] === 'b' ? 'b' : dataType[0] === 'i' ? 'i' : 'f') +
+        // b | i | f
+        (dataType[0] === 'b' || dataType[0] === 'i' ? dataType[0] : 'f') +
+        // v
         'v') as UniformSetter
   }
 }
@@ -31,37 +34,28 @@ const resolveToken = (token: Token) => {
 
 export const compileStrings = (
   strings: TemplateStringsArray,
-  variables: Token[]
+  tokens: Token[]
 ) => {
   const source = [
     ...strings.flatMap((string, index) => {
-      const variable = variables[index]
-      if (!variable) return string
-      return 'name' in variable ? [string, variable.name] : string
+      const variable = tokens[index]
+      if (!variable || !('name' in variable)) return string
+      return [string, variable.name]
     }),
   ].join('')
+  const variables = Array.from(
+    new Set(tokens.flatMap((token) => resolveToken(token)))
+  ).join('\n')
 
   const precision = source.match(/precision.*;/)?.[0]
+
   if (precision) {
     const [pre, after] = source.split(/precision.*;/)
-    return [
-      pre,
-      precision,
-      Array.from(
-        new Set(variables.flatMap((variable) => resolveToken(variable)))
-      ).join('\n'),
-      after,
-    ].join('\n')
+    return [pre, precision, variables, after].join('\n')
   }
   const version = source.match(/#version.*/)?.[0]
   const [pre, after] = source.split(/#version.*/)
-  return [
-    version,
-    Array.from(
-      new Set(variables.flatMap((variable) => resolveToken(variable)))
-    ).join('\n'),
-    after || pre,
-  ].join('\n')
+  return [version, variables, after || pre].join('\n')
 }
 
 /* COMPILATION BY WEB-GL */
