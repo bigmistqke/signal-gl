@@ -1,7 +1,6 @@
-import { Accessor } from 'solid-js'
-
 /* UTILITIES */
 
+type Accessor<T> = () => T
 export type ValueOf<T extends Record<string, any>> = T[keyof T]
 export type IsUnion<T, B = T> = T extends T
   ? [B] extends [T]
