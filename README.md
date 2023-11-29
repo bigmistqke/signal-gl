@@ -11,6 +11,8 @@
 - [Bindings](#bindings)
 - [Install](#install)
 - [Use it](#use-it)
+  - [Hello World](#hello-world)
+  - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
   - [`glsl`](#glsl-tag-template-literal)
   - [`attribute`](#attribute-utility-function)
@@ -81,32 +83,41 @@ return (
 )
 ```
 
-> [more examples](./dev/src/examples/README.md)
+### [more examples](./dev/src/examples/README.md)
 
 ## API
 
 ### `glsl` _tag template literal_
 
 - write and compose `glsl`
-- interpolate and auto-bind `attributes` / `uniforms` / `glsl-snippets`
+- interpolation
+  - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-utility-function) and [`uniform`](#uniform-utility-function) calls
+  - link glsl-snippets into one shader by interpolating [`glsl`](glsl-tag-template-literals) tag template literals
+  - create scoped variable names by interpolating `strings`
+- returns [`ShaderToken`](#return-type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
 
 #### usage
 
 ```ts
-glsl`#version 300 es
-${module}
+const module = glsl`...`
+
+const shader = glsl`#version 300 es
+
+${module} // module's source is inlined in shader
+float ${'scoped-var'} = 0.5; // prevent naming collisions with global variables by interpolating strings
+
 out vec2 v_coord;  
 out vec3 v_color;
-float ${'scoped-var'} = 0.5;
+
 void main() {
-  vec2 a_coord = ${attribute.vec2(vertices)};
-  vec2 cursor = ${uniform.vec2(cursor)};
+  vec2 a_coord = ${attribute.vec2(vertices)}; // vertices is bound as an attribute
+  vec2 cursor = ${uniform.vec2(cursor)};      // cursor is bound as a uniform
   v_coord = a_coord * ${'scoped-var'} + cursor;
   gl_Position = vec4(a_coord, 0, 1) ;
 }`
 ```
 
-#### return-type
+#### return-type: `ShaderToken`
 ```ts
 type ShaderToken = Accessor<{
   tokenType: 'shader'
@@ -120,18 +131,20 @@ type ShaderToken = Accessor<{
 }>
 ```
 
-#### interpolation/hole-types:
+##### interpolation-type
 ```ts
-type Hole =
+type ValueOf<T> = T[keyof T]
+
+type Interpolation =
   | ReturnType<ValueOf<typeof attribute>> // glsl`${attribute.float(...)}` auto-binds a signal to an attribute
   | ReturnType<ValueOf<typeof uniform>>   // glsl`${uniform.float(...)}`   auto-bind a signal to a uniform
-  | Accessor<ShaderToken>                 // glsl`${glsl`...`}`            compose shaders
+  | ReturnType<typeof glsl>               // glsl`${glsl`...`}`            compose shaders
   | string                                // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
 ```
 
 ### `attribute` _utility-function_
 
-- create `AttributeToken` to be consumed by `glsl`
+- returns [`AttributeToken`](#return-type-attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
 #### usage
 
@@ -194,7 +207,7 @@ type AttributeOptions = {
 }
 ```
 
-#### return-type
+#### return-type: `AttributeToken`
 
 ```ts
 type AttributeToken = {
@@ -210,7 +223,7 @@ type AttributeToken = {
 
 ### `uniform` _utility-function_
 
-- create `UniformToken` to be consumed by `glsl`
+- returns [`UniformToken | Sampler2DToken`](#return-type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
 #### usage
 
@@ -246,7 +259,7 @@ uniform.ivec4 ( AccessorOrValue<[number, number, number, number]>,     UniformOp
 uniform.bvec4 ( AccessorOrValue<[boolean, boolean, boolean, boolean]>, UniformOptions )
 ```
 
-#### options-type
+#### options-type: `UniformOptions`
 
 ```ts
 type UniformOptions = {
@@ -254,17 +267,18 @@ type UniformOptions = {
 }
 ```
 
-#### return-type
+#### return-type: `UniformToken | Sampler2DToken`
 
 ```ts
 type UniformToken = {
-  dataType: keyof Uniform
+  dataType: Omit<keyof Uniform, 'sampler2D'>
   functionName: UniformSetter
   name: string
   options: PrimitiveOptions
   tokenType: 'uniform'
   value: any
-} | {
+}
+type Sampler2DToken = {
   dataType: 'sampler2D'
   name: string
   options: Sampler2DOptions
@@ -277,8 +291,7 @@ type UniformToken = {
 ### `<GL/>` _component_
 
 - root `JSXElement`
-- contains `canvas` and `context-provider`
-- only valid children is `<Program/>`
+- represents a `canvas` and its `WebGL2RenderingContext`
 
 #### usage
 
@@ -299,9 +312,9 @@ type GLProps =
   }
 ```
 
-### `<Program/>`  _component_
+### `<Program/>` _component_
 
-- sibling of `<GL/>`
+- sibling of [`<GL/>`](#gl-component)
 - represents a `WebGLProgram`
 
 #### usage
