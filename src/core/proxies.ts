@@ -1,12 +1,12 @@
 import zeptoid from 'zeptoid'
 
+import { dataTypeToFunctionName } from './compilation'
 import type {
   AttributeParameters,
   AttributeProxy,
   UniformParameters,
   UniformProxy,
 } from './types'
-import { dataTypeToFunctionName } from './webgl'
 
 /**
  * @example

@@ -1,5 +1,6 @@
 import zeptoid from 'zeptoid'
 
+import { compileStrings as compileTemplate } from '@core/compilation'
 import type {
   AttributeReturnType,
   Check as Extends,
@@ -11,7 +12,6 @@ import type {
   Token,
   UniformReturnType,
 } from '@core/types'
-import { compileStrings as compileTemplate } from '@core/webgl'
 import {
   bindAttributeToken,
   bindSampler2DToken,
