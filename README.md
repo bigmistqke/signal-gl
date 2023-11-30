@@ -367,11 +367,11 @@ _use in combination with tag template literal syntax highlighting: see [glsl-lit
 
 ## Prior Art
 
-_these libraries could be of interest if you are looking for something a bit more stable and well-tested_
+_these libraries could be of interest if you are looking for stable and well-tested webgl libraries_
 
-- [regl](https://github.com/regl-project/regl): functional webgl library
-- [ogl](https://github.com/oframe/ogl): minimal webgl library
-- [twgl](https://github.com/greggman/twgl.js): tiny webgl library
-- [four](https://github.com/CodyJasonBennett/four): minimal webgl/webgpu alternative to three.js
-- [useGPU](https://gitlab.com/unconed/use.gpu): declarative, reactive webgpu library
-- [lume](https://github.com/lume/lume): signal-driven custom html-elements for webgl/webgpu
+- [regl](https://github.com/regl-project/regl) _functional webgl library_
+- [ogl](https//github.com/oframe/ogl) _minimal webgl library_
+- [twgl](https//github.com/greggman/twgl.js) _tiny webgl library_
+- [four](https//github.com/CodyJasonBennett/four) _minimal webgl/webgpu alternative to three.js_
+- [useGPU](https://gitlab.com/unconed/use.gpu) _declarative, reactive webgpu library + glsl/wsgl linker/treeshaker_
+- [lume](https://github.com/lume/lume) _signal-driven custom html-elements for webgl/webgpu_
