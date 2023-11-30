@@ -58,8 +58,8 @@ yarn add @bigmistqke/signal-gl
 ```tsx
 const [opacity, setOpacity] = createSignal(0.5)
 const vertices = new Float32Array([
-    -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-  ])
+  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+])
 
 const fragment = glsl`#version 300 es
   precision mediump float;
@@ -168,7 +168,7 @@ glsl`
 `
 ```
 
-You can also declare an attribute outside the template.
+attributes can also be declared outside the template
 
 ```ts
 const u_vertices = attribute.vec2(new Float32Array([
@@ -254,7 +254,7 @@ glsl`
 `
 ```
 
-Share a uniform between vertex and fragment shader by declaring it outside the template.
+share a uniform between vertex and fragment shader by declaring it outside the template
 
 ```ts
 const u_scale = uniform.float(1);
