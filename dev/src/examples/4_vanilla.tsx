@@ -43,6 +43,7 @@ function App() {
       vertex: vertex(),
       fragment: fragment(),
       mode: 'TRIANGLES',
+      count: vertices.length / 2,
     })
 
     const gl = createGL({

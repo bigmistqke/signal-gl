@@ -31,6 +31,7 @@ const Plane = (props: {
       fragment={props.fragment}
       vertex={vertex}
       mode="TRIANGLES"
+      count={props.vertices.length / 2}
     />
   )
 }

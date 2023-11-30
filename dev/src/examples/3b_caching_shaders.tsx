@@ -6,7 +6,14 @@ import {
   uniform,
   type ShaderToken,
 } from '@bigmistqke/signal-gl'
-import { Index, batch, createSignal, untrack, type Accessor } from 'solid-js'
+import {
+  Index,
+  batch,
+  createSignal,
+  mergeProps,
+  untrack,
+  type Accessor,
+} from 'solid-js'
 import { render } from 'solid-js/web'
 
 import './index.css'
@@ -22,14 +29,20 @@ const Plane = (props: {
   scale?: [number, number]
   position?: [number, number]
 }) => {
+  const merged = mergeProps(props, {
+    rotation: 0,
+    scale: [1, 1] as [number, number],
+    position: [0, 0] as [number, number],
+  })
+
   const vertex = glsl`#version 300 es
     out vec2 v_coord;  
     out vec3 v_color;
     void main() {
       vec2 a_coord = ${attribute.vec2(planeVertices)};
-      float rotation =  ${uniform.float(() => props.rotation || 0)};
-      vec2 scale =  ${uniform.vec2(() => props.scale || [1, 1])};
-      vec2 translation = ${uniform.vec2(() => props.position || [0, 0])};
+      float rotation =  ${uniform.float(() => merged.rotation)};
+      vec2 scale =  ${uniform.vec2(() => merged.scale)};
+      vec2 translation = ${uniform.vec2(() => merged.position)};
 
       // Scaling
       mat3 scaleMatrix = mat3(
@@ -65,6 +78,7 @@ const Plane = (props: {
       fragment={props.fragment}
       vertex={vertex}
       mode="TRIANGLES"
+      count={planeVertices.length / 2}
     />
   )
 }

@@ -90,6 +90,7 @@ export const createProgram = (config: {
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   mode: 'TRIANGLES' | 'LINES' | 'POINTS'
   cacheEnabled?: boolean
+  count: number
 }) => {
   const gl = config.canvas.getContext('webgl2')
 
@@ -127,7 +128,7 @@ export const createProgram = (config: {
 
       config.onRender?.(gl, program)
 
-      gl.drawArrays(gl[config.mode], 0, 6)
+      gl.drawArrays(gl[config.mode], 0, config.count)
     },
   }
 }

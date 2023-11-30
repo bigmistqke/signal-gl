@@ -71,6 +71,7 @@ export const GL = (props: GLProps) => {
 }
 
 type ProgramProps = {
+  count: number
   fragment: Accessor<ShaderToken>
   vertex: Accessor<ShaderToken>
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
@@ -100,6 +101,7 @@ export const Program = (props: ProgramProps) => {
       mode: props.mode,
       cacheEnabled: !!props.cacheEnabled,
       onRender: props.onRender,
+      count: props.count,
     })
   }) as any as JSXElement // cast to JSX
 }

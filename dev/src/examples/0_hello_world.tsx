@@ -41,7 +41,12 @@ function App() {
         setOpacity(1 - e.clientY / e.currentTarget.offsetHeight)
       }
     >
-      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+      <Program
+        fragment={fragment}
+        vertex={vertex}
+        mode="TRIANGLES"
+        count={vertices.length / 2}
+      />
     </GL>
   )
 }

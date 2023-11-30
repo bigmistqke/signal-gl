@@ -25,7 +25,14 @@ const Plane = (props: {
       gl_Position = vec4(a_coord, 0, 1.0);
     }`
 
-  return <Program vertex={vertex} fragment={props.fragment} mode="TRIANGLES" />
+  return (
+    <Program
+      vertex={vertex}
+      fragment={props.fragment}
+      mode="TRIANGLES"
+      count={props.vertices.length / 2}
+    />
+  )
 }
 
 function App() {

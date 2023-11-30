@@ -42,7 +42,7 @@ const vertex = glsl`#version 300 es
 
 return (
   <GL onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}>
-    <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+    <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" count={vertices.length / 2} />
   </GL>
 )
 ```
@@ -132,7 +132,7 @@ const onMouseMove = (e) => {
 
 return (
   <GL style={{ width: "100vw", height: "100vh" }} onMouseMove={onMouseMove}>
-    <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+    <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" count={vertices.length / 2} />
   </GL>
 );
 ```
@@ -160,7 +160,7 @@ const Plane = (props: {
       gl_Position = vec4(a_coord, 0, 1.0);
     }`
 
-  return <Program vertex={vertex} fragment={props.fragment} mode="TRIANGLES" />
+  return <Program vertex={vertex} fragment={props.fragment} mode="TRIANGLES" count={vertices.length / 2} />
 }
 
 const getColor = glsl`
@@ -286,6 +286,7 @@ const Plane = (props: {d
       fragment={props.fragment}
       vertex={vertex}
       mode="TRIANGLES"
+      count={vertices.length / 2}
     />
   )
 }

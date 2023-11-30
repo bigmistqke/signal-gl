@@ -4,18 +4,18 @@ import { render } from 'solid-js/web'
 import './index.css'
 
 function App() {
-  const [vertices] = createSignal(
-    new Float32Array([
-      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-    ]),
-    { equals: false }
-  )
+  const vertices = new Float32Array([
+    -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+  ])
 
   const [opacity, setOpacity] = createSignal(0.5)
   const [cameraPosition, setCameraPosition] = createSignal<[number, number]>([
     0, 0,
   ])
   const [zoom, setZoom] = createSignal(1.0)
+  const [time, setTime] = createSignal(0)
+
+  setInterval(() => setTime((time) => time + 0.1), 1000 / 60)
 
   const transformedCameraPosition = createMemo(
     () => cameraPosition().map((v) => v / zoom()) as [number, number]
@@ -24,6 +24,7 @@ function App() {
   const u_zoom = uniform.float(zoom)
   const u_opacity = uniform.float(opacity)
   const a_vertices = attribute.vec2(vertices)
+  const u_time = uniform.float(time)
 
   const fragment = glsl`#version 300 es
     precision mediump float;
@@ -43,8 +44,9 @@ function App() {
     out vec3 v_color;
     
     void main() {
-      vec2 a_coord = ${a_vertices};
+      vec2 a_coord = ${a_vertices} + vec2(sin(${u_time}), 0);
       v_coord = a_coord + ${u_cameraPosition};
+
       gl_Position = vec4((a_coord - ${u_cameraPosition}) * ${u_zoom}, 0, 1);
     }`
 
@@ -67,7 +69,12 @@ function App() {
         setZoom((prevZoom) => prevZoom - e.deltaY * 0.01)
       }}
     >
-      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+      <Program
+        fragment={fragment}
+        vertex={vertex}
+        mode="TRIANGLES"
+        count={vertices.length / 2}
+      />
     </GL>
   )
 }

@@ -87,7 +87,12 @@ function App() {
         ])
       }
     >
-      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
+      <Program
+        fragment={fragment}
+        vertex={vertex}
+        mode="TRIANGLES"
+        count={vertices.length / 2}
+      />
     </GL>
   )
 }
