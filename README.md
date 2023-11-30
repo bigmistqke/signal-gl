@@ -339,3 +339,14 @@ type ProgramProps = {
 >
 > use in combination with tag template literal syntax highlighting.<br/>
 > [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal) for `vs-code` 
+
+## Prior Art
+
+_these libraries could be of interest if you are looking for something a bit more stable and well-tested_
+
+- [regl](https://github.com/regl-project/regl): functional webgl library
+- [ogl](https://github.com/oframe/ogl): minimal webgl library
+- [twgl](https://github.com/greggman/twgl.js): tiny webgl library
+- [four](https://github.com/CodyJasonBennett/four): minimal webgl/webgpu alternative to three.js
+- [useGPU](https://gitlab.com/unconed/use.gpu): declarative, reactive webgpu library
+- [lume](https://github.com/lume/lume): signal-driven custom html-elements for webgl/webgpu
