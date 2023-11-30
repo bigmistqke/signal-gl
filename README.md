@@ -20,6 +20,7 @@
   - [`<GL/>`](#gl-component)
   - [`<Program/>`](#program-component)
 - [Tip](#user-content--tip) 
+- [Prior Art](#prior-art) 
 
 ## Premise
 
