@@ -254,7 +254,7 @@ glsl`
 `
 ```
 
-Declaring a uniform outside of template makes it possible to share a uniform between vertex and fragment shader.
+Share a uniform between vertex and fragment shader by declaring it outside the template.
 
 ```ts
 const u_scale = uniform.float(1);
