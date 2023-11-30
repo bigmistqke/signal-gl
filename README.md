@@ -13,7 +13,7 @@
 - [Bindings](#bindings)
 - [Install](#install)
 - [Use it](#use-it)
-  - [Hello World](#hello-world)
+  - [Hello World](#hello-world-playground)
   - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
   - [`glsl`](#glsl-tag-template-literal)
@@ -21,7 +21,7 @@
   - [`uniform`](#uniform-utility-function)
   - [`<GL/>`](#gl-component)
   - [`<Program/>`](#program-component)
-- [Tip](#user-content--tip) 
+- [Syntax Highlighting](#syntax-highlighting) 
 - [Prior Art](#prior-art) 
 
 ## Premise
@@ -168,6 +168,17 @@ glsl`
 `
 ```
 
+You can also declare an attribute outside the template.
+
+```ts
+const u_vertices = attribute.vec2(new Float32Array([
+  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+]))
+glsl`
+  vec2 vertice = ${u_vertices};
+`
+```
+
 #### signatures
 
 ```ts
@@ -240,6 +251,18 @@ glsl`
 const [signal] = createSignal(1)
 glsl`
   float scale = ${uniform.float(signal)};
+`
+```
+
+Declaring a uniform outside of template makes it possible to share a uniform between vertex and fragment shader.
+
+```ts
+const u_scale = uniform.float(1);
+const vertex = glsl`
+  float scale = ${u_scale};
+`
+const fragment = glsl`
+  float scale = ${u_scale};
 `
 ```
 
@@ -336,12 +359,11 @@ type ProgramProps = {
 }
 ```
 
-## `💡` Tip
+## Syntax Highlighting
 
-> <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
->
-> use in combination with tag template literal syntax highlighting.<br/>
-> [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal) for `vs-code` 
+_use in combination with tag template literal syntax highlighting: see [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal) for `vs-code`_
+
+<img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
 
 ## Prior Art
 
