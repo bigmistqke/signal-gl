@@ -1,6 +1,6 @@
 {
   "name": "@bigmistqke/signal-gl",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "description": "signal-driven glsl with auto-bindings and tag template literals",
   "license": "MIT",
   "author": "bigmistqke",
