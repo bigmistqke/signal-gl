@@ -1,5 +1,3 @@
-import { mergeProps } from 'solid-js'
-
 import type {
   AttributeProxy,
   AttributeToken,
@@ -9,6 +7,8 @@ import type {
   UniformToken,
   ValueOf,
 } from '@core/types'
+import { mergeProps } from 'solid-js'
+import { readableError } from './utils'
 
 const DEBUG = false
 
@@ -16,17 +16,10 @@ export const createToken = <
   TConfig extends ReturnType<ValueOf<UniformProxy> | ValueOf<AttributeProxy>>,
   TOther extends Record<string, any>
 >(
-  id: number | string,
+  name: number | string,
   config: TConfig,
   other?: TOther
-) =>
-  mergeProps(
-    config,
-    {
-      name: '_' + id,
-    },
-    other
-  )
+) => mergeProps(config, { name }, other)
 
 export const bindUniformToken = (
   token: UniformToken,
@@ -61,46 +54,73 @@ export const bindAttributeToken = (
 }
 
 export const bindSampler2DToken = (
-  sampler2D: Sampler2DToken,
+  token: Sampler2DToken,
   gl: WebGL2RenderingContext,
-  program: WebGLProgram
-  /** import effect from signal implementation */
+  program: WebGLProgram,
+  effect: (cb: () => void) => void
 ) => {
-  const { format, width, height, border, minFilter, magFilter } =
-    sampler2D.options
-
   // Create a texture and bind it to texture unit 0
-  const texture = gl.createTexture()
-  gl.activeTexture(gl.TEXTURE0 + sampler2D.textureIndex)
-  gl.bindTexture(gl.TEXTURE_2D, texture)
+  effect(() => {
+    const texture = gl.createTexture()
+    gl.activeTexture(gl.TEXTURE0 + token.textureIndex)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
 
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    format ? gl[format] : gl.RGBA,
-    width || 2,
-    height || 1,
-    border || 0,
-    format ? gl[format] : gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    sampler2D.value
-  )
+    const {
+      format,
+      width,
+      height,
+      border,
+      minFilter,
+      magFilter,
+      wrapS,
+      wrapT,
+      internalFormat,
+      type,
+      dataType,
+    } = token.options || {}
 
-  // Set texture parameters
-  gl.texParameteri(
-    gl.TEXTURE_2D,
-    gl.TEXTURE_MIN_FILTER,
-    minFilter ? gl[minFilter] : gl.NEAREST
-  )
-  gl.texParameteri(
-    gl.TEXTURE_2D,
-    gl.TEXTURE_MAG_FILTER,
-    magFilter ? gl[magFilter] : gl.NEAREST
-  )
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      internalFormat ? gl[internalFormat] : gl.RGBA,
+      width || 2,
+      height || 1,
+      border || 0,
+      format ? gl[format] : gl.RGBA,
+      dataType ? gl[dataType] : gl.UNSIGNED_BYTE,
+      token.value
+    )
 
-  // Bind the texture to the uniform sampler
-  gl[sampler2D.dataType === 'float' ? 'uniform1f' : 'uniform1i'](
-    gl.getUniformLocation(program, sampler2D.name),
-    sampler2D.textureIndex
-  )
+    DEBUG && console.error(readableError(gl))
+
+    // Set texture parameters
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_MIN_FILTER,
+      minFilter ? gl[minFilter] : gl.NEAREST
+    )
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_MAG_FILTER,
+      magFilter ? gl[magFilter] : gl.NEAREST
+    )
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_WRAP_S,
+      wrapS ? gl[wrapS] : gl.CLAMP_TO_EDGE
+    )
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_WRAP_T,
+      wrapT ? gl[wrapT] : gl.CLAMP_TO_EDGE
+    )
+
+    // Bind the texture to the uniform sampler
+    gl[type === 'float' ? 'uniform1f' : 'uniform1i'](
+      gl.getUniformLocation(program, token.name),
+      token.textureIndex
+    )
+
+    gl.flush()
+  })
 }

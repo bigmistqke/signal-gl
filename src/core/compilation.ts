@@ -24,10 +24,11 @@ export const dataTypeToFunctionName = (dataType: string) => {
 const resolveToken = (token: Token) => {
   switch (token.tokenType) {
     case 'shader':
-      return token.source
+      return token.source.split.variables
     case 'attribute':
       return `in ${token.dataType} ${token.name};`
     case 'uniform':
+    case 'sampler2D':
       return `uniform ${token.dataType} ${token.name};`
   }
 }
@@ -39,6 +40,10 @@ export const compileStrings = (
   const source = [
     ...strings.flatMap((string, index) => {
       const variable = tokens[index]
+      if (variable) {
+        if (variable.tokenType === 'shader')
+          return [string, variable.source.split.body]
+      }
       if (!variable || !('name' in variable)) return string
       return [string, variable.name]
     }),
@@ -50,12 +55,28 @@ export const compileStrings = (
   const precision = source.match(/precision.*;/)?.[0]
 
   if (precision) {
-    const [pre, after] = source.split(/precision.*;/)
-    return [pre, precision, variables, after].join('\n')
+    const [version, body] = source.split(/precision.*;/)
+    return {
+      code: [version, precision, variables, body].join('\n'),
+      split: {
+        version,
+        precision,
+        variables,
+        body,
+      },
+    }
   }
   const version = source.match(/#version.*/)?.[0]
   const [pre, after] = source.split(/#version.*/)
-  return [version, variables, after || pre].join('\n')
+  const body = after || pre
+  return {
+    code: [version, variables, body].join('\n'),
+    split: {
+      version,
+      variables,
+      body,
+    },
+  }
 }
 
 /* COMPILATION BY WEB-GL */
@@ -107,9 +128,8 @@ function createWebGLShader(
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     console.error(
-      type == gl.VERTEX_SHADER
-        ? 'VERTEX'
-        : 'FRAGMENT' + ` SHADER:\n ${gl.getShaderInfoLog(shader)}`
+      (type == gl.VERTEX_SHADER ? 'VERTEX' : 'FRAGMENT') +
+        ` SHADER:\n ${gl.getShaderInfoLog(shader)}`
     )
 
     return null

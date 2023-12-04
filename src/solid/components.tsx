@@ -11,8 +11,8 @@ import {
   type ComponentProps,
 } from 'solid-js'
 
-import { createGL, createProgram } from '@core/hooks'
 import type { ShaderToken } from '@core/types'
+import { createGL, createProgram } from '@core/vanilla'
 
 const glContext = createContext<{
   canvas: HTMLCanvasElement
@@ -48,6 +48,7 @@ export const GL = (props: GLProps) => {
         onMount(() => {
           const gl = createGL({
             canvas,
+            autoResize: true,
             get programs() {
               return programs() as any[]
             },

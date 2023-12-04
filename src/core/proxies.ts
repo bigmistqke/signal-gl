@@ -27,7 +27,7 @@ export const uniform = new Proxy({} as UniformProxy, {
   get(target, dataType) {
     return (...[value, options]: UniformParameters) => ({
       dataType,
-      name: zeptoid(),
+      name: 'u_' + zeptoid(),
       functionName: dataTypeToFunctionName(dataType as string),
       tokenType: dataType === 'sampler2D' ? 'sampler2D' : 'uniform',
       get value() {
@@ -68,7 +68,7 @@ export const attribute = new Proxy({} as AttributeProxy, {
           : undefined
       return {
         dataType,
-        name: zeptoid(),
+        name: 'a_' + zeptoid(),
         tokenType: 'attribute',
         size: size && !isNaN(size) ? size : 1,
         get value() {

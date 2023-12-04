@@ -19,7 +19,7 @@ import {
   createToken,
 } from './tokens'
 
-const DEBUG = import.meta.env.DEV
+const DEBUG = false //import.meta.env.DEV
 const nameCacheMap = new WeakMap<TemplateStringsArray, string[]>()
 let textureIndex = 0
 
@@ -111,13 +111,15 @@ export const createGlsl =
       program: WebGLProgram,
       onRender: OnRenderFunction
     ) => {
+      gl.useProgram(program)
+
       tokens.forEach((token) => {
         switch (token.tokenType) {
           case 'attribute':
             bindAttributeToken(token, gl, program, onRender)
             break
           case 'sampler2D':
-            effect(() => bindSampler2DToken(token, gl, program))
+            bindSampler2DToken(token, gl, program, effect)
             break
           case 'shader':
             token.bind(gl, program, onRender)
@@ -131,9 +133,7 @@ export const createGlsl =
     return {
       get source() {
         const source = compileTemplate(template, tokens)
-          .split(/\s\s+/g)
-          .join('\n')
-        DEBUG && console.log('source', source)
+        DEBUG && console.log('source', source.code)
         return source
       },
       bind,

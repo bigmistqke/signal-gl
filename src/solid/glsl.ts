@@ -1,4 +1,4 @@
 import { createGlsl } from '@core/createGlsl'
-import { createEffect } from 'solid-js'
+import { createRenderEffect } from 'solid-js'
 
-export const glsl = createGlsl(createEffect)
+export const glsl = createGlsl(createRenderEffect)
