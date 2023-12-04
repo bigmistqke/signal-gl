@@ -4,7 +4,6 @@
 [![Signal-gl bundle size](https://deno.bundlejs.com/badge?q=@bigmistqke/signal-gl@0.0.23&config=%7B%22esbuild%22:%7B%22external%22:%5B%22solid-js%22%5D%7D%7D)](https://deno.bundlejs.com/badge?q=@bigmistqke/signal-gl@0.0.23&config={%22esbuild%22:{%22external%22:[%22solid-js%22]}})
 [![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)](https://github.com/pnpm/pnpm)
 
-
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
 
 ## Overview
