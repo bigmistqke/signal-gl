@@ -29,7 +29,12 @@ export const uniform = new Proxy({} as UniformProxy, {
       dataType,
       name: 'u_' + zeptoid(),
       functionName: dataTypeToFunctionName(dataType as string),
-      tokenType: dataType === 'sampler2D' ? 'sampler2D' : 'uniform',
+      tokenType:
+        dataType === 'sampler2D'
+          ? 'sampler2D'
+          : dataType === 'isampler2D'
+          ? 'isampler2D'
+          : 'uniform',
       get value() {
         return typeof value === 'function' ? value() : value
       },

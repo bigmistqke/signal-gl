@@ -7,7 +7,6 @@ export const dataTypeToFunctionName = (dataType: string) => {
     case 'float':
       return 'uniform1f'
     case 'int':
-      return 'uniform1i'
     case 'bool':
       return 'uniform1i'
     default:
@@ -30,6 +29,8 @@ const resolveToken = (token: Token) => {
     case 'uniform':
     case 'sampler2D':
       return `uniform ${token.dataType} ${token.name};`
+    case 'isampler2D':
+      return `uniform highp ${token.dataType} ${token.name};`
   }
 }
 

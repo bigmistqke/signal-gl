@@ -1,68 +1,80 @@
-import { Accessor } from 'solid-js'
+import { Accessor, mergeProps } from 'solid-js'
 import { attribute, createGL, createProgram, uniform } from '..'
 import { glsl } from './glsl'
 
-import { Buffer, ShaderToken, UniformProxy } from '../core/types'
+import { getDefaultConfig } from '@core/utils'
+import {
+  Buffer,
+  DataType,
+  Format,
+  InternalFormat,
+  ShaderToken,
+  UniformProxy,
+} from '../core/types'
 
 const canvas = document.createElement('canvas')
-const context = canvas.getContext('webgl2')
 
+type ComputationConfig = {
+  /** _Uint8Array_ `UNSIGNED_BYTE` _Float32Array_ `FLOAT` _default_ `FLOAT` */
+  dataType?: DataType
+  /** _default_ input.length */
+  width?: number
+  /** _default_ 1 */
+  height?: number
+  /**  _Uint8Array_ `R8` _Float32Array_ `R32F` _default_ `R32F` */
+  internalFormat?: InternalFormat
+  /** _Uint8Array_ `RED` _Float32Array_ `RED` _default_ `RED` */
+  format?: Format
+}
+
+/**
+ * currently fully supported: `Uint8Array` and `Float32Array`
+ * @param input _required_ () => Buffer
+ * @param callback _required_ glsl-lambda: expects a `vec2` to be returned
+ * @param config _optional_
+ * @param config.width _default_ input.length
+ * @param config.height _default_ 1
+ * @param config.dataType _Uint8Array_ `UNSIGNED_BYTE` _Float32Array_ `FLOAT` _default_ `FLOAT`
+ * @param config.format _Uint8Array_ `RED` _Float32Array_ `RED` _default_ `RED`
+ * @param config.internalFormat _Uint8Array_ `R8` _Float32Array_ `R32F` _default_ `R32F`
+ * @returns TBuffer
+ */
 export const createComputation = <TBuffer extends Buffer>(
   input: Accessor<TBuffer>,
   callback: (
     uniform: ReturnType<UniformProxy['sampler2D']>
   ) => Accessor<ShaderToken>,
-  config?: {
-    dataType?: 'UNSIGNED_BYTE' | 'UNSIGNED_SHORT' | 'UNSIGNED_INT'
-    width?: number
-    height?: number
-  }
+  config?: ComputationConfig
 ) => {
   let output: TBuffer
-
-  const updateOutput = () => {
-    if (input().constructor !== output?.constructor) {
-      const bufferType = input().constructor as {
-        new (length: number): TBuffer
-      }
-      output = new bufferType(input().length)
-    }
+  let bufferType = input().constructor as {
+    new (length: number): TBuffer
   }
 
-  updateOutput()
+  const getConfig = () =>
+    mergeProps(
+      {
+        internalFormat: 'R32F',
+        format: 'RED',
+        width: input().length,
+        height: 1,
+        dataType: 'FLOAT',
+      },
+      getDefaultConfig(input()),
+      config
+    )
 
   const a_vertices = attribute.vec2(
     new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1])
   )
   const vertex = glsl`#version 300 es
-    void main() {
-      gl_Position = vec4(${a_vertices}, 0.0, 1.0);
-    }
-    `
-  const fragment = glsl`#version 300 es
-    precision lowp float;
-    
-    out vec4 outColor;
-    
-    vec4 compute(){
-      ${callback(
-        uniform.sampler2D(input, {
-          internalFormat: 'R8',
-          format: 'RED',
-          get width() {
-            return config?.width || input()?.length || 1
-          },
-          get height() {
-            return config?.height || 1
-          },
-          dataType: 'UNSIGNED_BYTE',
-        })
-      )}
-    }
+void main(){gl_Position = vec4(${a_vertices}, 0.0, 1.0);}`
 
-    void main() {
-      outColor = compute();
-    }`
+  const fragment = glsl`#version 300 es
+precision highp float;
+out vec4 outColor;
+vec4 compute(){${callback(uniform.sampler2D(input, getConfig()))}}
+void main(){outColor = compute();}`
 
   const program = createProgram({
     canvas,
@@ -72,20 +84,27 @@ export const createComputation = <TBuffer extends Buffer>(
     count: 4,
   })
 
-  const gl = createGL({ canvas, programs: [program] })
+  const gl = createGL({
+    canvas,
+    programs: [program],
+  })
+
+  const updateOutput = () => {
+    if (input().constructor !== output?.constructor) {
+      bufferType = input().constructor as {
+        new (length: number): TBuffer
+      }
+      output = new bufferType(input().length)
+    } else if (input().length !== output?.length) {
+      output = new bufferType(input().length)
+    }
+  }
+
+  updateOutput()
 
   return () => {
     updateOutput()
     gl.render()
-    return gl.read(output, {
-      get width() {
-        return config?.width || output.length || 1
-      },
-      get height() {
-        return config?.height || 1
-      },
-      format: 'RED',
-      dataType: 'UNSIGNED_BYTE',
-    })
+    return gl.read(output, getConfig())
   }
 }

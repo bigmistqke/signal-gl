@@ -27,6 +27,7 @@ export type UniformSetter =
   | 'uniform4fv'
   | 'uniform4iv'
 
+/** valid TypedArray-types */
 export type Buffer =
   | Uint8Array
   | Uint16Array
@@ -35,7 +36,6 @@ export type Buffer =
   | Int16Array
   | Int32Array
   | Float32Array
-  | Float64Array
 
 type IntBuffer = Int8Array | Int16Array | Int32Array
 
@@ -95,6 +95,12 @@ export type UniformProxy = {
   sampler2D: Variable<
     'sampler2D',
     'sampler2D',
+    ArrayBufferView,
+    Sampler2DOptions
+  >
+  isampler2D: Variable<
+    'isampler2D',
+    'isampler2D',
     ArrayBufferView,
     Sampler2DOptions
   >
@@ -188,7 +194,7 @@ export interface UniformToken extends TokenBase {
 export interface Sampler2DToken extends TokenBase {
   options: Sampler2DOptions
   textureIndex: number
-  tokenType: 'sampler2D'
+  tokenType: 'sampler2D' | 'isampler2D'
 }
 
 export type ScopedVariableToken = {
@@ -325,4 +331,4 @@ export type DataType =
   | 'FLOAT'
   | 'HALF_FLOAT'
 
-  export type ComputeShader = (u_buffer: ReturnType<UniformProxy['sampler2D']>) => Accessor<ShaderToken>
+  export type ComputeShader = (u_buffer: ReturnType<UniformProxy['sampler2D' ]>) => Accessor<ShaderToken>

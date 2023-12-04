@@ -1,5 +1,13 @@
+import { mergeProps } from 'solid-js'
 import { createWebGLProgram } from './compilation'
-import type { Buffer, Format, InternalFormat, ShaderToken } from './types'
+import type {
+  Buffer,
+  DataType,
+  Format,
+  InternalFormat,
+  ShaderToken,
+} from './types'
+import { objectsAreEqual } from './utils'
 
 /* PROGRAM-CACHE */
 
@@ -32,12 +40,34 @@ const setProgramCache = (config: {
 
 /* HOOKS */
 
-export const createGL = (config: {
+/** */
+type GLConfig = {
   canvas: HTMLCanvasElement
   programs: ReturnType<typeof createProgram>[]
   autoResize?: boolean
-}) => {
+  extensions?: {
+    /** default true */
+    float?: boolean
+    /** default false */
+    half_float?: boolean
+  }
+}
+
+type GLReadConfig = {
+  width?: number
+  height?: number
+  internalFormat?: InternalFormat
+  format?: Format
+  dataType?: DataType
+}
+
+export const createGL = (config: GLConfig) => {
   const gl = config.canvas.getContext('webgl2')!
+
+  const extensions = {
+    float: false,
+    half_float: false,
+  }
 
   if (!gl) throw 'webgl2 is not supported'
 
@@ -55,44 +85,10 @@ export const createGL = (config: {
   function render() {
     if (!config.canvas || !gl) return
 
-    let extFloat = gl.getExtension('EXT_color_buffer_float')
-    let extHalfFloat = gl.getExtension('EXT_color_buffer_half_float')
-
-    // Create a framebuffer
-    const framebuffer = gl.createFramebuffer()
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
-
-    // Create a renderbuffer for the red channel
-    const redRenderbuffer = gl.createRenderbuffer()
-    gl.bindRenderbuffer(gl.RENDERBUFFER, redRenderbuffer)
-    gl.renderbufferStorage(
-      gl.RENDERBUFFER,
-      gl.R8,
-      config.canvas.width,
-      config.canvas.height
-    )
-
-    // Attach the red renderbuffer to the framebuffer
-    gl.framebufferRenderbuffer(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.RENDERBUFFER,
-      redRenderbuffer
-    )
-
-    // gl.finish()
-
-    // Check if the framebuffer is complete
-    const framebufferStatus = gl.checkFramebufferStatus(gl.FRAMEBUFFER)
-    if (framebufferStatus !== gl.FRAMEBUFFER_COMPLETE) {
-      console.error('Framebuffer is not complete')
-    }
-
-    gl.clearColor(1.0, 0.0, 0.0, 1.0) // Clear to black, fully opaque
-    gl.clearDepth(1.0) // Clear everything
-    gl.enable(gl.DEPTH_TEST) // Enable depth testing
-    gl.depthFunc(gl.LEQUAL) // Near things obscure far things
-
+    gl.clearColor(1.0, 0.0, 0.0, 1.0)
+    gl.clearDepth(1.0)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
     if (!config.programs) return
@@ -110,25 +106,66 @@ export const createGL = (config: {
     }
   }
 
-  function read(
-    results: Buffer,
-    config?: {
-      width?: number
-      height?: number
-      internalFormat?: InternalFormat
-      format?: Format
-      dataType?: 'UNSIGNED_BYTE' | 'UNSIGNED_SHORT' | 'UNSIGNED_INT' | 'FLOAT'
+  // default value = true
+  if (config?.extensions?.float !== false) {
+    gl.getExtension('EXT_color_buffer_float')
+  }
+  // default value = false
+  if (config?.extensions?.half_float) {
+    gl.getExtension('EXT_color_buffer_half_float')
+  }
+
+  const updateFrameBuffer = ({
+    internalFormat,
+    width,
+    height,
+  }: Required<GLReadConfig>) => {
+    const framebuffer = gl.createFramebuffer()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)
+
+    // Create a renderbuffer
+    const renderBuffer = gl.createRenderbuffer()
+    gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer)
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl[internalFormat], width, height)
+
+    // Attach the renderbuffer to the framebuffer
+    gl.framebufferRenderbuffer(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.RENDERBUFFER,
+      renderBuffer
+    )
+
+    gl.finish()
+  }
+
+  let previousReadConfig: GLReadConfig = {}
+  function read(results: Buffer, _config?: GLReadConfig) {
+    const config = mergeProps(
+      {
+        format: 'RGBA',
+        dataType: 'UNSIGNED_BYTE',
+        internalFormat: 'RGBA8',
+        width: gl.canvas.width,
+        height: gl.canvas.height,
+      } as const,
+      _config
+    )
+
+    if (!objectsAreEqual(config, previousReadConfig)) {
+      previousReadConfig = config!
+      updateFrameBuffer(config)
     }
-  ) {
+
     render()
 
     gl.readPixels(
       0,
       0,
-      config?.width || gl.canvas.width,
-      config?.height || gl.canvas.height,
-      gl[config?.format || 'RGBA'],
-      gl[config?.dataType || 'UNSIGNED_BYTE'],
+      config.width,
+      config.height,
+      gl[config.format],
+      gl[config.dataType],
       results
     )
 

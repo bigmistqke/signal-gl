@@ -98,6 +98,7 @@ export const createGlsl =
           case 'attribute':
           case 'uniform':
             return createToken(name, hole)
+          case 'isampler2D':
           case 'sampler2D':
             return createToken(name, hole, {
               textureIndex: textureIndex++,
@@ -119,6 +120,7 @@ export const createGlsl =
             bindAttributeToken(token, gl, program, onRender)
             break
           case 'sampler2D':
+          case 'isampler2D':
             bindSampler2DToken(token, gl, program, effect)
             break
           case 'shader':
