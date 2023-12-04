@@ -5,12 +5,9 @@ import { render } from 'solid-js/web'
 import './index.css'
 
 function App() {
-  const [vertices] = createSignal(
-    new Float32Array([
-      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-    ]),
-    { equals: false }
-  )
+  const vertices = new Float32Array([
+    -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+  ])
   const [opacity, setOpacity] = createSignal(0.5)
 
   const fragment = glsl`#version 300 es
