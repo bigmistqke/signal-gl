@@ -133,7 +133,7 @@ void main() {
 const glsl = (strings: TemplateStringsArray, holes: Hole[]) : Accessor<ShaderToken>
 ```
 
-###### type `ShaderToken`
+##### type `ShaderToken`
 ```ts
 type ShaderToken = Accessor<{
   tokenType: 'shader'
@@ -147,7 +147,7 @@ type ShaderToken = Accessor<{
 }>
 ```
 
-###### type `Hole`
+##### type `Hole`
 ```ts
 type ValueOf<T> = T[keyof T]
 
@@ -217,7 +217,7 @@ attribute.ivec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
 attribute.bvec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
 ```
 
-###### type `AttributeOptions`
+##### type `AttributeOptions`
 
 ```ts
 type AttributeOptions = {
@@ -234,7 +234,7 @@ type AttributeOptions = {
 }
 ```
 
-###### type `AttributeToken`
+##### type `AttributeToken`
 
 ```ts
 type AttributeToken = {
@@ -299,7 +299,7 @@ uniform.bvec4     ( AccessorOrValue<[boolean, boolean, boolean, boolean]>, Unifo
 uniform.sampler2D ( AccessorOrValue<Buffer>,                               Sampler2DOptions ) : Sampler2DToken
 ```
 
-###### type `UniformOptions | Sampler2DOptions`
+##### type `UniformOptions | Sampler2DOptions`
 
 ```ts
 type UniformOptions = {
@@ -321,7 +321,7 @@ type Sampler2DOptions = UniformOptions & {
 }
 ```
 
-###### type `UniformToken | Sampler2DToken`
+##### type `UniformToken | Sampler2DToken`
 
 ```ts
 type UniformToken = {
@@ -366,7 +366,7 @@ createEffect(() => console.log(gl.read(new Float32Array(...))));
 const createCanvas = (config: GLConfig): GLReturnType
 ```
 
-###### type `GLConfig`
+##### type `GLConfig`
 
 ```ts
 type GLConfig = {
@@ -382,7 +382,7 @@ type GLConfig = {
 }
 ```
 
-###### type `GLReturnType`
+##### type `GLReturnType`
 
 - `gl.read` has conditional default values as config
   - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
@@ -445,7 +445,7 @@ import { createProgram } from "@bigmistqke/solid-gl"
 const createProgram = (config: ProgramConfig): ProgramReturnType
 ```
 
-###### type `ProgramConfig`
+##### type `ProgramConfig`
 
 ```ts
 type ProgramConfig =
@@ -461,7 +461,7 @@ type ProgramConfig =
   }
 ```
 
-###### type `ProgramReturnType`
+##### type `ProgramReturnType`
 
 ```ts
 type ProgramReturnType = {
@@ -499,7 +499,7 @@ const createComputation = (
 ) : Buffer
 ```
 
-###### type `ComputationConfig`
+##### type `ComputationConfig`
 
 ```ts
 type ComputationConfig = {
@@ -552,7 +552,7 @@ import { GL } from "@bigmistqke/solid-gl"
 const GL = (props: GLProps) => JSXElement
 ```
 
-###### type `GLProps`
+##### type `GLProps`
 
 ```ts
 type GLProps =
@@ -581,7 +581,7 @@ import { Program } from "@bigmistqke/solid-gl"
 const Program = (props: ProgramProps) => JSXElement
 ```
 
-###### type `ProgramProps
+##### type `ProgramProps
 
 ```ts
 type ProgramProps = {
