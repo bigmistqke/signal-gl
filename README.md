@@ -15,11 +15,14 @@
   - [Hello World](#hello-world-playground)
   - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
-  - [`glsl`](#glsl-tag-template-literal)
-  - [`attribute`](#attribute-utility-function)
-  - [`uniform`](#uniform-utility-function)
-  - [`<GL/>`](#gl-component)
-  - [`<Program/>`](#program-component)
+  - [`glsl`](#glsl-tag-template-literal) _tag template literal to compose glsl_
+  - [`attribute`](#attribute-utility-function) _utility-function to include attribute into `glsl`-template_
+  - [`uniform`](#uniform-utility-function) _utility-function to include uniform into `glsl`-template_
+  - [`createGL`](#creategl-utility-function) _utility managing `WebGL2RenderingContext`_
+  - [`createProgram`](#createprogram-utility-function) _utility managing `WebGLProgram`_
+  - [`<GL/>`](#gl-component) _component-wrapper around `createGL`_
+  - [`<Program/>`](#program-component) _component-wrapper around `createProgram`_
+  - [`createComputation`](#createcomputation-utility-function) _utility-function to compute on the gpu_
 - [Syntax Highlighting](#syntax-highlighting) 
 - [Prior Art](#prior-art) 
 
@@ -28,7 +31,7 @@
 - `Minimal` abstraction
 - Co-locating `js` and `glsl`
 - Composition of `glsl` snippets
-- Lessen boilerplate with `auto-binding` uniforms and attributes
+- Lessen boilerplate with `auto-binding` uniforms and attributes and `sensible` defaults
 - `Purely runtime`: no additional build tools
 - Small footprint: `<5kb minified + gzip`
 
@@ -119,7 +122,13 @@ void main() {
 }`
 ```
 
-#### return-type: `ShaderToken`
+#### signature
+
+```ts
+const glsl = (strings: TemplateStringsArray, holes: Hole[]) : Accessor<ShaderToken>
+```
+
+##### `ShaderToken`
 ```ts
 type ShaderToken = Accessor<{
   tokenType: 'shader'
@@ -133,11 +142,11 @@ type ShaderToken = Accessor<{
 }>
 ```
 
-##### interpolation-type
+##### `Hole`
 ```ts
 type ValueOf<T> = T[keyof T]
 
-type Interpolation =
+type Hole =
   | ReturnType<ValueOf<typeof attribute>> // glsl`${attribute.float(...)}` auto-binds a signal to an attribute
   | ReturnType<ValueOf<typeof uniform>>   // glsl`${uniform.float(...)}`   auto-bind a signal to a uniform
   | ReturnType<typeof glsl>               // glsl`${glsl`...`}`            compose shaders
@@ -146,7 +155,7 @@ type Interpolation =
 
 ### `attribute` _utility-function_
 
-- returns [`AttributeToken`](#return-type-attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
+- returns [`AttributeToken`](#attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
 #### usage
 
@@ -178,7 +187,7 @@ glsl`
 `
 ```
 
-#### signatures
+#### signature
 
 ```ts
 type AccessorOrValue<T> = Accessor<T> | T
@@ -189,21 +198,21 @@ type Buffer =
   | Float32Array
   | Float64Array
 
-attribute.float ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.int   ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.bool  ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.vec2  ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.ivec2 ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.bvec2 ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.vec3  ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.ivec3 ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.bvec3 ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.vec4  ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.ivec4 ( AccessorOrValue<Buffer>, AttributeOptions )
-attribute.bvec4 ( AccessorOrValue<Buffer>, AttributeOptions )
+attribute.float ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.int   ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.bool  ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.vec2  ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.ivec2 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.bvec2 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.vec3  ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.ivec3 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.bvec3 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.vec4  ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.ivec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
+attribute.bvec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
 ```
 
-#### options-type
+##### AttributeOptions
 
 ```ts
 type AttributeOptions = {
@@ -220,7 +229,7 @@ type AttributeOptions = {
 }
 ```
 
-#### return-type: `AttributeToken`
+##### `AttributeToken`
 
 ```ts
 type AttributeToken = {
@@ -236,7 +245,7 @@ type AttributeToken = {
 
 ### `uniform` _utility-function_
 
-- returns [`UniformToken | Sampler2DToken`](#return-type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
+- returns [`UniformToken | Sampler2DToken`](#uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
 #### usage
 
@@ -265,26 +274,27 @@ const fragment = glsl`
 `
 ```
 
-#### signatures
+#### signature
 
 ```ts
 type AccessorOrValue<T> = Accessor<T> | T
 
-uniform.float ( AccessorOrValue<number>,                               UniformOptions )
-uniform.int   ( AccessorOrValue<number>,                               UniformOptions )
-uniform.bool  ( AccessorOrValue<boolean>,                              UniformOptions )
-uniform.vec2  ( AccessorOrValue<[number, number]>,                     UniformOptions )
-uniform.ivec2 ( AccessorOrValue<[number, number]>,                     UniformOptions )
-uniform.bvec2 ( AccessorOrValue<[boolean, boolean]>,                   UniformOptions )
-uniform.vec3  ( AccessorOrValue<[number, number, number]>,             UniformOptions )
-uniform.ivec3 ( AccessorOrValue<[number, number, number]>,             UniformOptions )
-uniform.bvec3 ( AccessorOrValue<[boolean, boolean, boolean]>,          UniformOptions )
-uniform.vec4  ( AccessorOrValue<[number, number, number, number]>,     UniformOptions )
-uniform.ivec4 ( AccessorOrValue<[number, number, number, number]>,     UniformOptions )
-uniform.bvec4 ( AccessorOrValue<[boolean, boolean, boolean, boolean]>, UniformOptions )
+uniform.float     ( AccessorOrValue<number>,                               UniformOptions   ) : UniformToken
+uniform.int       ( AccessorOrValue<number>,                               UniformOptions   ) : UniformToken
+uniform.bool      ( AccessorOrValue<boolean>,                              UniformOptions   ) : UniformToken
+uniform.vec2      ( AccessorOrValue<[number, number]>,                     UniformOptions   ) : UniformToken
+uniform.ivec2     ( AccessorOrValue<[number, number]>,                     UniformOptions   ) : UniformToken
+uniform.bvec2     ( AccessorOrValue<[boolean, boolean]>,                   UniformOptions   ) : UniformToken
+uniform.vec3      ( AccessorOrValue<[number, number, number]>,             UniformOptions   ) : UniformToken
+uniform.ivec3     ( AccessorOrValue<[number, number, number]>,             UniformOptions   ) : UniformToken
+uniform.bvec3     ( AccessorOrValue<[boolean, boolean, boolean]>,          UniformOptions   ) : UniformToken
+uniform.vec4      ( AccessorOrValue<[number, number, number, number]>,     UniformOptions   ) : UniformToken
+uniform.ivec4     ( AccessorOrValue<[number, number, number, number]>,     UniformOptions   ) : UniformToken
+uniform.bvec4     ( AccessorOrValue<[boolean, boolean, boolean, boolean]>, UniformOptions   ) : UniformToken
+uniform.sampler2D ( AccessorOrValue<Buffer>,                               Sampler2DOptions ) : Sampler2DToken
 ```
 
-#### options-type: `UniformOptions`
+##### `UniformOptions`
 
 ```ts
 type UniformOptions = {
@@ -292,7 +302,7 @@ type UniformOptions = {
 }
 ```
 
-#### return-type: `UniformToken | Sampler2DToken`
+##### `UniformToken | Sampler2DToken`
 
 ```ts
 type UniformToken = {
@@ -313,10 +323,145 @@ type Sampler2DToken = {
 }
 ```
 
+### `createGL` _utility-function_
+
+- manage the `webgl2`-context of a given `<canvas/>`-element
+
+#### usage
+```tsx
+const canvas = <canvas/>
+const gl = createGL({canvas, programs: [programs]})
+if(!gl) return;
+
+// render programs to given canvas-element
+createEffect(() =>gl.render());
+// export the rendered result of the current program to a given TypedArray
+createEffect(() => console.log(gl.read(new Float32Array(...)))); 
+```
+
+#### signature
+
+```ts
+const createCanvas = (config: GLConfig): GLReturnType
+```
+
+##### `GLConfig`
+
+```ts
+type GLConfig = {
+  autoResize?: boolean         // default true
+  canvas?: HTMLCanvasElement
+  extensions?: {
+    float?: boolean            // default true
+    half_float?: boolean       // default false
+  }
+  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  programs: ReturnType<typeof createProgram>[]
+}
+```
+
+##### `GLReturnType`
+
+- `gl.read` has conditional default values as config
+  - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
+  - when output `Float32Array` then `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
+  - else `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
+
+```ts
+type GLReturnType = {
+  render: () => void,
+  read: (
+    output: Buffer,
+    config: {
+      width?: number
+      height?: number
+      internalFormat?: InternalFormat
+      format?: Format
+      dataType?: DataType
+    }
+  ) => Buffer
+} 
+```
+
+### `createProgram` _utility-function_
+
+- manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
+- to use program, add it to the `programs`-property in `GLConfig`
+
+#### usage
+```tsx
+const fragment = glsl`#version 300 es
+  precision mediump float;
+  in vec2 v_coord; 
+  out vec4 outColor;
+  void main() {
+    outColor = vec4(v_coord[0], v_coord[1], 0, 1);
+  }`
+
+const vertex = glsl`#version 300 es
+  out vec2 v_coord;  
+  out vec3 v_color;
+  void main() {
+    vec2 a_coord = ${attribute.vec2(vertices)};
+    v_coord = a_coord;
+    gl_Position = vec4(a_coord, 0, 1) ;
+  }`
+
+const program = createProgram({
+  canvas,
+  vertex: vertex(),
+  fragment: fragment(),
+  mode: 'TRIANGLES',
+  count: vertices.length / 2,
+})
+```
+
+#### signature
+
+```ts
+const createProgram = (config: ProgramConfig): ProgramReturnType
+```
+
+##### `ProgramConfig`
+
+```ts
+type ProgramConfig =
+  ComponentProps<'canvas'> & {
+    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    animate?: boolean
+  }
+```
+
+##### return-type: `GLReturnType`
+
+- `gl.read` has conditional default values as config
+  - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
+  - when output `Float32Array` then `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
+  - else `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
+
+```ts
+type GLReturnType = {
+  render: () => void,
+  read: (
+    output: Buffer,
+    config: {
+      width?: number
+      height?: number
+      internalFormat?: InternalFormat
+      format?: Format
+      dataType?: DataType
+    }
+  ) => Buffer
+} 
+```
+
 ### `<GL/>` _component_
 
 - root `JSXElement`
 - represents a `canvas` and its `WebGL2RenderingContext`
+- wrapper around [`createGL`](#creategl-utility-function)
 
 #### usage
 
@@ -355,6 +500,35 @@ type ProgramProps = {
   fragment: Accessor<ShaderToken>
   vertex: Accessor<ShaderToken>
   mode: 'TRIANGLES' | 'LINES' | 'POINTS'
+}
+```
+
+### `createComputation` _utility-function_
+
+- create a computation on the gpu with `renderbuffer`
+
+#### usage
+
+```tsx
+const [input, setInput] = createSignal(new Float32Array(WIDTH * HEIGHT));
+const compute = createComputation(input, (u_buffer) => glsl`
+  ivec2 index = ivec2(gl_FragCoord.xy);
+  vec4 value = texelFetch(${u_buffer}, index, 0);
+  return sqrt(value);
+`, {
+  width: WIDTH,
+  height: HEIGHT,
+})
+const memo = createMemo(compute) // Float32Array
+```
+
+#### config-type
+
+```ts
+type ComputationConfig = {
+  width: number
+  height: number
+  
 }
 ```
 
