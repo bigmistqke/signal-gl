@@ -22,10 +22,10 @@ function App() {
     ivec2 index = ivec2(gl_FragCoord.xy);
     vec4 value = texelFetch(${u_buffer}, index, 0);
 
-    return value * value;
+    return value * 2.0;
   `
 
-  const computeJs = () => input().map((v) => v * v)
+  const computeJs = () => input().map((v) => v * 2)
 
   const compute = createComputation(input, computeShader, {
     width: WIDTH,
