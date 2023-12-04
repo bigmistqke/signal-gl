@@ -1,7 +1,7 @@
 # 🚦 signal-gl
 
 [![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)](https://www.npmjs.com/package/@bigmistqke/signal-gl)
-[![Signal-gl bundle size](https://deno.bundlejs.com/badge?q=@bigmistqke/signal-gl@0.0.23&config=%7B%22esbuild%22:%7B%22external%22:%5B%22solid-js%22%5D%7D%7D)](https://deno.bundlejs.com/badge?q=@bigmistqke/signal-gl@0.0.23&config={%22esbuild%22:{%22external%22:[%22solid-js%22]}})
+[![Signal-gl bundle size](https://edge.bundlejs.com/badge?q=@bigmistqke/signal-gl@0.0.25&config={%22esbuild%22:{%22external%22:[%22solid-js%22]}})](https://bundlejs.com/?q=%40bigmistqke%2Fsignal-gl%400.0.25&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22solid-js%22%5D%7D%7D)
 [![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)](https://github.com/pnpm/pnpm)
 
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
