@@ -95,18 +95,18 @@ return (
 
 ## API
 
-### templating
+## templating
 
-#### `glsl` _tag template literal_
+### `glsl` _tag template literal_
 
 > - write and compose `glsl`
-> - interpolation (see `Hole`)(#hole)
+> - interpolation [see `Hole`](#hole)
 >   - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-utility-function) and [`uniform`](#uniform-utility-function) calls
 >   - link glsl-snippets into one shader by interpolating [`glsl`](#glsl-tag-template-literals) tag template literals
 >   - create scoped variable names by interpolating `strings`
 > - returns [`ShaderToken`](#type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
 
-##### Usage
+#### Usage
 
 ```ts
 const module = glsl`...`
@@ -127,13 +127,13 @@ void main() {
 }`
 ```
 
-##### Signature
+#### Signature
 
 ```ts
-const glsl = (strings: TemplateStringsArray, holes: Hole[]) : Accessor<ShaderToken>
+(strings: TemplateStringsArray, holes: Hole[]) : Accessor<ShaderToken>
 ```
 
-##### type `ShaderToken`
+#### type `ShaderToken`
 ```ts
 type ShaderToken = Accessor<{
   tokenType: 'shader'
@@ -147,7 +147,7 @@ type ShaderToken = Accessor<{
 }>
 ```
 
-##### type `Hole`
+#### type `Hole`
 ```ts
 type ValueOf<T> = T[keyof T]
 
@@ -158,11 +158,11 @@ type Hole =
   | string                                // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
 ```
 
-#### `attribute` _utility-function_
+### `attribute` _utility-function_
 
 > - returns [`AttributeToken`](#type-attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
-##### Usage
+#### Usage
 
 ```ts
 // static
@@ -192,7 +192,7 @@ glsl`
 `
 ```
 
-##### Signature
+#### Signature
 
 ```ts
 type AccessorOrValue<T> = Accessor<T> | T
@@ -217,7 +217,7 @@ attribute.ivec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
 attribute.bvec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
 ```
 
-##### type `AttributeOptions`
+#### type `AttributeOptions`
 
 ```ts
 type AttributeOptions = {
@@ -234,7 +234,7 @@ type AttributeOptions = {
 }
 ```
 
-##### type `AttributeToken`
+#### type `AttributeToken`
 
 ```ts
 type AttributeToken = {
@@ -248,11 +248,11 @@ type AttributeToken = {
 }
 ```
 
-#### `uniform` _utility-function_
+### `uniform` _utility-function_
 
 > returns [`UniformToken | Sampler2DToken`](#type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
-##### Usage
+#### Usage
 
 ```ts
 // static
@@ -279,7 +279,7 @@ const fragment = glsl`
 `
 ```
 
-##### Signature
+#### Signature
 
 ```ts
 type AccessorOrValue<T> = Accessor<T> | T
@@ -299,7 +299,7 @@ uniform.bvec4     ( AccessorOrValue<[boolean, boolean, boolean, boolean]>, Unifo
 uniform.sampler2D ( AccessorOrValue<Buffer>,                               Sampler2DOptions ) : Sampler2DToken
 ```
 
-##### type `UniformOptions | Sampler2DOptions`
+#### type `UniformOptions | Sampler2DOptions`
 
 ```ts
 type UniformOptions = {
@@ -321,7 +321,7 @@ type Sampler2DOptions = UniformOptions & {
 }
 ```
 
-##### type `UniformToken | Sampler2DToken`
+#### type `UniformToken | Sampler2DToken`
 
 ```ts
 type UniformToken = {
@@ -342,13 +342,13 @@ type Sampler2DToken = {
 }
 ```
 
-### hooks
+## hooks
 
-#### `createGL` _utility-function_
+### `createGL` _utility-function_
 
 > manage the `webgl2`-context of a given `<canvas/>`-element
 
-##### Usage
+#### Usage
 ```tsx
 const canvas = <canvas/>
 const gl = createGL({canvas, programs: [programs]})
@@ -360,13 +360,13 @@ createEffect(() =>gl.render());
 createEffect(() => console.log(gl.read(new Float32Array(...)))); 
 ```
 
-##### Signature
+#### Signature
 
 ```ts
 const createCanvas = (config: GLConfig): GLReturnType
 ```
 
-##### type `GLConfig`
+#### type `GLConfig`
 
 ```ts
 type GLConfig = {
@@ -382,7 +382,7 @@ type GLConfig = {
 }
 ```
 
-##### type `GLReturnType`
+#### type `GLReturnType`
 
 - `gl.read` has conditional default values as config
   - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
@@ -405,12 +405,12 @@ type GLReturnType = {
 } 
 ```
 
-#### `createProgram` _utility-function_
+### `createProgram` _utility-function_
 
 > manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
 > to use program, add it to the `programs`-property in createGL's `GLConfig`
 
-##### Usage
+#### Usage
 ```tsx
 const fragment = glsl`#version 300 es
   precision mediump float;
@@ -438,14 +438,14 @@ const program = createProgram({
 })
 ```
 
-##### Signature
+#### Signature
 
 ```ts
 import { createProgram } from "@bigmistqke/solid-gl"
 const createProgram = (config: ProgramConfig): ProgramReturnType
 ```
 
-##### type `ProgramConfig`
+#### type `ProgramConfig`
 
 ```ts
 type ProgramConfig =
@@ -461,7 +461,7 @@ type ProgramConfig =
   }
 ```
 
-##### type `ProgramReturnType`
+#### type `ProgramReturnType`
 
 ```ts
 type ProgramReturnType = {
@@ -469,12 +469,12 @@ type ProgramReturnType = {
 } 
 ```
 
-#### `createComputation` _utility-function_
+### `createComputation` _utility-function_
 
 - create a computation on the gpu with `renderbuffer`
 - sensible default configs for `Uint8Array` and `Float32Array`
 
-##### Usage
+#### Usage
 
 ```tsx
 const [input, setInput] = createSignal(new Float32Array(WIDTH * HEIGHT));
@@ -489,7 +489,7 @@ const compute = createComputation(input, (u_buffer) => glsl`
 const memo = createMemo(compute) // Float32Array
 ```
 
-##### Signature
+#### Signature
 
 ```ts
 const createComputation = (
@@ -499,7 +499,7 @@ const createComputation = (
 ) : Buffer
 ```
 
-##### type `ComputationConfig`
+#### type `ComputationConfig`
 
 ```ts
 type ComputationConfig = {
@@ -529,15 +529,15 @@ sensible defaults for `UInt8Array` and `Float32Array`
 }
 ```
 
-### components
+## components
 
-#### `<GL/>` _component_
+### `<GL/>` _component_
 
 - root `JSXElement`
 - represents a `canvas` and its `WebGL2RenderingContext`
 - wrapper around [`createGL`](#creategl-utility-function)
 
-##### Usage
+#### Usage
 
 ```tsx
 import { GL } from "@bigmistqke/solid-gl"
@@ -546,13 +546,13 @@ import { GL } from "@bigmistqke/solid-gl"
 </GL>
 ```
 
-##### Signature
+#### Signature
 
 ```ts
 const GL = (props: GLProps) => JSXElement
 ```
 
-##### type `GLProps`
+#### type `GLProps`
 
 ```ts
 type GLProps =
@@ -563,25 +563,25 @@ type GLProps =
   }
 ```
 
-#### `<Program/>` _component_
+### `<Program/>` _component_
 
 - sibling of [`<GL/>`](#gl-component)
 - represents a `WebGLProgram`
 
-##### Usage
+#### Usage
 
 ```tsx
 import { Program } from "@bigmistqke/solid-gl"
 <Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
 ```
 
-##### Signature
+#### Signature
 
 ```ts
 const Program = (props: ProgramProps) => JSXElement
 ```
 
-##### type `ProgramProps
+#### type `ProgramProps
 
 ```ts
 type ProgramProps = {
