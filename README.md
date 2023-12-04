@@ -15,14 +15,17 @@
   - [Hello World](#hello-world-playground)
   - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
-  - [`glsl`](#glsl-tag-template-literal) _tag template literal to compose glsl_
-  - [`attribute`](#attribute-utility-function) _utility-function to include attribute into `glsl`-template_
-  - [`uniform`](#uniform-utility-function) _utility-function to include uniform into `glsl`-template_
-  - [`createGL`](#creategl-utility-function) _utility managing `WebGL2RenderingContext`_
-  - [`createProgram`](#createprogram-utility-function) _utility managing `WebGLProgram`_
-  - [`<GL/>`](#gl-component) _component-wrapper around `createGL`_
-  - [`<Program/>`](#program-component) _component-wrapper around `createProgram`_
-  - [`createComputation`](#createcomputation-utility-function) _utility-function to compute on the gpu_
+  - [templating](#templating) _compose shaders with autobinding attributes and uniforms_
+    - [`glsl`](#glsl-tag-template-literal) _tag template literal to compose glsl_
+    - [`attribute`](#attribute-utility-function) _utility-function to include attribute into `glsl`-template_
+    - [`uniform`](#uniform-utility-function) _utility-function to include uniform into `glsl`-template_
+  - [hooks](#hooks) _manage `WebGL2RenderingContext` and `WebGLProgram`_
+    - [`createGL`](#creategl-utility-function) _utility managing `WebGL2RenderingContext`_
+    - [`createProgram`](#createprogram-utility-function) _utility managing `WebGLProgram`_
+    - [`createComputation`](#createcomputation-utility-function) _utility for gpu-computations_
+  - [components](#components) _JSX wrappers around `hooks`_
+    - [`<GL/>`](#gl-component) _component-wrapper around `createGL`_
+    - [`<Program/>`](#program-component) _component-wrapper around `createProgram`_
 - [Syntax Highlighting](#syntax-highlighting) 
 - [Prior Art](#prior-art) 
 
@@ -92,16 +95,18 @@ return (
 
 ## API
 
-### `glsl` _tag template literal_
+### templating
 
-- write and compose `glsl`
-- interpolation
-  - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-utility-function) and [`uniform`](#uniform-utility-function) calls
-  - link glsl-snippets into one shader by interpolating [`glsl`](glsl-tag-template-literals) tag template literals
-  - create scoped variable names by interpolating `strings`
-- returns [`ShaderToken`](#return-type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
+#### `glsl` _tag template literal_
 
-#### usage
+> - write and compose `glsl`
+> - interpolation (see `Hole`)(#hole)
+>   - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-utility-function) and [`uniform`](#uniform-utility-function) calls
+>   - link glsl-snippets into one shader by interpolating [`glsl`](#glsl-tag-template-literals) tag template literals
+>   - create scoped variable names by interpolating `strings`
+> - returns [`ShaderToken`](#type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
+
+##### Usage
 
 ```ts
 const module = glsl`...`
@@ -122,13 +127,13 @@ void main() {
 }`
 ```
 
-#### signature
+##### Signature
 
 ```ts
 const glsl = (strings: TemplateStringsArray, holes: Hole[]) : Accessor<ShaderToken>
 ```
 
-##### `ShaderToken`
+##### type `ShaderToken`
 ```ts
 type ShaderToken = Accessor<{
   tokenType: 'shader'
@@ -142,7 +147,7 @@ type ShaderToken = Accessor<{
 }>
 ```
 
-##### `Hole`
+##### type `Hole`
 ```ts
 type ValueOf<T> = T[keyof T]
 
@@ -153,11 +158,11 @@ type Hole =
   | string                                // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
 ```
 
-### `attribute` _utility-function_
+#### `attribute` _utility-function_
 
-- returns [`AttributeToken`](#attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
+> - returns [`AttributeToken`](#type-attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
-#### usage
+##### Usage
 
 ```ts
 // static
@@ -187,7 +192,7 @@ glsl`
 `
 ```
 
-#### signature
+##### Signature
 
 ```ts
 type AccessorOrValue<T> = Accessor<T> | T
@@ -212,7 +217,7 @@ attribute.ivec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
 attribute.bvec4 ( AccessorOrValue<Buffer>, AttributeOptions ) : AttributeToken
 ```
 
-##### AttributeOptions
+##### type `AttributeOptions`
 
 ```ts
 type AttributeOptions = {
@@ -229,7 +234,7 @@ type AttributeOptions = {
 }
 ```
 
-##### `AttributeToken`
+##### type `AttributeToken`
 
 ```ts
 type AttributeToken = {
@@ -243,11 +248,11 @@ type AttributeToken = {
 }
 ```
 
-### `uniform` _utility-function_
+#### `uniform` _utility-function_
 
-- returns [`UniformToken | Sampler2DToken`](#uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
+> returns [`UniformToken | Sampler2DToken`](#type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
-#### usage
+##### Usage
 
 ```ts
 // static
@@ -274,7 +279,7 @@ const fragment = glsl`
 `
 ```
 
-#### signature
+##### Signature
 
 ```ts
 type AccessorOrValue<T> = Accessor<T> | T
@@ -294,15 +299,29 @@ uniform.bvec4     ( AccessorOrValue<[boolean, boolean, boolean, boolean]>, Unifo
 uniform.sampler2D ( AccessorOrValue<Buffer>,                               Sampler2DOptions ) : Sampler2DToken
 ```
 
-##### `UniformOptions`
+##### type `UniformOptions | Sampler2DOptions`
 
 ```ts
 type UniformOptions = {
   name?: string
 }
+
+type Sampler2DOptions = UniformOptions & {
+  dataType?: DataType
+  width?: number
+  height?: number
+  type?: 'float' | 'integer'
+  format?: Format
+  internalFormat?: InternalFormat
+  wrapS?: 'CLAMP_TO_EDGE'
+  wrapT?: 'CLAMP_TO_EDGE'
+  magFilter?: 'NEAREST' | 'LINEAR'
+  minFilter?: 'NEAREST' | 'LINEAR'
+  border?: number
+}
 ```
 
-##### `UniformToken | Sampler2DToken`
+##### type `UniformToken | Sampler2DToken`
 
 ```ts
 type UniformToken = {
@@ -323,11 +342,13 @@ type Sampler2DToken = {
 }
 ```
 
-### `createGL` _utility-function_
+### hooks
 
-- manage the `webgl2`-context of a given `<canvas/>`-element
+#### `createGL` _utility-function_
 
-#### usage
+> manage the `webgl2`-context of a given `<canvas/>`-element
+
+##### Usage
 ```tsx
 const canvas = <canvas/>
 const gl = createGL({canvas, programs: [programs]})
@@ -339,13 +360,13 @@ createEffect(() =>gl.render());
 createEffect(() => console.log(gl.read(new Float32Array(...)))); 
 ```
 
-#### signature
+##### Signature
 
 ```ts
 const createCanvas = (config: GLConfig): GLReturnType
 ```
 
-##### `GLConfig`
+##### type `GLConfig`
 
 ```ts
 type GLConfig = {
@@ -361,7 +382,7 @@ type GLConfig = {
 }
 ```
 
-##### `GLReturnType`
+##### type `GLReturnType`
 
 - `gl.read` has conditional default values as config
   - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
@@ -384,12 +405,12 @@ type GLReturnType = {
 } 
 ```
 
-### `createProgram` _utility-function_
+#### `createProgram` _utility-function_
 
-- manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
-- to use program, add it to the `programs`-property in `GLConfig`
+> manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
+> to use program, add it to the `programs`-property in createGL's `GLConfig`
 
-#### usage
+##### Usage
 ```tsx
 const fragment = glsl`#version 300 es
   precision mediump float;
@@ -417,97 +438,43 @@ const program = createProgram({
 })
 ```
 
-#### signature
+##### Signature
 
 ```ts
+import { createProgram } from "@bigmistqke/solid-gl"
 const createProgram = (config: ProgramConfig): ProgramReturnType
 ```
 
-##### `ProgramConfig`
+##### type `ProgramConfig`
 
 ```ts
 type ProgramConfig =
-  ComponentProps<'canvas'> & {
+  {
+    canvas: HTMLCanvasElement,
+    // defaults to true
+    cacheEnabled?: boolean,
+    count: number
+    fragment: ShaderToken,
+    vertex: ShaderToken,
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
     onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-    animate?: boolean
   }
 ```
 
-##### return-type: `GLReturnType`
-
-- `gl.read` has conditional default values as config
-  - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
-  - when output `Float32Array` then `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
-  - else `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
+##### type `ProgramReturnType`
 
 ```ts
-type GLReturnType = {
+type ProgramReturnType = {
   render: () => void,
-  read: (
-    output: Buffer,
-    config: {
-      width?: number
-      height?: number
-      internalFormat?: InternalFormat
-      format?: Format
-      dataType?: DataType
-    }
-  ) => Buffer
 } 
 ```
 
-### `<GL/>` _component_
-
-- root `JSXElement`
-- represents a `canvas` and its `WebGL2RenderingContext`
-- wrapper around [`createGL`](#creategl-utility-function)
-
-#### usage
-
-```tsx
-<GL {...props as GLProps}>
-  ...
-</GL>
-```
-
-#### props-type
-
-```ts
-type GLProps =
-  ComponentProps<'canvas'> & {
-    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-    onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-    animate?: boolean
-  }
-```
-
-### `<Program/>` _component_
-
-- sibling of [`<GL/>`](#gl-component)
-- represents a `WebGLProgram`
-
-#### usage
-
-```tsx
-<Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
-```
-
-#### props-type
-
-```ts
-type ProgramProps = {
-  fragment: Accessor<ShaderToken>
-  vertex: Accessor<ShaderToken>
-  mode: 'TRIANGLES' | 'LINES' | 'POINTS'
-}
-```
-
-### `createComputation` _utility-function_
+#### `createComputation` _utility-function_
 
 - create a computation on the gpu with `renderbuffer`
+- sensible default configs for `Uint8Array` and `Float32Array`
 
-#### usage
+##### Usage
 
 ```tsx
 const [input, setInput] = createSignal(new Float32Array(WIDTH * HEIGHT));
@@ -522,13 +489,105 @@ const compute = createComputation(input, (u_buffer) => glsl`
 const memo = createMemo(compute) // Float32Array
 ```
 
-#### config-type
+##### Signature
+
+```ts
+const createComputation = (
+  buffer: Buffer, 
+  cb: (u_buffer: Accessor<Sampler2DToken>) => Accessor<ShaderToken>,
+  config: ComputationConfig
+) : Buffer
+```
+
+##### type `ComputationConfig`
 
 ```ts
 type ComputationConfig = {
-  width: number
-  height: number
-  
+  dataType?: DataType
+  width?: number
+  height?: number
+  internalFormat?: InternalFormat
+  format?: Format
+}
+```
+
+sensible defaults for `UInt8Array` and `Float32Array`
+
+```ts
+// UInt8Array
+{
+  dataType: 'UNSIGNED_BYTE',
+  internalFormat: 'R8',
+  format: 'RED',
+}
+
+// Float32Array
+{
+  dataType: 'FLOAT',
+  internalFormat: 'R32F',
+  format: 'RED',
+}
+```
+
+### components
+
+#### `<GL/>` _component_
+
+- root `JSXElement`
+- represents a `canvas` and its `WebGL2RenderingContext`
+- wrapper around [`createGL`](#creategl-utility-function)
+
+##### Usage
+
+```tsx
+import { GL } from "@bigmistqke/solid-gl"
+<GL {...props as GLProps}>
+  ...
+</GL>
+```
+
+##### Signature
+
+```ts
+const GL = (props: GLProps) => JSXElement
+```
+
+##### type `GLProps`
+
+```ts
+type GLProps =
+  ComponentProps<'canvas'> & {
+    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    animate?: boolean
+  }
+```
+
+#### `<Program/>` _component_
+
+- sibling of [`<GL/>`](#gl-component)
+- represents a `WebGLProgram`
+
+##### Usage
+
+```tsx
+import { Program } from "@bigmistqke/solid-gl"
+<Program fragment={glsl`...`} vertex={glsl`...`} mode='TRIANGLES'/>
+```
+
+##### Signature
+
+```ts
+const Program = (props: ProgramProps) => JSXElement
+```
+
+##### type `ProgramProps
+
+```ts
+type ProgramProps = {
+  fragment: Accessor<ShaderToken>
+  vertex: Accessor<ShaderToken>
+  mode: 'TRIANGLES' | 'LINES' | 'POINTS'
 }
 ```
 
