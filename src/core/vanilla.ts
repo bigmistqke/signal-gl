@@ -95,7 +95,7 @@ export const autosize = (gl: ReturnType<typeof createGL>) => {
  * @returns void
  */
 export const render = ({ ctx, config }: ReturnType<typeof createGL>) => {
-  ctx.clearColor(1.0, 0.0, 0.0, 1.0)
+  ctx.clearColor(0.0, 0.0, 0.0, 1.0)
   ctx.clearDepth(1.0)
   ctx.enable(ctx.DEPTH_TEST)
   ctx.depthFunc(ctx.LEQUAL)
@@ -247,6 +247,8 @@ export const createProgram = (config: CreateProgramConfig) => {
       if (!program || !gl) return
       gl.useProgram(program)
       queue.forEach((fn) => fn())
+      gl.finish()
+      console.log('render')
       config.onRender?.(gl, program)
       gl.drawArrays(gl[config.mode], config.first || 0, config.count)
     },

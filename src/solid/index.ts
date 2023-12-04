@@ -1,6 +1,6 @@
 export * from '@core/proxies'
 export * from '@core/types'
-export { createGL, createProgram } from '@core/vanilla'
+export { autosize, createGL, createProgram, read, render } from '@core/vanilla'
 export * from './components'
 export * from './createComputation'
 export * from './glsl'

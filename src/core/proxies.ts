@@ -1,12 +1,30 @@
 import zeptoid from 'zeptoid'
 
-import { dataTypeToFunctionName } from './compilation'
 import type {
   AttributeParameters,
   AttributeProxy,
   UniformParameters,
   UniformProxy,
+  UniformSetter,
 } from './types'
+
+const dataTypeToFunctionName = (dataType: string) => {
+  switch (dataType) {
+    case 'float':
+      return 'uniform1f'
+    case 'int':
+    case 'bool':
+      return 'uniform1i'
+    default:
+      return ('uniform' +
+        // 1 | 2 | 3 | 4
+        dataType[dataType.length - 1] +
+        // b | i | f
+        (dataType[0] === 'b' || dataType[0] === 'i' ? dataType[0] : 'f') +
+        // v
+        'v') as UniformSetter
+  }
+}
 
 /**
  * @example

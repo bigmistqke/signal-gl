@@ -12,7 +12,7 @@ import {
 } from 'solid-js'
 
 import type { ShaderToken } from '@core/types'
-import { autosize, createGL, createProgram, render } from '@core/vanilla'
+import { createGL, createProgram, render } from '@core/vanilla'
 
 const glContext = createContext<{
   canvas: HTMLCanvasElement
@@ -53,7 +53,8 @@ export const GL = (props: GLProps) => {
             },
           })
 
-          autosize(gl)
+          // autosize(gl)
+          render(gl)
 
           if (!gl) return
 
@@ -61,9 +62,13 @@ export const GL = (props: GLProps) => {
             if (props.animate) requestAnimationFrame(animate)
             render(gl)
           }
-          createEffect(() =>
-            props.animate ? animate() : createEffect(() => render(gl))
-          )
+          createEffect(() => {
+            props.animate
+              ? animate()
+              : createEffect(() => {
+                  render(gl)
+                })
+          })
         })
 
         return canvas

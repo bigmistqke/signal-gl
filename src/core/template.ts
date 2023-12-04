@@ -121,7 +121,7 @@ export const createGlsl =
             break
           case 'sampler2D':
           case 'isampler2D':
-            bindSampler2DToken(token, gl, program, effect)
+            bindSampler2DToken(token, gl, program, onRender, effect)
             break
           case 'shader':
             token.bind(gl, program, onRender)

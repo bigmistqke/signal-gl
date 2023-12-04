@@ -1,29 +1,11 @@
-import type { Token, UniformSetter } from './types'
+import type { Token } from './types'
 
 /* COMPILATION BY SIGNAL-GL */
 
-export const dataTypeToFunctionName = (dataType: string) => {
-  switch (dataType) {
-    case 'float':
-      return 'uniform1f'
-    case 'int':
-    case 'bool':
-      return 'uniform1i'
-    default:
-      return ('uniform' +
-        // 1 | 2 | 3 | 4
-        dataType[dataType.length - 1] +
-        // b | i | f
-        (dataType[0] === 'b' || dataType[0] === 'i' ? dataType[0] : 'f') +
-        // v
-        'v') as UniformSetter
-  }
-}
-
-const resolveToken = (token: Token) => {
+const tokenToString = (token: Token) => {
   switch (token.tokenType) {
     case 'shader':
-      return token.source.split.variables
+      return token.source.parts.variables
     case 'attribute':
       return `in ${token.dataType} ${token.name};`
     case 'uniform':
@@ -38,28 +20,27 @@ export const compileStrings = (
   strings: TemplateStringsArray,
   tokens: Token[]
 ) => {
-  const source = [
+  const code = [
     ...strings.flatMap((string, index) => {
       const variable = tokens[index]
       if (variable) {
         if (variable.tokenType === 'shader')
-          return [string, variable.source.split.body]
+          return [string, variable.source.parts.body]
       }
       if (!variable || !('name' in variable)) return string
       return [string, variable.name]
     }),
   ].join('')
-  const variables = Array.from(
-    new Set(tokens.flatMap((token) => resolveToken(token)))
-  ).join('\n')
+  const variables = Array.from(new Set(tokens.flatMap(tokenToString))).join(
+    '\n'
+  )
 
-  const precision = source.match(/precision.*;/)?.[0]
-
+  const precision = code.match(/precision.*;/)?.[0]
   if (precision) {
-    const [version, body] = source.split(/precision.*;/)
+    const [version, body] = code.split(/precision.*;/)
     return {
       code: [version, precision, variables, body].join('\n'),
-      split: {
+      parts: {
         version,
         precision,
         variables,
@@ -67,12 +48,12 @@ export const compileStrings = (
       },
     }
   }
-  const version = source.match(/#version.*/)?.[0]
-  const [pre, after] = source.split(/#version.*/)
+  const version = code.match(/#version.*/)?.[0]
+  const [pre, after] = code.split(/#version.*/)
   const body = after || pre
   return {
     code: [version, variables, body].join('\n'),
-    split: {
+    parts: {
       version,
       variables,
       body,

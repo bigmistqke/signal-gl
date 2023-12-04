@@ -25,7 +25,9 @@ export const bindUniformToken = (
   onRender: OnRenderFunction
 ) => {
   const location = gl.getUniformLocation(program, token.name)!
-  onRender(location, () => gl[token.functionName](location, token.value))
+  onRender(location, () => {
+    gl[token.functionName](location, token.value)
+  })
 }
 
 export const bindAttributeToken = (
@@ -51,14 +53,13 @@ export const bindSampler2DToken = (
   token: Sampler2DToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
+  onRender: OnRenderFunction,
   effect: (cb: () => void) => void
 ) => {
   // Create a texture and bind it to texture unit 0
-  effect(() => {
-    const texture = gl.createTexture()
-    gl.activeTexture(gl.TEXTURE0 + token.textureIndex)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-
+  // onRender(token.textureIndex, () => token.value)
+  onRender(token.textureIndex, () => {
+    console.log('bind')
     const {
       format,
       width,
@@ -87,6 +88,11 @@ export const bindSampler2DToken = (
       token.options
     )
 
+    gl.useProgram(program)
+
+    const texture = gl.createTexture()
+    gl.activeTexture(gl.TEXTURE0 + token.textureIndex)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -111,6 +117,6 @@ export const bindSampler2DToken = (
       token.textureIndex
     )
 
-    gl.flush()
+    gl.finish()
   })
 }
