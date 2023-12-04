@@ -6,6 +6,7 @@
 - [Scoped Variable Names and Modules](#scoped-variable-names-and-modules-playground)
 - [Multiple Shaders](#scope-and-modules-playground)
 - [Caching Shaders](#caching-shaders-playground)
+- [Vanilla](#vanilla)
 
 
 ### Hello World [[playground]](https://playground.solidjs.com/anonymous/72a268af-262d-4d9a-84e4-4d60c94157b3)

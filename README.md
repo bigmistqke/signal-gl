@@ -1,6 +1,7 @@
 # 🚦 signal-gl
 
 [![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/bigmistqke/signal-gl)](https://www.npmjs.com/package/@bigmistqke/signal-gl)
+[![Signal-gl bundle size](https://edge.bundlejs.com/badge?q=@bigmistqke/signal-gl@0.0.25&config={%22esbuild%22:{%22external%22:[%22solid-js%22]}})](https://bundlejs.com/?q=%40bigmistqke%2Fsignal-gl%400.0.25&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22solid-js%22%5D%7D%7D)
 [![Maintained with pnpm](https://img.shields.io/badge/maintained_with-pnpm-%23cc01ff)](https://github.com/pnpm/pnpm)
 
 `minimal` `inline` `reactive` `glsl` `auto-binding` `signals` `no boilerplate` `tag template literals`
@@ -11,7 +12,7 @@
 - [Bindings](#bindings)
 - [Install](#install)
 - [Use it](#use-it)
-  - [Hello World](#hello-world)
+  - [Hello World](#hello-world-playground)
   - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
   - [`glsl`](#glsl-tag-template-literal)
@@ -19,7 +20,8 @@
   - [`uniform`](#uniform-utility-function)
   - [`<GL/>`](#gl-component)
   - [`<Program/>`](#program-component)
-- [Tip](#user-content--tip) 
+- [Syntax Highlighting](#syntax-highlighting) 
+- [Prior Art](#prior-art) 
 
 ## Premise
 
@@ -55,8 +57,8 @@ yarn add @bigmistqke/signal-gl
 ```tsx
 const [opacity, setOpacity] = createSignal(0.5)
 const vertices = new Float32Array([
-    -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-  ])
+  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+])
 
 const fragment = glsl`#version 300 es
   precision mediump float;
@@ -165,6 +167,17 @@ glsl`
 `
 ```
 
+attributes can also be declared outside the template
+
+```ts
+const u_vertices = attribute.vec2(new Float32Array([
+  -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+]))
+glsl`
+  vec2 vertice = ${u_vertices};
+`
+```
+
 #### signatures
 
 ```ts
@@ -237,6 +250,18 @@ glsl`
 const [signal] = createSignal(1)
 glsl`
   float scale = ${uniform.float(signal)};
+`
+```
+
+share a uniform between vertex and fragment shader by declaring it outside the template
+
+```ts
+const u_scale = uniform.float(1);
+const vertex = glsl`
+  float scale = ${u_scale};
+`
+const fragment = glsl`
+  float scale = ${u_scale};
 `
 ```
 
@@ -333,9 +358,19 @@ type ProgramProps = {
 }
 ```
 
-## `💡` Tip
+## Syntax Highlighting
 
-> <img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
->
-> use in combination with tag template literal syntax highlighting.<br/>
-> [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal) for `vs-code` 
+_use in combination with tag template literal syntax highlighting: see [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal) for `vs-code`_
+
+<img width="417" alt="signal-gl code with syntax highlighting" src="https://github.com/bigmistqke/signal.gl/assets/10504064/d2027993-31ac-4c88-8f7f-c0b6f51d992c">
+
+## Prior Art
+
+_these libraries could be of interest if you are looking for stable and well-tested webgl libraries_
+
+- [regl](https://github.com/regl-project/regl) _functional webgl library_
+- [ogl](https//github.com/oframe/ogl) _minimal webgl library_
+- [twgl](https//github.com/greggman/twgl.js) _tiny webgl library_
+- [four](https//github.com/CodyJasonBennett/four) _minimal webgl/webgpu alternative to three.js_
+- [useGPU](https://gitlab.com/unconed/use.gpu) _declarative, reactive webgpu library + glsl/wsgl linker/treeshaker_
+- [lume](https://github.com/lume/lume) _signal-driven custom html-elements for webgl/webgpu_
