@@ -2,15 +2,16 @@ import { Accessor, mergeProps } from 'solid-js'
 import { attribute, createGL, createProgram, uniform } from '..'
 import { glsl } from './glsl'
 
-import { getDefaultConfig } from '@core/utils'
-import {
+import type {
   Buffer,
   DataType,
   Format,
   InternalFormat,
   ShaderToken,
   UniformProxy,
-} from '../core/types'
+} from '@core/types'
+import { getTextureConfigFromTypedArray } from '@core/utils'
+import { read, render } from '@core/vanilla'
 
 const canvas = document.createElement('canvas')
 
@@ -59,8 +60,9 @@ export const createComputation = <TBuffer extends Buffer>(
         width: input().length,
         height: 1,
         dataType: 'FLOAT',
+        output,
       },
-      getDefaultConfig(input()),
+      getTextureConfigFromTypedArray(input()),
       config
     )
 
@@ -104,7 +106,7 @@ void main(){outColor = compute();}`
 
   return () => {
     updateOutput()
-    gl.render()
-    return gl.read(output, getConfig())
+    render(gl)
+    return read(gl, getConfig())
   }
 }

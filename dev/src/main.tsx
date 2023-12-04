@@ -1,5 +1,5 @@
 import { ComputeShader, createComputation, glsl } from '@bigmistqke/signal-gl'
-import { createEffect, createSignal } from 'solid-js'
+import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 import './index.css'
 
@@ -24,6 +24,11 @@ function App() {
     return sqrt(sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value))) * sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value)))) 
      * sqrt(sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value))) * sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value)))) ;
   `
+
+  const computeGlsl = createComputation(input, computeShader, {
+    width: WIDTH,
+    height: HEIGHT,
+  })
 
   // absurd calculation
   // maybe it gets compiled away idk ¯\_(ツ)_/¯
@@ -60,14 +65,10 @@ function App() {
 
   const computeJs2 = () => input().map((value) => calc(value))
 
-  const compute = createComputation(input, computeShader, {
-    width: WIDTH,
-    height: HEIGHT,
-  })
-
-  createEffect(() => {
+  setInterval(() => {
     console.time('compute glsl')
-    const glslResult = compute()
+    setInput((input) => ((input[0] = Math.floor(Math.random() * 100)), input))
+    const glslResult = computeGlsl()
     console.timeEnd('compute glsl')
 
     console.time('compute js')
@@ -87,11 +88,15 @@ function App() {
       jsResult2[0],
       input()[0]
     )
-  })
-
-  setInterval(() => {
-    setInput((input) => ((input[0] = Math.floor(Math.random() * 100)), input))
   }, 1000)
+
+  /* setInterval(() => {
+    setInput(
+      (input) => (
+        (input = input.map(() => Math.floor(Math.random() * 100))), input
+      )
+    )
+  }, 1000) */
 
   return <span></span>
 }
