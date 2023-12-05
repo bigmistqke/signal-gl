@@ -1,6 +1,9 @@
-export * from '@core/proxies'
+export * from '@core/hooks'
+export * from '@core/template'
 export * from '@core/types'
-export { autosize, createGL, createProgram, read, render } from '@core/vanilla'
 export * from './components'
-export * from './createComputation'
-export * from './glsl'
+
+/* bind solid's createEffect to glsl.effect */
+import { glsl } from '@core/template'
+import { createEffect } from 'solid-js'
+glsl.effect = createEffect

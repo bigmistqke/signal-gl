@@ -1,7 +1,7 @@
 import { Accessor, mergeProps } from 'solid-js'
 import { ShaderToken, attribute, uniform } from '..'
+import { glsl } from '../bindings'
 import { Program } from '../components'
-import { glsl } from '../glsl'
 
 const planeVertices = new Float32Array(
   [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0].map(

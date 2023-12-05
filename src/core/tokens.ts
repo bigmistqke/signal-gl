@@ -1,3 +1,5 @@
+import { mergeProps } from 'solid-js'
+
 import type {
   AttributeProxy,
   AttributeToken,
@@ -6,8 +8,7 @@ import type {
   UniformProxy,
   UniformToken,
   ValueOf,
-} from '@core/types'
-import { mergeProps } from 'solid-js'
+} from './types'
 
 export const createToken = <
   TConfig extends ReturnType<ValueOf<UniformProxy> | ValueOf<AttributeProxy>>,
@@ -25,7 +26,7 @@ export const bindUniformToken = (
   onRender: OnRenderFunction
 ) => {
   const location = gl.getUniformLocation(program, token.name)!
-  onRender(location, () => {
+  onRender(token.name, () => {
     gl[token.functionName](location, token.value)
   })
 }
@@ -41,7 +42,7 @@ export const bindAttributeToken = (
   const glTarget = target ? gl[target] : gl.ARRAY_BUFFER
   const location = gl.getAttribLocation(program, token.name)
 
-  onRender(location, () => {
+  onRender(token.name, () => {
     gl.bindBuffer(glTarget, buffer)
     gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
     gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)
@@ -53,10 +54,32 @@ export const bindSampler2DToken = (
   token: Sampler2DToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  effect: (cb: () => void) => void,
-  render: () => void
+  onRender: OnRenderFunction,
+  effect: (cb: () => void) => void
 ) => {
-  // Create a texture and bind it to texture unit 0
+  // Create a texture
+  const texture = gl.createTexture()
+  const options = mergeProps(
+    {
+      internalFormat: 'RGBA',
+      width: 2,
+      height: 1,
+      border: 0,
+      format: 'RGBA',
+      dataType: 'UNSIGNED_BYTE',
+      minFilter: 'NEAREST',
+      magFilter: 'NEAREST',
+      wrapS: 'CLAMP_TO_EDGE',
+      wrapT: 'CLAMP_TO_EDGE',
+    } as const,
+    token.options
+  )
+
+  onRender(token.name, () => {
+    /* token.value here to trigger possible `effect(() => gl.render())` */
+    token.value
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+  })
   effect(() => {
     const {
       format,
@@ -69,26 +92,10 @@ export const bindSampler2DToken = (
       wrapT,
       internalFormat,
       dataType,
-    } = mergeProps(
-      {
-        internalFormat: 'RGBA',
-        width: 2,
-        height: 1,
-        border: 0,
-        format: 'RGBA',
-        dataType: 'UNSIGNED_BYTE',
-        minFilter: 'NEAREST',
-        magFilter: 'NEAREST',
-        wrapS: 'CLAMP_TO_EDGE',
-        wrapT: 'CLAMP_TO_EDGE',
-      } as const,
-      token.options
-    )
+    } = options
 
     gl.useProgram(program)
 
-    const texture = gl.createTexture()
-    gl.activeTexture(gl.TEXTURE0 + token.textureIndex)
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(
       gl.TEXTURE_2D,
@@ -110,7 +117,5 @@ export const bindSampler2DToken = (
 
     // Bind the texture to the uniform sampler
     gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex)
-
-    render()
   })
 }

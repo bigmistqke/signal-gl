@@ -1,27 +1,34 @@
 import zeptoid from 'zeptoid'
 
-import { compileStrings as compileTemplate } from '@core/compilation'
-import type {
-  AttributeReturnType,
-  Check as Extends,
-  GLSLError,
-  IsUnion,
-  OnRenderFunction,
-  ShaderToken,
-  TemplateValue,
-  Token,
-  UniformReturnType,
-} from '@core/types'
+import { compileStrings as compileTemplate } from './compilation'
 import {
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
   createToken,
 } from './tokens'
+import type {
+  AttributeParameters,
+  AttributeProxy,
+  AttributeReturnType,
+  Check,
+  GLSLError,
+  IsUnion,
+  OnRenderFunction,
+  ShaderToken,
+  TemplateValue,
+  Token,
+  UniformParameters,
+  UniformProxy,
+  UniformReturnType,
+  UniformSetter,
+} from './types'
 
 const DEBUG = false //import.meta.env.DEV
 const nameCacheMap = new WeakMap<TemplateStringsArray, string[]>()
 let textureIndex = 0
+
+/* GLSL TAG TEMPLATE LITERAL */
 
 /**
  *  RULES
@@ -30,7 +37,7 @@ let textureIndex = 0
  *        which could cause issues in cached mode
  * */
 
-type ShouldNotUnion<T> = Extends<
+type ShouldNotUnion<T> = Check<
   T,
   [UniformReturnType, AttributeReturnType, string]
 >
@@ -43,15 +50,13 @@ type CheckTemplateValues<T extends any[]> = {
 }
 
 /**
- * pass effect from signal implementation
+ * Tag template literal to compose glsl-shaders.
  */
-export const createGlsl =
-  (effect: (cb: () => void) => void) =>
-  <T extends TemplateValue[]>(
-    template: TemplateStringsArray,
-    ...holes: CheckTemplateValues<T>
-  ) =>
-  () => {
+export const glsl = function <T extends TemplateValue[]>(
+  template: TemplateStringsArray,
+  ...holes: CheckTemplateValues<T>
+) {
+  return () => {
     const hasNameCache = nameCacheMap.has(template)
     if (!hasNameCache) nameCacheMap.set(template, [])
     const nameCache = nameCacheMap.get(template)!
@@ -122,7 +127,7 @@ export const createGlsl =
             break
           case 'sampler2D':
           case 'isampler2D':
-            bindSampler2DToken(token, gl, program, effect, render)
+            bindSampler2DToken(token, gl, program, onRender, glsl.effect)
             break
           case 'shader':
             token.bind(gl, program, onRender, render)
@@ -144,3 +149,103 @@ export const createGlsl =
       template,
     } as ShaderToken
   }
+}
+/** Stubbed effect. Overwrite this value to create bindings for other signal-implementations. */
+glsl.effect = (cb: () => void) => {}
+
+/* TEMPLATE-HELPERS */
+
+const dataTypeToFunctionName = (dataType: string) => {
+  switch (dataType) {
+    case 'float':
+      return 'uniform1f'
+    case 'int':
+    case 'bool':
+      return 'uniform1i'
+    default:
+      return ('uniform' +
+        // 1 | 2 | 3 | 4
+        dataType[dataType.length - 1] +
+        // b | i | f
+        (dataType[0] === 'b' || dataType[0] === 'i' ? dataType[0] : 'f') +
+        // v
+        'v') as UniformSetter
+  }
+}
+
+/**
+ * @example
+ *
+ * ```ts
+ * // dynamic
+ * const [color] = createSignal([0, 1, 2])
+ * glsl`
+ *  vec3 color = ${uniform.vec3(color)};
+ * `
+ * // static
+ * glsl`
+ *  vec3 color = ${uniform.vec3([0, 1, 2])};
+ * `
+ * ```
+ * */
+export const uniform = new Proxy({} as UniformProxy, {
+  get(target, dataType) {
+    return (...[value, options]: UniformParameters) => ({
+      dataType,
+      name: 'u_' + zeptoid(),
+      functionName: dataTypeToFunctionName(dataType as string),
+      tokenType:
+        dataType === 'sampler2D'
+          ? 'sampler2D'
+          : dataType === 'isampler2D'
+          ? 'isampler2D'
+          : 'uniform',
+      get value() {
+        return typeof value === 'function' ? value() : value
+      },
+      options,
+    })
+  },
+})
+
+/** 
+ * @example
+ * ```ts
+ * // dynamic
+ * const [vertices] = createSignal
+ *  new Float32Array([
+      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+    ])
+ * )
+ * glsl`
+ *  vec2 vertices = ${attribute.vec2(vertices)};
+ * `
+ * 
+ * // static
+ * glsl`
+ *  vec2 vertices = ${attribute.vec2(new Float32Array([
+      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+    ]))};
+ * `
+ * ```
+ * */
+export const attribute = new Proxy({} as AttributeProxy, {
+  get(target, dataType) {
+    return (...[value, options]: AttributeParameters) => {
+      const size =
+        typeof dataType === 'string'
+          ? +dataType[dataType.length - 1]!
+          : undefined
+      return {
+        dataType,
+        name: 'a_' + zeptoid(),
+        tokenType: 'attribute',
+        size: size && !isNaN(size) ? size : 1,
+        get value() {
+          return typeof value === 'function' ? value() : value
+        },
+        options,
+      }
+    }
+  },
+})

@@ -70,8 +70,8 @@ export function createWebGLProgram(
 ) {
   const program = gl.createProgram()
 
-  var vertexShader = createWebGLShader(gl, vertex, gl.VERTEX_SHADER)
-  var fragmentShader = createWebGLShader(gl, fragment, gl.FRAGMENT_SHADER)
+  var vertexShader = createWebGLShader(gl, vertex, 'vertex')
+  var fragmentShader = createWebGLShader(gl, fragment, 'fragment')
 
   if (!program || !vertexShader || !fragmentShader) return null
 
@@ -85,6 +85,7 @@ export function createWebGLProgram(
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     console.error('error while creating program', gl.getProgramInfoLog(program))
+    gl.deleteProgram(program)
     return null
   }
 
@@ -94,26 +95,25 @@ export function createWebGLProgram(
 function createWebGLShader(
   gl: WebGLRenderingContext,
   src: string,
-  type:
-    | WebGLRenderingContextBase['VERTEX_SHADER']
-    | WebGLRenderingContextBase['FRAGMENT_SHADER']
+  type: 'vertex' | 'fragment'
 ) {
-  const shader = gl.createShader(type)
+  const shader = gl.createShader(
+    type === 'fragment' ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER
+  )
 
+  /* cration shader failed */
   if (!shader) {
-    console.error(`error while creating shader`)
+    console.error(type, `error while creating shader`)
     return null
   }
 
   gl.shaderSource(shader, src)
   gl.compileShader(shader)
 
+  /* compilation shader failed */
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(
-      (type == gl.VERTEX_SHADER ? 'VERTEX' : 'FRAGMENT') +
-        ` SHADER:\n ${gl.getShaderInfoLog(shader)}`
-    )
-
+    console.error(type, gl.getShaderInfoLog(shader))
+    gl.deleteShader(shader)
     return null
   }
 
