@@ -22,7 +22,7 @@
   - [hooks](#hooks)
     - [`createGL`](#creategl-hook) _hook for managing `WebGL2RenderingContext`_
     - [`createProgram`](#createprogram-hook) _hook for managing `WebGLProgram`_
-    - [`createComputation`](#createcomputation-hook) _hook for gpu-computations_
+    - [`createComputation`](#createcomputation-h=ook) _hook for gpu-computations_
   - [components](#components) _JSX wrappers around `hooks`_
     - [`<GL/>`](#gl-component) _JSX wrapper around `createGL`_
     - [`<Program/>`](#program-component) _JSX wrapper around `createProgram`_
@@ -100,9 +100,9 @@ return (
 ### `glsl` _tag template literal_
 
 > - write and compose `glsl`
-> - interpolation [see `Hole`](#hole)
->   - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-utility-function) and [`uniform`](#uniform-utility-function) calls
->   - link glsl-snippets into one shader by interpolating [`glsl`](#glsl-tag-template-literals) tag template literals
+> - interpolation [see `Hole`](#type-hole)
+>   - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-component-helper) and [`uniform`](#uniform-component-helper) calls
+>   - link glsl-snippets into one shader by interpolating [`glsl`](#glsl-tag-template-literal) tag template literals
 >   - create scoped variable names by interpolating `strings`
 > - returns [`ShaderToken`](#type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
 
@@ -535,7 +535,7 @@ sensible defaults for `UInt8Array` and `Float32Array`
 
 - root `JSXElement`
 - represents a `canvas` and its `WebGL2RenderingContext`
-- wrapper around [`createGL`](#creategl-utility-function)
+- wrapper around [`createGL`](#creategl-hook)
 
 #### Usage
 
