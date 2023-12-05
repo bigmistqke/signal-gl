@@ -12,11 +12,11 @@ import {
 } from 'solid-js'
 
 import {
-  GLToken,
+  StackToken,
   autosize,
-  clear as clearGL,
-  createGL,
+  clear,
   createProgram,
+  createStack,
   filterProgramTokens,
 } from '@core/hooks'
 import type { ShaderToken } from '@core/types'
@@ -32,12 +32,12 @@ const useGL = () => useContext(glContext)
 type GLProps = ComponentProps<'canvas'> & {
   onProgramCreate?: () => void
   /* Enable/disable clear-function or provide a custom one. */
-  clear?: boolean | ((gl: GLToken) => void)
+  clear?: boolean | ((gl: StackToken) => void)
   /* Enable/disable `rAF`-based animation or request fps. If disabled, render-loop will be `effect`-based. */
   animate?: boolean | number
 }
 
-export const GL = (props: GLProps) => {
+export const Stack = (props: GLProps) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
   const canvas = (<canvas {...rest} />) as HTMLCanvasElement
 
@@ -55,34 +55,35 @@ export const GL = (props: GLProps) => {
         const childs = children(() => childrenProps.children)
 
         onMount(() => {
-          const gl = createGL({
-            canvas,
-            get programs() {
-              return filterProgramTokens(childs())
-            },
-          })
+          try {
+            const stack = createStack({
+              canvas,
+              get programs() {
+                return filterProgramTokens(childs())
+              },
+            })
 
-          autosize(gl)
-          gl.render()
+            autosize(stack)
+            stack.render()
 
-          if (!gl) return
+            const render = () => {
+              if (props.clear) {
+                if (typeof props.clear === 'function') props.clear(stack)
+                else clear(stack)
+              }
+              stack.render()
+            }
 
-          const clear = () => {
-            if (!props.clear) return
-            if (typeof props.clear === 'function') props.clear(gl)
-            else clearGL(gl)
+            const animate = () => {
+              if (props.animate) requestAnimationFrame(animate)
+              render()
+            }
+            createEffect(() =>
+              props.animate ? animate() : createEffect(render)
+            )
+          } catch (error) {
+            console.error(error)
           }
-
-          const render = () => {
-            clear()
-            gl.render()
-          }
-
-          const animate = () => {
-            if (props.animate) requestAnimationFrame(animate)
-            render()
-          }
-          createEffect(() => (props.animate ? animate() : createEffect(render)))
         })
 
         return canvas

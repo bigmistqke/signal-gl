@@ -20,11 +20,11 @@
     - [`attribute`](#attribute-template-helper) _template-helper to include attribute into `glsl`-template_
     - [`uniform`](#uniform-template-helper) _template-helper to include uniform into `glsl`-template_
   - [hooks](#hooks)
-    - [`createGL`](#creategl-hook) _hook for managing `WebGL2RenderingContext`_
+    - [`createStack`](#creategl-hook) _hook for managing `WebGL2RenderingContext`_
     - [`createProgram`](#createprogram-hook) _hook for managing `WebGLProgram`_
     - [`createComputation`](#createcomputation-hook) _hook for gpu-computations_
   - [components](#components)
-    - [`<GL/>`](#gl-component) _JSX wrapper around `createGL`_
+    - [`<Stack/>`](#gl-component) _JSX wrapper around `createStack`_
     - [`<Program/>`](#program-component) _JSX wrapper around `createProgram`_
 - [Syntax Highlighting](#syntax-highlighting) 
 - [Prior Art](#prior-art) 
@@ -85,9 +85,9 @@ const vertex = glsl`#version 300 es
   }`
 
 return (
-  <GL onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}>
+  <Stack onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}>
     <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" />
-  </GL>
+  </Stack>
 )
 ```
 
@@ -346,15 +346,15 @@ type Sampler2DToken = {
 
 ## hooks
 
-### `createGL` _hook_
+### `createStack` _hook_
 
 > manage the `webgl2`-context of a given `<canvas/>`-element
 
 #### Usage
 ```tsx
-import { createGL, read, autosize } from "@bigmistqke/signal-gl"
+import { createStack, read, autosize } from "@bigmistqke/signal-gl"
 const canvas = <canvas/>
-const gl = createGL({canvas, programs: [programs]})
+const gl = createStack({canvas, programs: [programs]})
 if(!gl) return;
 
 // render programs to given canvas-element whenever any of its attributes/uniforms update
@@ -368,13 +368,13 @@ read(gl, { output: new Float32Array(...) });
 #### Signature
 
 ```ts
-(config: GLConfig): GLReturnType
+(config: StackConfig):`StackReturnType
 ```
 
-#### type `GLConfig`
+#### type `StackConfig`
 
 ```ts
-type GLConfig = {
+type StackConfig = {
   autoResize?: boolean         // default true
   canvas?: HTMLCanvasElement
   extensions?: {
@@ -387,7 +387,7 @@ type GLConfig = {
 }
 ```
 
-#### type `GLReturnType`
+#### type `StackReturnType`
 
 - `gl.read` has conditional default values as config
   - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
@@ -395,7 +395,7 @@ type GLConfig = {
   - else `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
 
 ```ts
-type GLReturnType = {
+type`StackReturnType = {
   render: () => void,
   read: (
     output: Buffer,
@@ -413,7 +413,7 @@ type GLReturnType = {
 ### `createProgram` _hook_
 
 > manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
-> to use program, add it to the `programs`-property in createGL's `GLConfig`
+> to use program, add it to the `programs`-property in createStack's `StackConfig`
 
 #### Usage
 ```tsx
@@ -422,7 +422,7 @@ const fragment = glsl`#version 300 es
   in vec2 v_coord; 
   out vec4 outColor;
   void main() {
-    outColor = vec4(v_coord[0], v_coord[1], 0, 1);
+    outColor = vec4(${uniform.float(red)}, v_coord[1], 0, 1);
   }`
 
 const vertex = glsl`#version 300 es
@@ -441,6 +441,9 @@ const program = createProgram({
   mode: 'TRIANGLES',
   count: vertices.length / 2,
 })
+
+// will re-render if either `vertices` or `red` gets updates
+createEffect(program.render) 
 ```
 
 #### Signature
@@ -535,41 +538,41 @@ sensible defaults for `UInt8Array` and `Float32Array`
 
 ## components
 
-### `<GL/>` _component_
+### `<Stack/>` _component_
 
 - root `JSXElement`
 - represents a `canvas` and its `WebGL2RenderingContext`
-- wrapper around [`createGL`](#creategl-hook)
+- wrapper around [`createStack`](#creategl-hook)
 
 #### Usage
 
 ```tsx
 import { GL } from "@bigmistqke/solid-gl"
-<GL {...props as GLProps}>
-  ...
-</GL>
+<Stack onProgramCreate={() => console.log('program created')} >
+  <Program />
+</Stack>
 ```
 
 #### Signature
 
 ```ts
-(props: GLProps) => JSXElement
+(props: StackProps) => JSXElement
 ```
 
-#### type `GLProps`
+#### type `StackProps`
 
 ```ts
-type GLProps =
+type StackProps =
   ComponentProps<'canvas'> & {
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-    onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+    onProgramCreate?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
     animate?: boolean
   }
 ```
 
 ### `<Program/>` _component_
 
-- sibling of [`<GL/>`](#gl-component)
+- sibling of [`<Stack/>`](#gl-component)
 - represents a `WebGLProgram`
 
 #### Usage

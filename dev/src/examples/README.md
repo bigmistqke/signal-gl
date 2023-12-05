@@ -42,9 +42,9 @@ const vertex = glsl`#version 300 es
   }`
 
 return (
-  <GL onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}>
+  <Stack onMouseMove={(e) => setOpacity(e.clientY / e.currentTarget.offsetHeight)}>
     <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" count={vertices.length / 2} />
-  </GL>
+  </Stack>
 )
 ```
 
@@ -132,9 +132,9 @@ const onMouseMove = (e) => {
 };
 
 return (
-  <GL style={{ width: "100vw", height: "100vh" }} onMouseMove={onMouseMove}>
+  <Stack style={{ width: "100vw", height: "100vh" }} onMouseMove={onMouseMove}>
     <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" count={vertices.length / 2} />
-  </GL>
+  </Stack>
 );
 ```
 
@@ -183,7 +183,7 @@ const getColor = glsl`
   }`
 
 return (
-  <GL
+  <Stack
     onMouseMove={(e) => {
       setOpacity(1 - e.clientY / e.currentTarget.offsetHeight)
       setCursor([
@@ -227,7 +227,7 @@ return (
         ])
       }z
     />
-  </GL>
+  </Stack>
 )
 ```
 
@@ -350,7 +350,7 @@ const fragment = (blue: number) => glsl`#version 300 es
   }`
 
 return (
-  <GL onProgramCreate={() => console.log('created a program')}>
+  <Stack onProgramCreate={() => console.log('created a program')}>
     <Index each={boids()}>
       {(boid, index) => {
         return (
@@ -362,7 +362,7 @@ return (
         )
       }}
     </Index>
-  </GL>
+  </Stack>
 )
 ```
 
@@ -405,12 +405,13 @@ onMount(() => {
     mode: 'TRIANGLES',
   })
 
-  const gl = createGL({
+  const stack = createStack({
     canvas,
-    programs: [program],
+    programs: [ program ],
   })
 
-  createEffect(() => gl?.render())
+  createEffect(gl.render) 
+  // or creatEffect(program.render)
 })
 
 return (

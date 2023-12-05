@@ -13,9 +13,9 @@ import type {
 import { getTextureConfigFromTypedArray, objectsAreEqual } from './utils'
 
 /* 
-  CREATE_GL-HOOK 
+  CREATE_STACK-HOOK 
 */
-type GLConfig = {
+type StackConfig = {
   canvas: HTMLCanvasElement
   programs: ReturnType<typeof createProgram>[]
   extensions?: {
@@ -25,21 +25,17 @@ type GLConfig = {
     half_float?: boolean
   }
 }
-export type GLToken = GLConfig & {
+export type StackToken = StackConfig & {
   ctx: WebGL2RenderingContext
   render: () => void
-  cache: {
-    previousReadConfig: GLReadConfig
-  }
 }
 /**
- * Returns `GLToken`. Manages `Webgl2RenderingContext` of given `<canvas/>`
- * @param config `GLConfig`
- * @returns `GLToken`
+ * Returns `ComposerToken`.
+ * @param config `ComposerConfig`
+ * @returns `ComposerToken`
  */
-export const createGL = (config: GLConfig): GLToken => {
+export const createStack = (config: StackConfig): StackToken => {
   const ctx = config.canvas.getContext('webgl2')!
-
   if (!ctx) throw 'webgl2 is not supported'
 
   // TODO: should these extensions be effectful?
@@ -56,124 +52,7 @@ export const createGL = (config: GLConfig): GLToken => {
     ...config,
     ctx,
     render: () => config.programs.forEach((program) => program.render()),
-    cache: {
-      previousReadConfig: {} as GLReadConfig,
-    },
   }
-}
-
-/* 
-  UTILITY-FUNCTIONS 4 GL_TOKEN 
-*/
-
-/**
- * Utility-function to automatically update `GLToken['canvas']` width/height on resize.
- * @param gl
- * @returns void
- */
-export const autosize = (gl: GLToken) => {
-  /* Observe resize-events canvas */
-  const resizeObserver = new ResizeObserver(() => {
-    gl.canvas.width = gl.canvas.clientWidth
-    gl.canvas.height = gl.canvas.clientHeight
-    gl.ctx.viewport(0, 0, gl.canvas.width, gl.canvas.height)
-    gl.render()
-  })
-  resizeObserver.observe(gl.canvas)
-}
-
-/**
- * Utility-function to clear canvas with sensible defaults.
- * @param gl
- * @returns void
- */
-export const clear = ({ ctx }: GLToken) => {
-  ctx.clearColor(0.0, 0.0, 0.0, 1.0)
-  ctx.clearDepth(1.0)
-  ctx.enable(ctx.DEPTH_TEST)
-  ctx.depthFunc(ctx.LEQUAL)
-  ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT)
-}
-
-type GLRenderBufferConfig = {
-  internalFormat: InternalFormat
-  width: number
-  height: number
-}
-/**
- * Utility-function to set renderBuffer of a `GLToken['context']`.
- * @param gl
- * @param {GLRenderBufferConfig} config
- * @returns `typeof config.output`
- */
-export const renderBuffer = (
-  { ctx }: GLToken,
-  { internalFormat, width, height }: GLRenderBufferConfig
-) => {
-  const framebuffer = ctx.createFramebuffer()
-  ctx.bindFramebuffer(ctx.FRAMEBUFFER, framebuffer)
-
-  /* Create a renderbuffer */
-  const renderBuffer = ctx.createRenderbuffer()
-  ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderBuffer)
-  ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx[internalFormat], width, height)
-
-  /* Attach the renderbuffer to the framebuffer */
-  ctx.framebufferRenderbuffer(
-    ctx.FRAMEBUFFER,
-    ctx.COLOR_ATTACHMENT0,
-    ctx.RENDERBUFFER,
-    renderBuffer
-  )
-
-  ctx.finish()
-}
-
-type GLReadConfig = {
-  width?: number
-  height?: number
-  internalFormat?: InternalFormat
-  format?: Format
-  dataType?: DataType
-  output: Buffer
-}
-/**
- * Utility-function to read the pixel-data of a `GLToken['context']`.
- * @param gl
- * @param {GLReadConfig} config
- * @returns `typeof config.output`
- */
-export const read = (gl: GLToken, config?: GLReadConfig) => {
-  const mergedConfig = mergeProps(
-    {
-      format: 'RGBA',
-      dataType: 'UNSIGNED_BYTE',
-      internalFormat: 'RGBA8',
-      width: gl.canvas.width,
-      height: gl.canvas.height,
-    } as const,
-    config
-  )
-
-  if (!objectsAreEqual(mergedConfig, gl.cache.previousReadConfig)) {
-    gl.cache.previousReadConfig = mergedConfig!
-    renderBuffer(gl, mergedConfig)
-  }
-
-  clear(gl)
-  gl.render()
-
-  gl.ctx.readPixels(
-    0,
-    0,
-    mergedConfig.width,
-    mergedConfig.height,
-    gl.ctx[mergedConfig.format],
-    gl.ctx[mergedConfig.dataType],
-    mergedConfig.output
-  )
-
-  return mergedConfig.output
 }
 
 /* 
@@ -191,9 +70,9 @@ type CreateProgramConfig = {
   vertex: ShaderToken
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
 }
-export type ProgramToken = {
-  config: CreateProgramConfig
+export type ProgramToken = CreateProgramConfig & {
   program: WebGLProgram
+  ctx: WebGL2RenderingContext
   render: () => void
   [IS_PROGRAM]: true
 }
@@ -203,16 +82,16 @@ export type ProgramToken = {
  * @returns
  */
 export const createProgram = (config: CreateProgramConfig): ProgramToken => {
-  const gl = config.canvas.getContext('webgl2')
+  const ctx = config.canvas.getContext('webgl2')
 
-  if (!gl) throw 'webgl2 is not supported'
+  if (!ctx) throw 'webgl2 is not supported'
 
   /* create program */
   const cachedProgram = config.cacheEnabled && getProgramCache(config)
   const program =
     cachedProgram ||
     createWebGLProgram(
-      gl,
+      ctx,
       config.vertex.source.code,
       config.fragment.source.code
     )
@@ -228,20 +107,21 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
 
   /* render-function */
   const render = () => {
-    gl.useProgram(program)
+    ctx.useProgram(program)
     /* iterate through all uniforms/attributes and update them. */
     updateQueue.forEach((update) => update())
-    config.onRender?.(gl, program)
-    gl.drawArrays(gl[config.mode], config.first || 0, config.count)
+    config.onRender?.(ctx, program)
+    ctx.drawArrays(ctx[config.mode], config.first || 0, config.count)
   }
 
   /* bind all uniforms/attributes to the program and add to `updateQueue` */
-  config.vertex.bind(gl, program, addToUpdateQueue, render)
-  config.fragment.bind(gl, program, addToUpdateQueue, render)
+  config.vertex.bind(ctx, program, addToUpdateQueue, render)
+  config.fragment.bind(ctx, program, addToUpdateQueue, render)
 
   return {
-    config,
+    ...config,
     program,
+    ctx,
     render,
     [IS_PROGRAM]: true,
   }
@@ -273,10 +153,6 @@ const setProgramCache = ({
   }
 }
 
-/* 
-  UTILITY-FUNCTIONS 4 PROGRAM_TOKEN 
-*/
-
 /** Checks if a given value is a `ProgramToken` */
 export const isProgramToken = (value: any): value is ProgramToken =>
   typeof value === 'object' && IS_PROGRAM in value
@@ -287,6 +163,128 @@ export const filterProgramTokens = (value: any) =>
     ? (value as any[])
     : [value]
   ).filter(isProgramToken)
+
+/* 
+  UTILITY-FUNCTIONS FOR GL_TOKEN AND PROGRAM_TOKEN
+*/
+
+/**
+ * Utility-function to automatically update `GLToken['canvas'] | ProgramToken['canvas']` width/height on resize.
+ * @param gl
+ * @returns void
+ */
+export const autosize = ({
+  canvas,
+  ctx,
+  render,
+}: StackToken | ProgramToken) => {
+  /* Observe resize-events canvas */
+  const resizeObserver = new ResizeObserver(() => {
+    canvas.width = canvas.clientWidth
+    canvas.height = canvas.clientHeight
+    ctx.viewport(0, 0, canvas.width, canvas.height)
+    render()
+  })
+  resizeObserver.observe(canvas)
+}
+
+/**
+ * Utility-function to clear canvas with sensible defaults.
+ * @param `GLToken | ProgramToken`
+ * @returns void
+ */
+export const clear = ({ ctx }: StackToken | ProgramToken) => {
+  ctx.clearColor(0.0, 0.0, 0.0, 1.0)
+  ctx.clearDepth(1.0)
+  ctx.enable(ctx.DEPTH_TEST)
+  ctx.depthFunc(ctx.LEQUAL)
+  ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT)
+}
+
+type RenderBufferConfig = {
+  internalFormat: InternalFormat
+  width: number
+  height: number
+}
+/**
+ * Utility-function to set renderBuffer of a `GLToken['context'] | ProgramToken['context']`.
+ * @param gl
+ * @param {RenderBufferConfig} config
+ * @returns `typeof config.output`
+ */
+export const renderBuffer = (
+  { ctx }: StackToken | ProgramToken,
+  { internalFormat, width, height }: RenderBufferConfig
+) => {
+  const framebuffer = ctx.createFramebuffer()
+  ctx.bindFramebuffer(ctx.FRAMEBUFFER, framebuffer)
+
+  /* Create a renderbuffer */
+  const renderBuffer = ctx.createRenderbuffer()
+  ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderBuffer)
+  ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx[internalFormat], width, height)
+
+  /* Attach the renderbuffer to the framebuffer */
+  ctx.framebufferRenderbuffer(
+    ctx.FRAMEBUFFER,
+    ctx.COLOR_ATTACHMENT0,
+    ctx.RENDERBUFFER,
+    renderBuffer
+  )
+
+  ctx.finish()
+}
+
+const readCache = new WeakMap<WebGL2RenderingContext, Record<string, any>>()
+type ReadConfig = {
+  width?: number
+  height?: number
+  internalFormat?: InternalFormat
+  format?: Format
+  dataType?: DataType
+  output: Buffer
+}
+/**
+ * Utility-function to read the pixel-data of a `GLToken['context']`.
+ * @param token
+ * @param {ReadConfig} config
+ * @returns `typeof config.output`
+ */
+export const read = (token: StackToken | ProgramToken, config?: ReadConfig) => {
+  const mergedConfig = mergeProps(
+    {
+      format: 'RGBA',
+      dataType: 'UNSIGNED_BYTE',
+      internalFormat: 'RGBA8',
+      width: token.canvas.width,
+      height: token.canvas.height,
+    } as const,
+    config
+  )
+
+  if (
+    !readCache.get(token.ctx) ||
+    !objectsAreEqual(mergedConfig, readCache.get(token.ctx))
+  ) {
+    readCache.set(token.ctx, mergedConfig)
+    renderBuffer(token, mergedConfig)
+  }
+
+  clear(token)
+  token.render()
+
+  token.ctx.readPixels(
+    0,
+    0,
+    mergedConfig.width,
+    mergedConfig.height,
+    token.ctx[mergedConfig.format],
+    token.ctx[mergedConfig.dataType],
+    mergedConfig.output
+  )
+
+  return mergedConfig.output
+}
 
 /* 
   CREATE_COMPUTATION-HOOK 
@@ -362,11 +360,6 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
     count: 4,
   })
 
-  const gl = createGL({
-    canvas: computationCanvas,
-    programs: [program],
-  })
-
   const updateOutput = () => {
     if (input().constructor !== output?.constructor) {
       bufferType = input().constructor as {
@@ -382,8 +375,8 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
 
   return () => {
     updateOutput()
-    clear(gl)
-    gl.render()
-    return read(gl, getConfig())
+    clear(program)
+    program.render()
+    return read(program, getConfig())
   }
 }

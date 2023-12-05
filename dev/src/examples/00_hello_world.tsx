@@ -1,4 +1,4 @@
-import { attribute, GL, glsl, Program, uniform } from '@bigmistqke/signal-gl'
+import { Program, Stack, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
@@ -29,7 +29,7 @@ function App() {
     }`
 
   return (
-    <GL
+    <Stack
       style={{
         width: '100vw',
         height: '100vh',
@@ -44,7 +44,7 @@ function App() {
         mode="TRIANGLES"
         count={vertices.length / 2}
       />
-    </GL>
+    </Stack>
   )
 }
 

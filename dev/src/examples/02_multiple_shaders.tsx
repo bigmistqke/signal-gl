@@ -1,7 +1,7 @@
 import {
-  GL,
   Program,
   ShaderToken,
+  Stack,
   attribute,
   glsl,
   uniform,
@@ -58,7 +58,7 @@ function App() {
     }`
 
   return (
-    <GL
+    <Stack
       style={{
         width: '100vw',
         height: '100vh',
@@ -106,7 +106,7 @@ function App() {
           ])
         }
       />
-    </GL>
+    </Stack>
   )
 }
 

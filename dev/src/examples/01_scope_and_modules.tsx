@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 
-import { GL, Program, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
+import { Program, Stack, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
 
 import './index.css'
 
@@ -73,7 +73,7 @@ function App() {
     }`
 
   return (
-    <GL
+    <Stack
       style={{
         width: '100%',
         height: '100vh',
@@ -93,7 +93,7 @@ function App() {
         mode="TRIANGLES"
         count={vertices.length / 2}
       />
-    </GL>
+    </Stack>
   )
 }
 

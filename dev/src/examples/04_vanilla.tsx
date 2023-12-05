@@ -1,7 +1,7 @@
 import {
   attribute,
-  createGL,
   createProgram,
+  createStack,
   glsl,
   uniform,
 } from '@bigmistqke/signal-gl'
@@ -18,22 +18,22 @@ function App() {
   ])
 
   const fragment = glsl`#version 300 es
-    precision mediump float;
-    in vec2 v_coord; 
-    out vec4 outColor;
-    void main() {
-      float opacity = ${uniform.float(opacity)};
-      outColor = vec4(v_coord[0], v_coord[1], v_coord[0], opacity);
-    }`
+  precision mediump float;
+  in vec2 v_coord; 
+  out vec4 outColor;
+  void main() {
+    float opacity = ${uniform.float(opacity)};
+    outColor = vec4(v_coord[0], v_coord[1], v_coord[0], opacity);
+  }`
 
   const vertex = glsl`#version 300 es
-    out vec2 v_coord;  
-    out vec3 v_color;
-    void main() {
-      vec2 a_coord = ${attribute.vec2(vertices)};
-      v_coord = a_coord;
-      gl_Position = vec4(a_coord, 0, 1) ;
-    }`
+  out vec2 v_coord;  
+  out vec3 v_color;
+  void main() {
+    vec2 a_coord = ${attribute.vec2(vertices)};
+    v_coord = a_coord;
+    gl_Position = vec4(a_coord, 0, 1) ;
+  }`
 
   let canvas: HTMLCanvasElement
 
@@ -46,7 +46,7 @@ function App() {
       count: vertices.length / 2,
     })
 
-    const gl = createGL({
+    const gl = createStack({
       canvas,
       programs: [program],
     })

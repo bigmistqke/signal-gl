@@ -1,6 +1,6 @@
 import {
-  GL,
   Program,
+  Stack,
   attribute,
   glsl,
   uniform,
@@ -149,7 +149,7 @@ function App() {
    }`
 
   return (
-    <GL
+    <Stack
       style={{
         width: '100vw',
         height: '100vh',
@@ -170,7 +170,7 @@ function App() {
           )
         }}
       </Index>
-    </GL>
+    </Stack>
   )
 }
 
