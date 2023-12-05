@@ -1,104 +1,128 @@
-import { ComputeShader, createComputation, glsl } from '@bigmistqke/signal-gl'
-import { createSignal } from 'solid-js'
+import { createEffect } from 'solid-js'
+import { createStore, reconcile } from 'solid-js/store'
 import { render } from 'solid-js/web'
-import './index.css'
 
-const HEIGHT = 2048
-const WIDTH = 2048
+import { GL, Program, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
+
+type Matrix<T = any> = T[][]
 
 function App() {
-  const [input, setInput] = createSignal(
-    new Float32Array(
-      new Array(WIDTH * HEIGHT)
-        .fill('')
-        .map((v, index) => Math.floor(Math.random() * 100))
-    ),
-    {
-      equals: false,
-    }
-  )
+  const gameOfLife = createGameOfLife()
 
-  const computeShader: ComputeShader = (u_buffer) => glsl`
-    ivec2 index = ivec2(gl_FragCoord.xy);
-    vec4 value = texelFetch(${u_buffer}, index, 0);
-    return sqrt(sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value))) * sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value)))) 
-     * sqrt(sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value))) * sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value)))) ;
+  const vertices = new Float32Array([
+    -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+  ])
+
+  const fragment = glsl`#version 300 es
+    precision lowp float;
+    in vec2 vTexCoord; 
+    out vec4 outColor;
+
+    void main() {
+     outColor = texture(${uniform.sampler2D(gameOfLife, {
+       format: 'LUMINANCE',
+       internalFormat: 'LUMINANCE',
+       dataType: 'UNSIGNED_BYTE',
+       width: X,
+       height: Y,
+     })}, vTexCoord * 0.5 + 0.5);
+    }
   `
 
-  const computeGlsl = createComputation(input, computeShader, {
-    width: WIDTH,
-    height: HEIGHT,
-  })
+  const vertex = glsl`#version 300 es
+  out vec2 vTexCoord;
 
-  // absurd calculation
-  // maybe it gets compiled away idk ¯\_(ツ)_/¯
-  const calc = (value: number) =>
-    Math.sqrt(
-      Math.sqrt(
-        Math.sqrt(Math.sqrt(value) * Math.sqrt(value)) *
-          Math.sqrt(Math.sqrt(value) * Math.sqrt(value))
-      ) *
-        Math.sqrt(
-          Math.sqrt(Math.sqrt(value) * Math.sqrt(value)) *
-            Math.sqrt(Math.sqrt(value) * Math.sqrt(value))
-        )
-    ) *
-    Math.sqrt(
-      Math.sqrt(
-        Math.sqrt(Math.sqrt(value) * Math.sqrt(value)) *
-          Math.sqrt(Math.sqrt(value) * Math.sqrt(value))
-      ) *
-        Math.sqrt(
-          Math.sqrt(Math.sqrt(value) * Math.sqrt(value)) *
-            Math.sqrt(Math.sqrt(value) * Math.sqrt(value))
-        )
+  void main() {
+    vTexCoord = ${attribute.vec2(vertices)};
+    gl_Position = vec4(vTexCoord, 0, 1);
+  }
+`
+
+  return (
+    <>
+      <GL>
+        <Program
+          fragment={fragment}
+          vertex={vertex}
+          mode="TRIANGLES"
+          count={6}
+        />
+      </GL>
+    </>
+  )
+}
+
+const createMatrix = (x: number, y: number): Matrix<0 | 255> =>
+  new Array(x)
+    .fill('')
+    .map(() =>
+      new Array(y).fill('').map(() => (Math.random() > 0.75 ? 255 : 0))
     )
 
-  let output = new Float32Array(input().map((v) => v))
-  const computeJs = () => {
-    const values = input()
-    for (let i = 0; i < values.length; i++) {
-      output[i] = calc(values[i]!)
-    }
-    return output
+const X = 4 * 4
+const Y = 4 * 4
+
+const createGameOfLife = () => {
+  const [matrix, setMatrix] = createStore<Matrix<0 | 255>>(createMatrix(X, Y))
+
+  const calculateAmountOfLivingNeigbors = (
+    matrix: Matrix<0 | 255>,
+    x: number,
+    y: number
+  ) => {
+    let amount = 0
+    const directions = [-1, 0, 1]
+    directions.forEach((_x) =>
+      directions.forEach((_y) => {
+        if (_x === 0 && _y === 0) return
+        matrix[x + _x]?.[y + _y] && amount++
+      })
+    )
+    return amount
   }
 
-  const computeJs2 = () => input().map((value) => calc(value))
+  const evaluateCell = (
+    matrix: Matrix<0 | 255>,
+    x: number,
+    y: number
+  ): 0 | 255 => {
+    const cell = matrix[x]?.[y]
 
-  setInterval(() => {
-    console.time('compute glsl')
-    setInput((input) => ((input[0] = Math.floor(Math.random() * 100)), input))
-    const glslResult = computeGlsl()
-    console.timeEnd('compute glsl')
+    const amount = calculateAmountOfLivingNeigbors(matrix, x, y)
 
-    console.time('compute js')
-    const jsResult = computeJs()
-    console.timeEnd('compute js')
+    // 1. Any live cell with two or three live neighbours survives.
+    if (cell && (amount === 2 || amount === 3)) {
+      return 255
+    }
+    // 2. Any dead cell with three live neighbours becomes a live cell.
+    if (!cell && amount === 3) {
+      return 255
+    }
 
-    console.time('compute js2')
-    const jsResult2 = computeJs2()
-    console.timeEnd('compute js2')
+    // 3. All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+    return 0
+  }
 
-    console.log(
-      glslResult[0] === jsResult[0] && jsResult[0] === jsResult2[0]
-        ? 'SUCCESS'
-        : 'ERROR',
-      glslResult[0],
-      jsResult[0],
-      jsResult2[0],
-      input()[0]
-    )
-  }, 1000)
+  const evaluateMatrix = (current: Matrix<0 | 255>) => {
+    const next: Matrix<0 | 255> = []
+    for (let x = 0; x < current.length; x++) {
+      const row = current[x]!
+      next.push([])
+      for (let y = 0; y < row.length; y++) {
+        next[x]![y] = evaluateCell(current, x, y)
+      }
+    }
+    return next
+  }
 
-  /* setInterval(() => {
-    setInput(
-      (input) => (
-        (input = input.map(() => Math.floor(Math.random() * 100))), input
-      )
-    )
-  }, 1000) */
+  let interval: ReturnType<typeof setInterval> | undefined
+  createEffect(() => {
+    interval = setInterval(() => {
+      setMatrix(reconcile(evaluateMatrix(matrix)))
+    }, 1000)
+  })
 
-  return <span></span>
+  return () => new Uint8Array(matrix.flat(1))
 }
 
 render(() => <App />, document.getElementById('app')!)

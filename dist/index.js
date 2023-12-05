@@ -1,10 +1,8 @@
 import zeptoid from 'zeptoid';
-import { createContext, createEffect, splitProps, children, onMount, createMemo, mergeProps, useContext } from 'solid-js';
+import { createContext, createEffect, mergeProps, splitProps, children, onMount, createMemo, useContext } from 'solid-js';
 import { spread, createComponent, template } from 'solid-js/web';
 
 // src/core/proxies.ts
-
-// src/core/compilation.ts
 var dataTypeToFunctionName = (dataType) => {
   switch (dataType) {
     case "float":
@@ -19,10 +17,43 @@ var dataTypeToFunctionName = (dataType) => {
       "v";
   }
 };
-var resolveToken = (token) => {
+var uniform = new Proxy({}, {
+  get(target, dataType) {
+    return (...[value, options]) => ({
+      dataType,
+      name: "u_" + zeptoid(),
+      functionName: dataTypeToFunctionName(dataType),
+      tokenType: dataType === "sampler2D" ? "sampler2D" : dataType === "isampler2D" ? "isampler2D" : "uniform",
+      get value() {
+        return typeof value === "function" ? value() : value;
+      },
+      options
+    });
+  }
+});
+var attribute = new Proxy({}, {
+  get(target, dataType) {
+    return (...[value, options]) => {
+      const size = typeof dataType === "string" ? +dataType[dataType.length - 1] : void 0;
+      return {
+        dataType,
+        name: "a_" + zeptoid(),
+        tokenType: "attribute",
+        size: size && !isNaN(size) ? size : 1,
+        get value() {
+          return typeof value === "function" ? value() : value;
+        },
+        options
+      };
+    };
+  }
+});
+
+// src/core/compilation.ts
+var tokenToString = (token) => {
   switch (token.tokenType) {
     case "shader":
-      return token.source.split.variables;
+      return token.source.parts.variables;
     case "attribute":
       return `in ${token.dataType} ${token.name};`;
     case "uniform":
@@ -33,27 +64,27 @@ var resolveToken = (token) => {
   }
 };
 var compileStrings = (strings, tokens) => {
-  const source = [
+  const code = [
     ...strings.flatMap((string, index) => {
       const variable = tokens[index];
       if (variable) {
         if (variable.tokenType === "shader")
-          return [string, variable.source.split.body];
+          return [string, variable.source.parts.body];
       }
       if (!variable || !("name" in variable))
         return string;
       return [string, variable.name];
     })
   ].join("");
-  const variables = Array.from(
-    new Set(tokens.flatMap((token) => resolveToken(token)))
-  ).join("\n");
-  const precision = source.match(/precision.*;/)?.[0];
+  const variables = Array.from(new Set(tokens.flatMap(tokenToString))).join(
+    "\n"
+  );
+  const precision = code.match(/precision.*;/)?.[0];
   if (precision) {
-    const [version2, body2] = source.split(/precision.*;/);
+    const [version2, body2] = code.split(/precision.*;/);
     return {
       code: [version2, precision, variables, body2].join("\n"),
-      split: {
+      parts: {
         version: version2,
         precision,
         variables,
@@ -61,12 +92,12 @@ var compileStrings = (strings, tokens) => {
       }
     };
   }
-  const version = source.match(/#version.*/)?.[0];
-  const [pre, after] = source.split(/#version.*/);
+  const version = code.match(/#version.*/)?.[0];
+  const [pre, after] = code.split(/#version.*/);
   const body = after || pre;
   return {
     code: [version, variables, body].join("\n"),
-    split: {
+    parts: {
       version,
       variables,
       body
@@ -108,57 +139,137 @@ function createWebGLShader(gl, src, type) {
   return shader;
 }
 
-// src/core/proxies.ts
-var uniform = new Proxy({}, {
-  get(target, dataType) {
-    return (...[value, options]) => ({
-      dataType,
-      name: "u_" + zeptoid(),
-      functionName: dataTypeToFunctionName(dataType),
-      tokenType: dataType === "sampler2D" ? "sampler2D" : dataType === "isampler2D" ? "isampler2D" : "uniform",
-      get value() {
-        return typeof value === "function" ? value() : value;
-      },
-      options
-    });
-  }
-});
-var attribute = new Proxy({}, {
-  get(target, dataType) {
-    return (...[value, options]) => {
-      const size = typeof dataType === "string" ? +dataType[dataType.length - 1] : void 0;
-      return {
-        dataType,
-        name: "a_" + zeptoid(),
-        tokenType: "attribute",
-        size: size && !isNaN(size) ? size : 1,
-        get value() {
-          return typeof value === "function" ? value() : value;
-        },
-        options
-      };
-    };
-  }
-});
-
 // src/core/utils.ts
 function objectsAreEqual(a, b) {
   return a && b && Object.keys(a).every((key) => b[key] === a[key]);
 }
-var defaultConfigs = /* @__PURE__ */ new Map();
-defaultConfigs.set(Uint8Array, {
+var textureConfigFromTypedArrayMap = /* @__PURE__ */ new Map();
+textureConfigFromTypedArrayMap.set(Uint8Array, {
   format: "RED",
   internalFormat: "R8",
   dataType: "UNSIGNED_BYTE"
 });
-defaultConfigs.set(Float32Array, {
+textureConfigFromTypedArrayMap.set(Float32Array, {
   format: "RED",
   internalFormat: "R32F",
   dataType: "FLOAT"
 });
-var getDefaultConfig = (buffer) => defaultConfigs.get(buffer.constructor);
+var getTextureConfigFromTypedArray = (buffer) => textureConfigFromTypedArrayMap.get(buffer.constructor);
 
 // src/core/vanilla.ts
+var createGL = (config) => {
+  const ctx = config.canvas.getContext("webgl2");
+  if (!ctx)
+    throw "webgl2 is not supported";
+  if (config?.extensions?.float !== false) {
+    ctx.getExtension("EXT_color_buffer_float");
+  }
+  if (config?.extensions?.half_float) {
+    ctx.getExtension("EXT_color_buffer_half_float");
+  }
+  return {
+    ...config,
+    ctx,
+    render: () => config.programs.forEach((program) => program.render()),
+    cache: {
+      previousReadConfig: {}
+    }
+  };
+};
+var autosize = (gl) => {
+  const resizeObserver = new ResizeObserver(() => {
+    gl.canvas.width = gl.canvas.clientWidth;
+    gl.canvas.height = gl.canvas.clientHeight;
+    gl.ctx.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.render();
+  });
+  resizeObserver.observe(gl.canvas);
+};
+var clear = ({ ctx }) => {
+  ctx.clearColor(0, 0, 0, 1);
+  ctx.clearDepth(1);
+  ctx.enable(ctx.DEPTH_TEST);
+  ctx.depthFunc(ctx.LEQUAL);
+  ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT);
+};
+var renderBuffer = ({ ctx }, { internalFormat, width, height }) => {
+  const framebuffer = ctx.createFramebuffer();
+  ctx.bindFramebuffer(ctx.FRAMEBUFFER, framebuffer);
+  const renderBuffer2 = ctx.createRenderbuffer();
+  ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderBuffer2);
+  ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx[internalFormat], width, height);
+  ctx.framebufferRenderbuffer(
+    ctx.FRAMEBUFFER,
+    ctx.COLOR_ATTACHMENT0,
+    ctx.RENDERBUFFER,
+    renderBuffer2
+  );
+  ctx.finish();
+};
+var read = (gl, config) => {
+  const mergedConfig = mergeProps(
+    {
+      format: "RGBA",
+      dataType: "UNSIGNED_BYTE",
+      internalFormat: "RGBA8",
+      width: gl.canvas.width,
+      height: gl.canvas.height
+    },
+    config
+  );
+  if (!objectsAreEqual(mergedConfig, gl.cache.previousReadConfig)) {
+    gl.cache.previousReadConfig = mergedConfig;
+    renderBuffer(gl, mergedConfig);
+  }
+  clear(gl);
+  gl.render();
+  gl.ctx.readPixels(
+    0,
+    0,
+    mergedConfig.width,
+    mergedConfig.height,
+    gl.ctx[mergedConfig.format],
+    gl.ctx[mergedConfig.dataType],
+    mergedConfig.output
+  );
+  return mergedConfig.output;
+};
+var IS_PROGRAM = Symbol("is-program");
+var createProgram = (config) => {
+  const gl = config.canvas.getContext("webgl2");
+  if (!gl)
+    throw "webgl2 is not supported";
+  const cachedProgram = config.cacheEnabled && getProgramCache(config);
+  const program = cachedProgram || createWebGLProgram(
+    gl,
+    config.vertex.source.code,
+    config.fragment.source.code
+  );
+  if (!program)
+    throw `error while building program`;
+  if (config.cacheEnabled)
+    setProgramCache({ ...config, program });
+  const queue = /* @__PURE__ */ new Map();
+  const addToQueue = (location, fn) => (queue.set(location, fn), () => queue.delete(location));
+  const render = () => {
+    if (!program || !gl)
+      return;
+    gl.useProgram(program);
+    queue.forEach((fn) => fn());
+    config.onRender?.(gl, program);
+    gl.drawArrays(gl[config.mode], config.first || 0, config.count);
+  };
+  config.vertex.bind(gl, program, addToQueue, render);
+  config.fragment.bind(gl, program, addToQueue, render);
+  return {
+    config,
+    program,
+    render,
+    [IS_PROGRAM]: true
+  };
+};
+var isProgramToken = (value) => typeof value === "object" && IS_PROGRAM in value;
+var filterProgramTokens = (value) => (typeof value === "object" && Array.isArray(value) ? value : [value]).filter(isProgramToken);
 var programCache = /* @__PURE__ */ new WeakMap();
 var getProgramCache = (config) => programCache.get(config.vertex.template)?.get(config.fragment.template);
 var setProgramCache = (config) => {
@@ -168,131 +279,6 @@ var setProgramCache = (config) => {
   if (!programCache.get(config.vertex.template).get(config.fragment.template)) {
     programCache.get(config.vertex.template).set(config.fragment.template, config.program);
   }
-};
-var createGL = (config) => {
-  const gl = config.canvas.getContext("webgl2");
-  if (!gl)
-    throw "webgl2 is not supported";
-  const resizeObserver = new ResizeObserver(() => {
-    if (config.autoResize) {
-      config.canvas.width = config.canvas.clientWidth;
-      config.canvas.height = config.canvas.clientHeight;
-      gl.viewport(0, 0, config.canvas.width, config.canvas.height);
-      render();
-    }
-  });
-  resizeObserver.observe(config.canvas);
-  function render() {
-    if (!config.canvas || !gl)
-      return;
-    gl.clearColor(1, 0, 0, 1);
-    gl.clearDepth(1);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    if (!config.programs)
-      return;
-    if (Array.isArray(config.programs)) {
-      config.programs.forEach((program) => {
-        if (program && typeof program === "object" && "render" in program) {
-          program.render?.();
-        }
-      });
-    } else {
-      if (typeof config.programs === "object" && "render" in config.programs) {
-        config.programs.render?.();
-      }
-    }
-  }
-  if (config?.extensions?.float !== false) {
-    gl.getExtension("EXT_color_buffer_float");
-  }
-  if (config?.extensions?.half_float) {
-    gl.getExtension("EXT_color_buffer_half_float");
-  }
-  const updateFrameBuffer = ({
-    internalFormat,
-    width,
-    height
-  }) => {
-    const framebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    const renderBuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl[internalFormat], width, height);
-    gl.framebufferRenderbuffer(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0,
-      gl.RENDERBUFFER,
-      renderBuffer
-    );
-    gl.finish();
-  };
-  let previousReadConfig = {};
-  function read(results, _config) {
-    const config2 = mergeProps(
-      {
-        format: "RGBA",
-        dataType: "UNSIGNED_BYTE",
-        internalFormat: "RGBA8",
-        width: gl.canvas.width,
-        height: gl.canvas.height
-      },
-      _config
-    );
-    if (!objectsAreEqual(config2, previousReadConfig)) {
-      previousReadConfig = config2;
-      updateFrameBuffer(config2);
-    }
-    render();
-    gl.readPixels(
-      0,
-      0,
-      config2.width,
-      config2.height,
-      gl[config2.format],
-      gl[config2.dataType],
-      results
-    );
-    return results;
-  }
-  return {
-    render,
-    read
-  };
-};
-var createProgram = (config) => {
-  const gl = config.canvas.getContext("webgl2");
-  if (!gl)
-    return;
-  const onRenderQueue = /* @__PURE__ */ new Map();
-  const addToOnRenderQueue = (location, fn) => {
-    onRenderQueue.set(location, fn);
-    return () => onRenderQueue.delete(location);
-  };
-  const cachedProgram = config.cacheEnabled && getProgramCache(config);
-  const program = cachedProgram || createWebGLProgram(
-    gl,
-    config.vertex.source.code,
-    config.fragment.source.code
-  );
-  if (!program)
-    return;
-  if (config.cacheEnabled)
-    setProgramCache({ ...config, program });
-  const render = () => {
-    if (!program || !gl)
-      return;
-    gl.useProgram(program);
-    onRenderQueue.forEach((fn) => fn());
-    config.onRender?.(gl, program);
-    gl.drawArrays(gl[config.mode], 0, config.count);
-  };
-  config.vertex.bind(gl, program, addToOnRenderQueue);
-  config.fragment.bind(gl, program, addToOnRenderQueue);
-  return {
-    render
-  };
 };
 var _tmpl$ = /* @__PURE__ */ template(`<canvas>`);
 var glContext = createContext();
@@ -316,15 +302,16 @@ var GL = (props) => {
     },
     get children() {
       return (() => {
-        const programs = children(() => childrenProps.children);
+        const childs = children(() => childrenProps.children);
         onMount(() => {
           const gl = createGL({
             canvas: canvas2,
-            autoResize: true,
             get programs() {
-              return programs();
+              return filterProgramTokens(childs());
             }
           });
+          autosize(gl);
+          gl.render();
           if (!gl)
             return;
           const animate = () => {
@@ -332,7 +319,11 @@ var GL = (props) => {
               requestAnimationFrame(animate);
             gl.render();
           };
-          createEffect(() => props.animate ? animate() : createEffect(gl.render));
+          createEffect(() => {
+            props.animate ? animate() : createEffect(() => {
+              gl.render();
+            });
+          });
         });
         return canvas2;
       })();
@@ -360,7 +351,9 @@ var Program = (props) => {
 var createToken = (name, config, other) => mergeProps(config, { name }, other);
 var bindUniformToken = (token, gl, program, onRender) => {
   const location = gl.getUniformLocation(program, token.name);
-  onRender(location, () => gl[token.functionName](location, token.value));
+  onRender(location, () => {
+    gl[token.functionName](location, token.value);
+  });
 };
 var bindAttributeToken = (token, gl, program, onRender) => {
   const target = token.options?.target;
@@ -374,11 +367,8 @@ var bindAttributeToken = (token, gl, program, onRender) => {
     gl.enableVertexAttribArray(location);
   });
 };
-var bindSampler2DToken = (token, gl, program, effect) => {
+var bindSampler2DToken = (token, gl, program, effect, render) => {
   effect(() => {
-    const texture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + token.textureIndex);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
     const {
       format,
       width,
@@ -389,7 +379,6 @@ var bindSampler2DToken = (token, gl, program, effect) => {
       wrapS,
       wrapT,
       internalFormat,
-      type,
       dataType
     } = mergeProps(
       {
@@ -406,6 +395,10 @@ var bindSampler2DToken = (token, gl, program, effect) => {
       },
       token.options
     );
+    gl.useProgram(program);
+    const texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + token.textureIndex);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -421,11 +414,8 @@ var bindSampler2DToken = (token, gl, program, effect) => {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[magFilter]);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl[wrapS]);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[wrapT]);
-    gl[type === "float" ? "uniform1f" : "uniform1i"](
-      gl.getUniformLocation(program, token.name),
-      token.textureIndex
-    );
-    gl.flush();
+    gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex);
+    render();
   });
 };
 
@@ -476,7 +466,7 @@ var createGlsl = (effect) => (template, ...holes) => () => {
         });
     }
   }).filter((hole) => hole !== void 0);
-  const bind = (gl, program, onRender) => {
+  const bind = (gl, program, onRender, render) => {
     gl.useProgram(program);
     tokens.forEach((token) => {
       switch (token.tokenType) {
@@ -485,10 +475,10 @@ var createGlsl = (effect) => (template, ...holes) => () => {
           break;
         case "sampler2D":
         case "isampler2D":
-          bindSampler2DToken(token, gl, program, effect);
+          bindSampler2DToken(token, gl, program, effect, render);
           break;
         case "shader":
-          token.bind(gl, program, onRender);
+          token.bind(gl, program, onRender, render);
           break;
         case "uniform":
           bindUniformToken(token, gl, program, onRender);
@@ -520,9 +510,10 @@ var createComputation = (input, callback, config) => {
       format: "RED",
       width: input().length,
       height: 1,
-      dataType: "FLOAT"
+      dataType: "FLOAT",
+      output
     },
-    getDefaultConfig(input()),
+    getTextureConfigFromTypedArray(input()),
     config
   );
   const a_vertices = attribute.vec2(
@@ -558,8 +549,8 @@ void main(){outColor = compute();}`;
   return () => {
     updateOutput();
     gl.render();
-    return gl.read(output, getConfig());
+    return read(gl, getConfig());
   };
 };
 
-export { GL, Program, attribute, createComputation, createGL, createProgram, glsl, uniform };
+export { GL, Program, attribute, autosize, clear, createComputation, createGL, createProgram, filterProgramTokens, glsl, isProgramToken, read, renderBuffer, uniform };

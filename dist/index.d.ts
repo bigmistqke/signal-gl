@@ -78,7 +78,7 @@ type AttributeReturnType = ReturnType<ValueOf<AttributeProxy>>;
 type ShaderToken = {
     source: {
         code: string;
-        split: {
+        parts: {
             version: string | undefined;
             precision: string;
             variables: string;
@@ -87,7 +87,7 @@ type ShaderToken = {
     };
     template: TemplateStringsArray;
     tokenType: 'shader';
-    bind: (gl: WebGL2RenderingContext, program: WebGLProgram, onRender: OnRenderFunction) => void;
+    bind: (gl: WebGL2RenderingContext, program: WebGLProgram, onRender: OnRenderFunction, render: () => void) => void;
 };
 interface TokenBase {
     dataType: keyof UniformProxy | keyof AttributeProxy;
@@ -163,11 +163,9 @@ declare const uniform: UniformProxy;
  * */
 declare const attribute: AttributeProxy;
 
-/** */
 type GLConfig = {
     canvas: HTMLCanvasElement;
     programs: ReturnType<typeof createProgram>[];
-    autoResize?: boolean;
     extensions?: {
         /** default true */
         float?: boolean;
@@ -175,28 +173,80 @@ type GLConfig = {
         half_float?: boolean;
     };
 };
+type GLToken = GLConfig & {
+    ctx: WebGL2RenderingContext;
+    render: () => void;
+    cache: {
+        previousReadConfig: GLReadConfig;
+    };
+};
+/**
+ * Returns `GLToken`. Manages `Webgl2RenderingContext` of given `<canvas/>`
+ * @param config `GLConfig`
+ * @returns `GLToken`
+ */
+declare const createGL: (config: GLConfig) => GLToken;
+/**
+ * Utility-function to automatically update `GLToken['canvas']` width/height on resize.
+ * @param gl
+ * @returns void
+ */
+declare const autosize: (gl: GLToken) => void;
+declare const clear: ({ ctx }: GLToken) => void;
+type GLRenderBufferConfig = {
+    internalFormat: InternalFormat;
+    width: number;
+    height: number;
+};
+/**
+ * Utility-function to set renderBuffer of a `GLToken['context']`.
+ * @param gl
+ * @param {GLRenderBufferConfig} config
+ * @returns `typeof config.output`
+ */
+declare const renderBuffer: ({ ctx }: GLToken, { internalFormat, width, height }: GLRenderBufferConfig) => void;
 type GLReadConfig = {
     width?: number;
     height?: number;
     internalFormat?: InternalFormat;
     format?: Format;
     dataType?: DataType;
+    output: Buffer;
 };
-declare const createGL: (config: GLConfig) => {
-    render: () => void;
-    read: (results: Buffer, _config?: GLReadConfig) => Buffer;
-};
-declare const createProgram: (config: {
+/**
+ * Utility-function to read the pixel-data of a `GLToken['context']`.
+ * @param gl
+ * @param {GLReadConfig} config
+ * @returns `typeof config.output`
+ */
+declare const read: (gl: GLToken, config?: GLReadConfig) => Buffer;
+type CreateProgramConfig = {
     canvas: HTMLCanvasElement;
-    vertex: ShaderToken;
-    fragment: ShaderToken;
-    onRender?: ((gl: WebGL2RenderingContext, program: WebGLProgram) => void) | undefined;
-    mode: 'TRIANGLES' | 'LINES' | 'POINTS';
-    cacheEnabled?: boolean | undefined;
+    cacheEnabled?: boolean;
     count: number;
-}) => {
+    first?: number;
+    fragment: ShaderToken;
+    mode: 'TRIANGLES' | 'LINES' | 'POINTS';
+    vertex: ShaderToken;
+    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
+};
+declare const IS_PROGRAM: unique symbol;
+type ProgramToken = {
+    config: CreateProgramConfig;
+    program: WebGLProgram;
     render: () => void;
-} | undefined;
+    [IS_PROGRAM]: true;
+};
+/**
+ * Returns `ProgramToken`. Manages `WebGLProgram` of given vertex- and fragment- `glsl` shaders.
+ * @param config
+ * @returns
+ */
+declare const createProgram: (config: CreateProgramConfig) => ProgramToken;
+/** Checks if a given value is a `ProgramToken` */
+declare const isProgramToken: (value: any) => value is ProgramToken;
+/** Filters an array (or not) for `ProgramTokens`. Returns `ProgramToken[]` */
+declare const filterProgramTokens: (value: any) => ProgramToken[];
 
 type GLProps = ComponentProps<'canvas'> & {
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
@@ -248,4 +298,4 @@ declare const createComputation: <TBuffer extends Buffer>(input: Accessor$1<TBuf
 
 declare const glsl: <T extends TemplateValue[]>(template: TemplateStringsArray, ...holes: { [K in keyof T]: Check<T[K], [UniformReturnType, AttributeReturnType, string]> extends true ? IsUnion<Extract<T[K], any>, Extract<T[K], any>> extends true ? GLSLError<"unions not allowed in interpolations"> : T[K] : T[K]; }) => () => ShaderToken;
 
-export { type AttributeOptions, type AttributeParameters, type AttributeProxy, type AttributeReturnType, type AttributeToken, type Buffer, type Check, type ComputeShader, type DataType, type Format, GL, type GLSLError, type InternalFormat, type IsUnion, type OnRenderFunction, type PrimitiveOptions, Program, type Sampler2DOptions, type Sampler2DToken, type ScopedVariableToken, type ShaderToken, type TemplateValue, type Token, type TypedArray, type UniformParameters, type UniformProxy, type UniformReturnType, type UniformSetter, type UniformToken, type ValueOf, attribute, createComputation, createGL, createProgram, glsl, uniform };
+export { type AttributeOptions, type AttributeParameters, type AttributeProxy, type AttributeReturnType, type AttributeToken, type Buffer, type Check, type ComputeShader, type DataType, type Format, GL, type GLSLError, type InternalFormat, type IsUnion, type OnRenderFunction, type PrimitiveOptions, Program, type ProgramToken, type Sampler2DOptions, type Sampler2DToken, type ScopedVariableToken, type ShaderToken, type TemplateValue, type Token, type TypedArray, type UniformParameters, type UniformProxy, type UniformReturnType, type UniformSetter, type UniformToken, type ValueOf, attribute, autosize, clear, createComputation, createGL, createProgram, filterProgramTokens, glsl, isProgramToken, read, renderBuffer, uniform };
