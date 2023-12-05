@@ -158,7 +158,7 @@ export type AttributeReturnType = ReturnType<ValueOf<AttributeProxy>>
 export type ShaderToken = {
   source: {
     code: string
-    split: {
+    parts: {
       version: string | undefined
       precision: string
       variables: string
@@ -170,7 +170,8 @@ export type ShaderToken = {
   bind: (
     gl: WebGL2RenderingContext,
     program: WebGLProgram,
-    onRender: OnRenderFunction
+    onRender: OnRenderFunction,
+    render: () => void
   ) => void
 }
 

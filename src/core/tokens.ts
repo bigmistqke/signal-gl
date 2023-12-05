@@ -53,13 +53,11 @@ export const bindSampler2DToken = (
   token: Sampler2DToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  onRender: OnRenderFunction,
-  effect: (cb: () => void) => void
+  effect: (cb: () => void) => void,
+  render: () => void
 ) => {
   // Create a texture and bind it to texture unit 0
-  // onRender(token.textureIndex, () => token.value)
-  onRender(token.textureIndex, () => {
-    console.log('bind')
+  effect(() => {
     const {
       format,
       width,
@@ -70,7 +68,6 @@ export const bindSampler2DToken = (
       wrapS,
       wrapT,
       internalFormat,
-      type,
       dataType,
     } = mergeProps(
       {
@@ -112,11 +109,8 @@ export const bindSampler2DToken = (
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[wrapT])
 
     // Bind the texture to the uniform sampler
-    gl[type === 'float' ? 'uniform1f' : 'uniform1i'](
-      gl.getUniformLocation(program, token.name),
-      token.textureIndex
-    )
+    gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex)
 
-    gl.finish()
+    render()
   })
 }

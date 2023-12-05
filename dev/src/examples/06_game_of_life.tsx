@@ -21,6 +21,8 @@ function App() {
     void main() {
      outColor = texture(${uniform.sampler2D(gameOfLife, {
        format: 'LUMINANCE',
+       internalFormat: 'LUMINANCE',
+       dataType: 'UNSIGNED_BYTE',
        width: X,
        height: Y,
      })}, vTexCoord * 0.5);

@@ -110,7 +110,8 @@ export const createGlsl =
     const bind = (
       gl: WebGL2RenderingContext,
       program: WebGLProgram,
-      onRender: OnRenderFunction
+      onRender: OnRenderFunction,
+      render: () => void
     ) => {
       gl.useProgram(program)
 
@@ -121,10 +122,10 @@ export const createGlsl =
             break
           case 'sampler2D':
           case 'isampler2D':
-            bindSampler2DToken(token, gl, program, onRender, effect)
+            bindSampler2DToken(token, gl, program, effect, render)
             break
           case 'shader':
-            token.bind(gl, program, onRender)
+            token.bind(gl, program, onRender, render)
             break
           case 'uniform':
             bindUniformToken(token, gl, program, onRender)

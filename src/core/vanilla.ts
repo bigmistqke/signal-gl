@@ -237,20 +237,20 @@ export const createProgram = (config: CreateProgramConfig) => {
     fn: () => void
   ) => (queue.set(location, fn), () => queue.delete(location))
 
-  config.vertex.bind(gl, program, addToQueue)
-  config.fragment.bind(gl, program, addToQueue)
+  const render = () => {
+    if (!program || !gl) return
+    gl.useProgram(program)
+    queue.forEach((fn) => fn())
+    config.onRender?.(gl, program)
+    gl.drawArrays(gl[config.mode], config.first || 0, config.count)
+  }
+
+  config.vertex.bind(gl, program, addToQueue, render)
+  config.fragment.bind(gl, program, addToQueue, render)
 
   return {
     config,
     program,
-    render: () => {
-      if (!program || !gl) return
-      gl.useProgram(program)
-      queue.forEach((fn) => fn())
-      gl.finish()
-      console.log('render')
-      config.onRender?.(gl, program)
-      gl.drawArrays(gl[config.mode], config.first || 0, config.count)
-    },
+    render,
   }
 }
