@@ -17,15 +17,15 @@
 - [API](#api)
   - [templating](#templating) _compose shaders with autobinding attributes and uniforms_
     - [`glsl`](#glsl-tag-template-literal) _tag template literal to compose glsl_
-    - [`attribute`](#attribute-utility-function) _utility-function to include attribute into `glsl`-template_
-    - [`uniform`](#uniform-utility-function) _utility-function to include uniform into `glsl`-template_
+    - [`attribute`](#attribute-template-helper) _template-helper to include attribute into `glsl`-template_
+    - [`uniform`](#uniform-template-helper) _template-helper to include uniform into `glsl`-template_
   - [hooks](#hooks) _manage `WebGL2RenderingContext` and `WebGLProgram`_
-    - [`createGL`](#creategl-utility-function) _utility managing `WebGL2RenderingContext`_
-    - [`createProgram`](#createprogram-utility-function) _utility managing `WebGLProgram`_
-    - [`createComputation`](#createcomputation-utility-function) _utility for gpu-computations_
+    - [`createGL`](#creategl-hook) hook managing `WebGL2RenderingContext`_
+    - [`createProgram`](#createprogram-hook) hook managing `WebGLProgram`_
+    - [`createComputation`](#createcomputation-hook) hook for gpu-computations_
   - [components](#components) _JSX wrappers around `hooks`_
-    - [`<GL/>`](#gl-component) _component-wrapper around `createGL`_
-    - [`<Program/>`](#program-component) _component-wrapper around `createProgram`_
+    - [`<GL/>`](#gl-component) _JSX wrapper around `createGL`_
+    - [`<Program/>`](#program-component) _JSX wrapper around `createProgram`_
 - [Syntax Highlighting](#syntax-highlighting) 
 - [Prior Art](#prior-art) 
 
@@ -158,7 +158,7 @@ type Hole =
   | string                                // glsl`{'scoped-var}`           scope variable name to prevent name-collisions
 ```
 
-### `attribute` _utility-function_
+### `attribute` _template-helper_
 
 > - returns [`AttributeToken`](#type-attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
@@ -248,7 +248,7 @@ type AttributeToken = {
 }
 ```
 
-### `uniform` _utility-function_
+### `uniform` _template-helper_
 
 > returns [`UniformToken | Sampler2DToken`](#type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
@@ -344,7 +344,7 @@ type Sampler2DToken = {
 
 ## hooks
 
-### `createGL` _utility-function_
+### `createGL` _hook_
 
 > manage the `webgl2`-context of a given `<canvas/>`-element
 
@@ -405,7 +405,7 @@ type GLReturnType = {
 } 
 ```
 
-### `createProgram` _utility-function_
+### `createProgram` _hook_
 
 > manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
 > to use program, add it to the `programs`-property in createGL's `GLConfig`
@@ -469,7 +469,7 @@ type ProgramReturnType = {
 } 
 ```
 
-### `createComputation` _utility-function_
+### `createComputation` _hook_
 
 - create a computation on the gpu with `renderbuffer`
 - sensible default configs for `Uint8Array` and `Float32Array`
