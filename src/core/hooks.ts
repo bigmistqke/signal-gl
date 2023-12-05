@@ -286,6 +286,11 @@ export const read = (token: StackToken | ProgramToken, config?: ReadConfig) => {
   return mergedConfig.output
 }
 
+const extend = (
+  { ctx }: StackToken | ProgramToken,
+  extension: Parameters<WebGLRenderingContextBase['getExtension']>[0]
+) => ctx.getExtension(extension)
+
 /* 
   CREATE_COMPUTATION-HOOK 
 */
@@ -359,6 +364,8 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
     mode: 'TRIANGLES',
     count: 4,
   })
+
+  extend(program, 'EXT_color_buffer_float')
 
   const updateOutput = () => {
     if (input().constructor !== output?.constructor) {
