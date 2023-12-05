@@ -20,8 +20,8 @@
     - [`attribute`](#attribute-template-helper) _template-helper to include attribute into `glsl`-template_
     - [`uniform`](#uniform-template-helper) _template-helper to include uniform into `glsl`-template_
   - [hooks](#hooks)
-    - [`createStack`](#creategl-hook) _hook for managing `WebGL2RenderingContext`_
     - [`createProgram`](#createprogram-hook) _hook for managing `WebGLProgram`_
+    - [`createStack`](#createstack-hook) _hook for managing multiple `Programs`_
     - [`createComputation`](#createcomputation-hook) _hook for gpu-computations_
   - [components](#components)
     - [`<Stack/>`](#gl-component) _JSX wrapper around `createStack`_
@@ -346,70 +346,6 @@ type Sampler2DToken = {
 
 ## hooks
 
-### `createStack` _hook_
-
-> manage the `webgl2`-context of a given `<canvas/>`-element
-
-#### Usage
-```tsx
-import { createStack, read, autosize } from "@bigmistqke/signal-gl"
-const canvas = <canvas/>
-const gl = createStack({canvas, programs: [programs]})
-if(!gl) return;
-
-// render programs to given canvas-element whenever any of its attributes/uniforms update
-createEffect(gl.render);
-// automatically update gl-dimensions when canvas updates
-autosize(gl)
-// export the rendered result of the current program to a given TypedArray
-read(gl, { output: new Float32Array(...) }); 
-```
-
-#### Signature
-
-```ts
-(config: StackConfig):`StackReturnType
-```
-
-#### type `StackConfig`
-
-```ts
-type StackConfig = {
-  autoResize?: boolean         // default true
-  canvas?: HTMLCanvasElement
-  extensions?: {
-    float?: boolean            // default true
-    half_float?: boolean       // default false
-  }
-  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-  onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-  programs: ReturnType<typeof createProgram>[]
-}
-```
-
-#### type `StackReturnType`
-
-- `gl.read` has conditional default values as config
-  - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
-  - when output `Float32Array` then `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
-  - else `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
-
-```ts
-type`StackReturnType = {
-  render: () => void,
-  read: (
-    output: Buffer,
-    config: {
-      width?: number
-      height?: number
-      internalFormat?: InternalFormat
-      format?: Format
-      dataType?: DataType
-    }
-  ) => Buffer
-} 
-```
-
 ### `createProgram` _hook_
 
 > manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
@@ -473,6 +409,70 @@ type ProgramConfig =
 ```ts
 type ProgramReturnType = {
   render: () => void,
+} 
+```
+
+### `createStack` _hook_
+
+> manage the `webgl2`-context of a given `<canvas/>`-element
+
+#### Usage
+```tsx
+import { createStack, read, autosize } from "@bigmistqke/signal-gl"
+const canvas = <canvas/>
+const gl = createStack({canvas, programs: [programs]})
+if(!gl) return;
+
+// render programs to given canvas-element whenever any of its attributes/uniforms update
+createEffect(gl.render);
+// automatically update gl-dimensions when canvas updates
+autosize(gl)
+// export the rendered result of the current program to a given TypedArray
+read(gl, { output: new Float32Array(...) }); 
+```
+
+#### Signature
+
+```ts
+(config: StackConfig):`StackReturnType
+```
+
+#### type `StackConfig`
+
+```ts
+type StackConfig = {
+  autoResize?: boolean         // default true
+  canvas?: HTMLCanvasElement
+  extensions?: {
+    float?: boolean            // default true
+    half_float?: boolean       // default false
+  }
+  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  programs: ReturnType<typeof createProgram>[]
+}
+```
+
+#### type `StackReturnType`
+
+- `gl.read` has conditional default values as config
+  - when output `Uint8Array` then `{ internalFormat: 'R8', format: 'RED', dataType: 'UNSIGNED_BYTE' }`
+  - when output `Float32Array` then `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
+  - else `{ internalFormat: 'R32F', format: 'RED', dataType: 'FLOAT' }`
+
+```ts
+type`StackReturnType = {
+  render: () => void,
+  read: (
+    output: Buffer,
+    config: {
+      width?: number
+      height?: number
+      internalFormat?: InternalFormat
+      format?: Format
+      dataType?: DataType
+    }
+  ) => Buffer
 } 
 ```
 
@@ -542,12 +542,12 @@ sensible defaults for `UInt8Array` and `Float32Array`
 
 - root `JSXElement`
 - represents a `canvas` and its `WebGL2RenderingContext`
-- wrapper around [`createStack`](#creategl-hook)
+- wrapper around [`createStack`](#createstack-hook)
 
 #### Usage
 
 ```tsx
-import { GL } from "@bigmistqke/solid-gl"
+import { Stack } from "@bigmistqke/solid-gl"
 <Stack onProgramCreate={() => console.log('program created')} >
   <Program />
 </Stack>
