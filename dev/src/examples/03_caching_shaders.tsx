@@ -29,11 +29,14 @@ const Plane = (props: {
   scale?: [number, number]
   position?: [number, number]
 }) => {
-  const merged = mergeProps(props, {
-    rotation: 0,
-    scale: [1, 1] as [number, number],
-    position: [0, 0] as [number, number],
-  })
+  const merged = mergeProps(
+    {
+      rotation: 0,
+      scale: [1, 1] as [number, number],
+      position: [0, 0] as [number, number],
+    },
+    props
+  )
 
   const vertex = glsl`#version 300 es
     out vec2 v_coord;  
@@ -142,7 +145,7 @@ function App() {
    out vec4 outColor;
    void main() {
      float blue = ${uniform.float(blue)};
-     outColor = vec4(v_coord[0], 0.0, blue, 0.25);
+     outColor = vec4(0, 0.0, blue, 0.25);
    }`
 
   return (
@@ -150,6 +153,7 @@ function App() {
       style={{
         width: '100vw',
         height: '100vh',
+        background: 'black',
       }}
       onProgramCreate={() => {
         console.log('created a program')

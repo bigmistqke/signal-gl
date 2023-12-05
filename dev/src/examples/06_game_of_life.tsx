@@ -25,7 +25,7 @@ function App() {
        dataType: 'UNSIGNED_BYTE',
        width: X,
        height: Y,
-     })}, vTexCoord * 0.5);
+     })}, vTexCoord * 0.5 + 0.5);
     }
   `
 
