@@ -23,30 +23,36 @@ export const bindUniformToken = (
   token: UniformToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  onRender: OnRenderFunction
+  onRender: OnRenderFunction,
+  effect: (cb: () => void) => void
 ) => {
+  // get location based on token.name
   const location = gl.getUniformLocation(program, token.name)!
-  onRender(token.name, () => {
-    gl[token.functionName](location, token.value)
-  })
+  onRender(token.name, () =>
+    (gl[token.functionName] as any)(location, token.value)
+  )
 }
 
 export const bindAttributeToken = (
   token: AttributeToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  onRender: OnRenderFunction
+  onRender: OnRenderFunction,
+  effect: (cb: () => void) => void
 ) => {
-  const target = token.options?.target
+  // create buffer
   const buffer = gl.createBuffer()
-  const glTarget = target ? gl[target] : gl.ARRAY_BUFFER
   const location = gl.getAttribLocation(program, token.name)
-
+  const glTarget = () => gl[token.options?.target || 'ARRAY_BUFFER']
   onRender(token.name, () => {
-    gl.bindBuffer(glTarget, buffer)
-    gl.bufferData(glTarget, token.value, gl.STATIC_DRAW)
+    token.value // to trigger effect when value updates
+    gl.bindBuffer(glTarget(), buffer)
     gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)
     gl.enableVertexAttribArray(location)
+  })
+  effect(() => {
+    gl.bindBuffer(glTarget(), buffer)
+    gl.bufferData(glTarget(), token.value, gl.STATIC_DRAW)
   })
 }
 
@@ -57,7 +63,7 @@ export const bindSampler2DToken = (
   onRender: OnRenderFunction,
   effect: (cb: () => void) => void
 ) => {
-  // Create a texture
+  // create texture
   const texture = gl.createTexture()
   const options = mergeProps(
     {
@@ -74,10 +80,9 @@ export const bindSampler2DToken = (
     } as const,
     token.options
   )
-
+  // render-loop
   onRender(token.name, () => {
-    /* token.value here to trigger possible `effect(() => gl.render())` */
-    token.value
+    token.value // to trigger effect when value updates
     gl.bindTexture(gl.TEXTURE_2D, texture)
   })
   effect(() => {
@@ -93,9 +98,6 @@ export const bindSampler2DToken = (
       internalFormat,
       dataType,
     } = options
-
-    gl.useProgram(program)
-
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(
       gl.TEXTURE_2D,
@@ -108,13 +110,11 @@ export const bindSampler2DToken = (
       gl[dataType],
       token.value
     )
-
     // Set texture parameters
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[minFilter])
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[magFilter])
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl[wrapS])
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[wrapT])
-
     // Bind the texture to the uniform sampler
     gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex)
   })

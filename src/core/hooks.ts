@@ -62,7 +62,9 @@ export const createGL = (config: GLConfig): GLToken => {
   }
 }
 
-/* UTILITY-FUNCTIONS 4 GL_TOKEN */
+/* 
+  UTILITY-FUNCTIONS 4 GL_TOKEN 
+*/
 
 /**
  * Utility-function to automatically update `GLToken['canvas']` width/height on resize.

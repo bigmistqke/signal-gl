@@ -122,7 +122,7 @@ export const glsl = function <T extends TemplateValue[]>(
       tokens.forEach((token) => {
         switch (token.tokenType) {
           case 'attribute':
-            bindAttributeToken(token, gl, program, onRender)
+            bindAttributeToken(token, gl, program, onRender, glsl.effect)
             break
           case 'sampler2D':
           case 'isampler2D':
@@ -132,7 +132,7 @@ export const glsl = function <T extends TemplateValue[]>(
             token.bind(gl, program, onRender, render)
             break
           case 'uniform':
-            bindUniformToken(token, gl, program, onRender)
+            bindUniformToken(token, gl, program, onRender, glsl.effect)
             break
         }
       })
