@@ -352,20 +352,23 @@ type Sampler2DToken = {
 
 #### Usage
 ```tsx
+import { createGL, read, autosize } from "@bigmistqke/signal-gl"
 const canvas = <canvas/>
 const gl = createGL({canvas, programs: [programs]})
 if(!gl) return;
 
-// render programs to given canvas-element
-createEffect(() =>gl.render());
+// render programs to given canvas-element whenever any of its attributes/uniforms update
+createEffect(gl.render);
+// automatically update gl-dimensions when canvas updates
+autosize(gl)
 // export the rendered result of the current program to a given TypedArray
-createEffect(() => console.log(gl.read(new Float32Array(...)))); 
+read(gl, { output: new Float32Array(...) }); 
 ```
 
 #### Signature
 
 ```ts
-const createCanvas = (config: GLConfig): GLReturnType
+(config: GLConfig): GLReturnType
 ```
 
 #### type `GLConfig`
@@ -443,8 +446,7 @@ const program = createProgram({
 #### Signature
 
 ```ts
-import { createProgram } from "@bigmistqke/solid-gl"
-const createProgram = (config: ProgramConfig): ProgramReturnType
+(config: ProgramConfig): ProgramReturnType
 ```
 
 #### type `ProgramConfig`
@@ -488,13 +490,13 @@ const compute = createComputation(input, (u_buffer) => glsl`
   width: WIDTH,
   height: HEIGHT,
 })
-const memo = createMemo(compute) // Float32Array
+const memo = createMemo(compute) // Accessor<Float32Array>
 ```
 
 #### Signature
 
 ```ts
-const createComputation = (
+(
   buffer: Buffer, 
   cb: (u_buffer: Accessor<Sampler2DToken>) => Accessor<ShaderToken>,
   config: ComputationConfig
@@ -551,7 +553,7 @@ import { GL } from "@bigmistqke/solid-gl"
 #### Signature
 
 ```ts
-const GL = (props: GLProps) => JSXElement
+(props: GLProps) => JSXElement
 ```
 
 #### type `GLProps`
@@ -580,7 +582,7 @@ import { Program } from "@bigmistqke/solid-gl"
 #### Signature
 
 ```ts
-const Program = (props: ProgramProps) => JSXElement
+(props: ProgramProps) => JSXElement
 ```
 
 #### type `ProgramProps
