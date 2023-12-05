@@ -20,9 +20,9 @@
     - [`attribute`](#attribute-template-helper) _template-helper to include attribute into `glsl`-template_
     - [`uniform`](#uniform-template-helper) _template-helper to include uniform into `glsl`-template_
   - [hooks](#hooks) _manage `WebGL2RenderingContext` and `WebGLProgram`_
-    - [`createGL`](#creategl-hook) hook managing `WebGL2RenderingContext`_
-    - [`createProgram`](#createprogram-hook) hook managing `WebGLProgram`_
-    - [`createComputation`](#createcomputation-hook) hook for gpu-computations_
+    - [`createGL`](#creategl-hook) _hook managing `WebGL2RenderingContext`_
+    - [`createProgram`](#createprogram-hook) _hook managing `WebGLProgram`_
+    - [`createComputation`](#createcomputation-hook) _hook for gpu-computations_
   - [components](#components) _JSX wrappers around `hooks`_
     - [`<GL/>`](#gl-component) _JSX wrapper around `createGL`_
     - [`<Program/>`](#program-component) _JSX wrapper around `createProgram`_
