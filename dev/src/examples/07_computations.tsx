@@ -1,4 +1,4 @@
-import { ComputeShader, createComputation, glsl } from '@bigmistqke/signal-gl'
+import { Computation, createComputation, glsl } from '@bigmistqke/signal-gl'
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
 import './index.css'
@@ -18,7 +18,7 @@ function App() {
     }
   )
 
-  const computeShader: ComputeShader = (u_buffer) => glsl`
+  const computeShader: Computation = (u_buffer) => glsl`
     ivec2 index = ivec2(gl_FragCoord.xy);
     vec4 value = texelFetch(${u_buffer}, index, 0);
     return sqrt(sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value))) * sqrt(sqrt(sqrt(value) * sqrt(value)) * sqrt(sqrt(value) * sqrt(value)))) 

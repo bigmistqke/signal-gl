@@ -11,8 +11,15 @@ import {
   type ComponentProps,
 } from 'solid-js'
 
+import {
+  GLToken,
+  autosize,
+  clear as clearGL,
+  createGL,
+  createProgram,
+  filterProgramTokens,
+} from '@core/hooks'
 import type { ShaderToken } from '@core/types'
-import { createGL, createProgram, render } from '@core/vanilla'
 
 const glContext = createContext<{
   canvas: HTMLCanvasElement
@@ -23,15 +30,17 @@ const glContext = createContext<{
 const useGL = () => useContext(glContext)
 
 type GLProps = ComponentProps<'canvas'> & {
-  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   onProgramCreate?: () => void
-  onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-  animate?: boolean
+  /* Enable/disable clear-function or provide a custom one. */
+  clear?: boolean | ((gl: GLToken) => void)
+  /* Enable/disable `rAF`-based animation or request fps. If disabled, render-loop will be `effect`-based. */
+  animate?: boolean | number
 }
 
 export const GL = (props: GLProps) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
   const canvas = (<canvas {...rest} />) as HTMLCanvasElement
+
   return (
     <glContext.Provider
       value={{
@@ -43,32 +52,37 @@ export const GL = (props: GLProps) => {
       }}
     >
       {(() => {
-        const programs = children(() => childrenProps.children)
+        const childs = children(() => childrenProps.children)
 
         onMount(() => {
           const gl = createGL({
             canvas,
             get programs() {
-              return programs() as any[]
+              return filterProgramTokens(childs())
             },
           })
 
-          // autosize(gl)
-          render(gl)
+          autosize(gl)
+          gl.render()
 
           if (!gl) return
 
+          const clear = () => {
+            if (!props.clear) return
+            if (typeof props.clear === 'function') props.clear(gl)
+            else clearGL(gl)
+          }
+
+          const render = () => {
+            clear()
+            gl.render()
+          }
+
           const animate = () => {
             if (props.animate) requestAnimationFrame(animate)
-            render(gl)
+            render()
           }
-          createEffect(() => {
-            props.animate
-              ? animate()
-              : createEffect(() => {
-                  render(gl)
-                })
-          })
+          createEffect(() => (props.animate ? animate() : createEffect(render)))
         })
 
         return canvas
@@ -82,7 +96,6 @@ type ProgramProps = {
   fragment: Accessor<ShaderToken>
   vertex: Accessor<ShaderToken>
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-  onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   mode: 'TRIANGLES' | 'POINTS' | 'LINES'
   /**
    * @unstable
