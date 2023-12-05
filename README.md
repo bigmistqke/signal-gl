@@ -15,15 +15,15 @@
   - [Hello World](#hello-world-playground)
   - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
-  - [templating](#templating) _compose shaders with autobinding attributes and uniforms_
+  - [templating](#templating)
     - [`glsl`](#glsl-tag-template-literal) _tag template literal to compose glsl_
     - [`attribute`](#attribute-template-helper) _template-helper to include attribute into `glsl`-template_
     - [`uniform`](#uniform-template-helper) _template-helper to include uniform into `glsl`-template_
   - [hooks](#hooks)
     - [`createGL`](#creategl-hook) _hook for managing `WebGL2RenderingContext`_
     - [`createProgram`](#createprogram-hook) _hook for managing `WebGLProgram`_
-    - [`createComputation`](#createcomputation-h=ook) _hook for gpu-computations_
-  - [components](#components) _JSX wrappers around `hooks`_
+    - [`createComputation`](#createcomputation-hook) _hook for gpu-computations_
+  - [components](#components)
     - [`<GL/>`](#gl-component) _JSX wrapper around `createGL`_
     - [`<Program/>`](#program-component) _JSX wrapper around `createProgram`_
 - [Syntax Highlighting](#syntax-highlighting) 
@@ -99,12 +99,12 @@ return (
 
 ### `glsl` _tag template literal_
 
-> - write and compose `glsl`
-> - interpolation [see `Hole`](#type-hole)
->   - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-component-helper) and [`uniform`](#uniform-component-helper) calls
->   - link glsl-snippets into one shader by interpolating [`glsl`](#glsl-tag-template-literal) tag template literals
->   - create scoped variable names by interpolating `strings`
-> - returns [`ShaderToken`](#type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
+> write and compose `glsl` with a tag template literal
+> interpolation [`Hole`](#type-hole)
+> - auto-bind and link `attributes` / `uniforms` by interpolating [`attribute`](#attribute-component-helper) and [`uniform`](#uniform-component-helper) calls
+> - link glsl-snippets into one shader by interpolating [`glsl`](#glsl-tag-template-literal) tag template literals
+> - create scoped variable names by interpolating `strings`
+> returns [`ShaderToken`](#type-shadertoken) to be consumed by a [`<Program/>`](#program-component)
 
 #### Usage
 
@@ -160,7 +160,8 @@ type Hole =
 
 ### `attribute` _template-helper_
 
-> - returns [`AttributeToken`](#type-attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
+> template-helper to include/bind a uniform into `glsl`.
+> returns [`AttributeToken`](#type-attributetoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
 #### Usage
 
@@ -250,6 +251,7 @@ type AttributeToken = {
 
 ### `uniform` _template-helper_
 
+> template-helper to include/bind a uniform into `glsl`.
 > returns [`UniformToken | Sampler2DToken`](#type-uniformtoken--sampler2dtoken) to be consumed by [`glsl`](#glsl-tag-template-literal)
 
 #### Usage
