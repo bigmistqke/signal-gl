@@ -1,53 +1,8 @@
-import zeptoid from 'zeptoid';
 import { createContext, createEffect, mergeProps, splitProps, children, onMount, createMemo, useContext } from 'solid-js';
+import zeptoid from 'zeptoid';
 import { spread, createComponent, template } from 'solid-js/web';
 
-// src/core/proxies.ts
-var dataTypeToFunctionName = (dataType) => {
-  switch (dataType) {
-    case "float":
-      return "uniform1f";
-    case "int":
-    case "bool":
-      return "uniform1i";
-    default:
-      return "uniform" + // 1 | 2 | 3 | 4
-      dataType[dataType.length - 1] + // b | i | f
-      (dataType[0] === "b" || dataType[0] === "i" ? dataType[0] : "f") + // v
-      "v";
-  }
-};
-var uniform = new Proxy({}, {
-  get(target, dataType) {
-    return (...[value, options]) => ({
-      dataType,
-      name: "u_" + zeptoid(),
-      functionName: dataTypeToFunctionName(dataType),
-      tokenType: dataType === "sampler2D" ? "sampler2D" : dataType === "isampler2D" ? "isampler2D" : "uniform",
-      get value() {
-        return typeof value === "function" ? value() : value;
-      },
-      options
-    });
-  }
-});
-var attribute = new Proxy({}, {
-  get(target, dataType) {
-    return (...[value, options]) => {
-      const size = typeof dataType === "string" ? +dataType[dataType.length - 1] : void 0;
-      return {
-        dataType,
-        name: "a_" + zeptoid(),
-        tokenType: "attribute",
-        size: size && !isNaN(size) ? size : 1,
-        get value() {
-          return typeof value === "function" ? value() : value;
-        },
-        options
-      };
-    };
-  }
-});
+// src/core/hooks.ts
 
 // src/core/compilation.ts
 var tokenToString = (token) => {
@@ -106,8 +61,8 @@ var compileStrings = (strings, tokens) => {
 };
 function createWebGLProgram(gl, vertex, fragment) {
   const program = gl.createProgram();
-  var vertexShader = createWebGLShader(gl, vertex, gl.VERTEX_SHADER);
-  var fragmentShader = createWebGLShader(gl, fragment, gl.FRAGMENT_SHADER);
+  var vertexShader = createWebGLShader(gl, vertex, "vertex");
+  var fragmentShader = createWebGLShader(gl, fragment, "fragment");
   if (!program || !vertexShader || !fragmentShader)
     return null;
   gl.attachShader(program, vertexShader);
@@ -117,27 +72,232 @@ function createWebGLProgram(gl, vertex, fragment) {
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     console.error("error while creating program", gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
     return null;
   }
   return program;
 }
 function createWebGLShader(gl, src, type) {
-  const shader = gl.createShader(type);
+  const shader = gl.createShader(
+    type === "fragment" ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER
+  );
   if (!shader) {
-    console.error(`error while creating shader`);
+    console.error(type, `error while creating shader`);
     return null;
   }
   gl.shaderSource(shader, src);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(
-      (type == gl.VERTEX_SHADER ? "VERTEX" : "FRAGMENT") + ` SHADER:
- ${gl.getShaderInfoLog(shader)}`
-    );
+    console.error(type, gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
     return null;
   }
   return shader;
 }
+var createToken = (name, config, other) => mergeProps(config, { name }, other);
+var bindUniformToken = (token, gl, program, onRender, effect) => {
+  const location = gl.getUniformLocation(program, token.name);
+  onRender(
+    token.name,
+    () => gl[token.functionName](location, token.value)
+  );
+};
+var bindAttributeToken = (token, gl, program, onRender, effect) => {
+  const buffer = gl.createBuffer();
+  const location = gl.getAttribLocation(program, token.name);
+  const glTarget = () => gl[token.options?.target || "ARRAY_BUFFER"];
+  onRender(token.name, () => {
+    token.value;
+    gl.bindBuffer(glTarget(), buffer);
+    gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(location);
+  });
+  effect(() => {
+    gl.bindBuffer(glTarget(), buffer);
+    gl.bufferData(glTarget(), token.value, gl.STATIC_DRAW);
+  });
+};
+var bindSampler2DToken = (token, gl, program, onRender, effect) => {
+  const texture = gl.createTexture();
+  const options = mergeProps(
+    {
+      internalFormat: "RGBA",
+      width: 2,
+      height: 1,
+      border: 0,
+      format: "RGBA",
+      dataType: "UNSIGNED_BYTE",
+      minFilter: "NEAREST",
+      magFilter: "NEAREST",
+      wrapS: "CLAMP_TO_EDGE",
+      wrapT: "CLAMP_TO_EDGE"
+    },
+    token.options
+  );
+  onRender(token.name, () => {
+    token.value;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+  });
+  effect(() => {
+    const {
+      format,
+      width,
+      height,
+      border,
+      minFilter,
+      magFilter,
+      wrapS,
+      wrapT,
+      internalFormat,
+      dataType
+    } = options;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl[internalFormat],
+      width,
+      height,
+      border,
+      gl[format],
+      gl[dataType],
+      token.value
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[minFilter]);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[magFilter]);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl[wrapS]);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[wrapT]);
+    gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex);
+  });
+};
+
+// src/core/template.ts
+var DEBUG = false;
+var nameCacheMap = /* @__PURE__ */ new WeakMap();
+var textureIndex = 0;
+var glsl = function(template, ...holes) {
+  return () => {
+    const hasNameCache = nameCacheMap.has(template);
+    if (!hasNameCache)
+      nameCacheMap.set(template, []);
+    const nameCache = nameCacheMap.get(template);
+    const scopedNames = /* @__PURE__ */ new Map();
+    const tokens = holes.map((hole, index) => {
+      if (typeof hole === "function") {
+        return hole();
+      }
+      if (typeof hole === "string") {
+        const name2 = (
+          // check for cache
+          hasNameCache && nameCache[index] || // check for scoped names
+          scopedNames.get(hole) || // create new name
+          `${hole}_${zeptoid()}`
+        );
+        if (!scopedNames.has(hole))
+          scopedNames.set(hole, name2);
+        if (!hasNameCache || !nameCache[index])
+          nameCache[index] = name2;
+        return {
+          name: name2,
+          tokenType: "scope"
+        };
+      }
+      const name = hasNameCache && nameCache[index] || hole.name;
+      if (!hasNameCache)
+        nameCache[index] = name;
+      if (DEBUG && !name) {
+        console.error("id was not found for hole:", hole, "with index", index);
+      }
+      switch (hole.tokenType) {
+        case "attribute":
+        case "uniform":
+          return createToken(name, hole);
+        case "isampler2D":
+        case "sampler2D":
+          return createToken(name, hole, {
+            textureIndex: textureIndex++
+          });
+      }
+    }).filter((hole) => hole !== void 0);
+    const bind = (gl, program, onRender, render) => {
+      gl.useProgram(program);
+      tokens.forEach((token) => {
+        switch (token.tokenType) {
+          case "attribute":
+            bindAttributeToken(token, gl, program, onRender, glsl.effect);
+            break;
+          case "sampler2D":
+          case "isampler2D":
+            bindSampler2DToken(token, gl, program, onRender, glsl.effect);
+            break;
+          case "shader":
+            token.bind(gl, program, onRender, render);
+            break;
+          case "uniform":
+            bindUniformToken(token, gl, program, onRender, glsl.effect);
+            break;
+        }
+      });
+    };
+    return {
+      get source() {
+        const source = compileStrings(template, tokens);
+        DEBUG && console.log("source", source.code);
+        return source;
+      },
+      bind,
+      tokenType: "shader",
+      template
+    };
+  };
+};
+glsl.effect = (cb) => {
+};
+var dataTypeToFunctionName = (dataType) => {
+  switch (dataType) {
+    case "float":
+      return "uniform1f";
+    case "int":
+    case "bool":
+      return "uniform1i";
+    default:
+      return "uniform" + // 1 | 2 | 3 | 4
+      dataType[dataType.length - 1] + // b | i | f
+      (dataType[0] === "b" || dataType[0] === "i" ? dataType[0] : "f") + // v
+      "v";
+  }
+};
+var uniform = new Proxy({}, {
+  get(target, dataType) {
+    return (...[value, options]) => ({
+      dataType,
+      name: "u_" + zeptoid(),
+      functionName: dataTypeToFunctionName(dataType),
+      tokenType: dataType === "sampler2D" ? "sampler2D" : dataType === "isampler2D" ? "isampler2D" : "uniform",
+      get value() {
+        return typeof value === "function" ? value() : value;
+      },
+      options
+    });
+  }
+});
+var attribute = new Proxy({}, {
+  get(target, dataType) {
+    return (...[value, options]) => {
+      const size = typeof dataType === "string" ? +dataType[dataType.length - 1] : void 0;
+      return {
+        dataType,
+        name: "a_" + zeptoid(),
+        tokenType: "attribute",
+        size: size && !isNaN(size) ? size : 1,
+        get value() {
+          return typeof value === "function" ? value() : value;
+        },
+        options
+      };
+    };
+  }
+});
 
 // src/core/utils.ts
 function objectsAreEqual(a, b) {
@@ -156,8 +316,8 @@ textureConfigFromTypedArrayMap.set(Float32Array, {
 });
 var getTextureConfigFromTypedArray = (buffer) => textureConfigFromTypedArrayMap.get(buffer.constructor);
 
-// src/core/vanilla.ts
-var createGL = (config) => {
+// src/core/hooks.ts
+var createStack = (config) => {
   const ctx = config.canvas.getContext("webgl2");
   if (!ctx)
     throw "webgl2 is not supported";
@@ -170,20 +330,70 @@ var createGL = (config) => {
   return {
     ...config,
     ctx,
-    render: () => config.programs.forEach((program) => program.render()),
-    cache: {
-      previousReadConfig: {}
-    }
+    render: () => config.programs.forEach((program) => program.render())
   };
 };
-var autosize = (gl) => {
+var IS_PROGRAM = Symbol("is-program");
+var createProgram = (config) => {
+  const ctx = config.canvas.getContext("webgl2");
+  if (!ctx)
+    throw "webgl2 is not supported";
+  const cachedProgram = config.cacheEnabled && getProgramCache(config);
+  const program = cachedProgram || createWebGLProgram(
+    ctx,
+    config.vertex.source.code,
+    config.fragment.source.code
+  );
+  if (!program)
+    throw `error while building program`;
+  if (config.cacheEnabled)
+    setProgramCache({ ...config, program });
+  const updateQueue = /* @__PURE__ */ new Map();
+  const addToUpdateQueue = (location, fn) => (updateQueue.set(location, fn), () => updateQueue.delete(location));
+  const render = () => {
+    ctx.useProgram(program);
+    updateQueue.forEach((update) => update());
+    config.onRender?.(ctx, program);
+    ctx.drawArrays(ctx[config.mode], config.first || 0, config.count);
+  };
+  config.vertex.bind(ctx, program, addToUpdateQueue, render);
+  config.fragment.bind(ctx, program, addToUpdateQueue, render);
+  return {
+    ...config,
+    program,
+    ctx,
+    render,
+    [IS_PROGRAM]: true
+  };
+};
+var programCache = /* @__PURE__ */ new WeakMap();
+var getProgramCache = (config) => programCache.get(config.vertex.template)?.get(config.fragment.template);
+var setProgramCache = ({
+  vertex,
+  fragment,
+  program
+}) => {
+  if (!programCache.get(vertex.template)) {
+    programCache.set(vertex.template, /* @__PURE__ */ new WeakMap());
+  }
+  if (!programCache.get(vertex.template).get(fragment.template)) {
+    programCache.get(vertex.template).set(fragment.template, program);
+  }
+};
+var isProgramToken = (value) => typeof value === "object" && IS_PROGRAM in value;
+var filterProgramTokens = (value) => (typeof value === "object" && Array.isArray(value) ? value : [value]).filter(isProgramToken);
+var autosize = ({
+  canvas,
+  ctx,
+  render
+}) => {
   const resizeObserver = new ResizeObserver(() => {
-    gl.canvas.width = gl.canvas.clientWidth;
-    gl.canvas.height = gl.canvas.clientHeight;
-    gl.ctx.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.render();
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    ctx.viewport(0, 0, canvas.width, canvas.height);
+    render();
   });
-  resizeObserver.observe(gl.canvas);
+  resizeObserver.observe(canvas);
 };
 var clear = ({ ctx }) => {
   ctx.clearColor(0, 0, 0, 1);
@@ -206,86 +416,89 @@ var renderBuffer = ({ ctx }, { internalFormat, width, height }) => {
   );
   ctx.finish();
 };
-var read = (gl, config) => {
+var readCache = /* @__PURE__ */ new WeakMap();
+var read = (token, config) => {
   const mergedConfig = mergeProps(
     {
       format: "RGBA",
       dataType: "UNSIGNED_BYTE",
       internalFormat: "RGBA8",
-      width: gl.canvas.width,
-      height: gl.canvas.height
+      width: token.canvas.width,
+      height: token.canvas.height
     },
     config
   );
-  if (!objectsAreEqual(mergedConfig, gl.cache.previousReadConfig)) {
-    gl.cache.previousReadConfig = mergedConfig;
-    renderBuffer(gl, mergedConfig);
+  if (!readCache.get(token.ctx) || !objectsAreEqual(mergedConfig, readCache.get(token.ctx))) {
+    readCache.set(token.ctx, mergedConfig);
+    renderBuffer(token, mergedConfig);
   }
-  clear(gl);
-  gl.render();
-  gl.ctx.readPixels(
+  clear(token);
+  token.render();
+  token.ctx.readPixels(
     0,
     0,
     mergedConfig.width,
     mergedConfig.height,
-    gl.ctx[mergedConfig.format],
-    gl.ctx[mergedConfig.dataType],
+    token.ctx[mergedConfig.format],
+    token.ctx[mergedConfig.dataType],
     mergedConfig.output
   );
   return mergedConfig.output;
 };
-var IS_PROGRAM = Symbol("is-program");
-var createProgram = (config) => {
-  const gl = config.canvas.getContext("webgl2");
-  if (!gl)
-    throw "webgl2 is not supported";
-  const cachedProgram = config.cacheEnabled && getProgramCache(config);
-  const program = cachedProgram || createWebGLProgram(
-    gl,
-    config.vertex.source.code,
-    config.fragment.source.code
+var computationCanvas = document.createElement("canvas");
+var createComputation = function(input, callback, config) {
+  let output;
+  let bufferType = input().constructor;
+  const getConfig = () => mergeProps(
+    {
+      internalFormat: "R32F",
+      format: "RED",
+      width: input().length,
+      height: 1,
+      dataType: "FLOAT",
+      output
+    },
+    getTextureConfigFromTypedArray(input()),
+    config
   );
-  if (!program)
-    throw `error while building program`;
-  if (config.cacheEnabled)
-    setProgramCache({ ...config, program });
-  const queue = /* @__PURE__ */ new Map();
-  const addToQueue = (location, fn) => (queue.set(location, fn), () => queue.delete(location));
-  const render = () => {
-    if (!program || !gl)
-      return;
-    gl.useProgram(program);
-    queue.forEach((fn) => fn());
-    config.onRender?.(gl, program);
-    gl.drawArrays(gl[config.mode], config.first || 0, config.count);
+  const a_vertices = attribute.vec2(
+    new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1])
+  );
+  const vertex = glsl`#version 300 es
+void main(){gl_Position = vec4(${a_vertices}, 0.0, 1.0);}`;
+  const fragment = glsl`#version 300 es
+precision highp float; out vec4 outColor; vec4 compute(){${callback(
+    uniform.sampler2D(input, getConfig())
+  )}} void main(){outColor = compute();}`;
+  const program = createProgram({
+    canvas: computationCanvas,
+    vertex: vertex(),
+    fragment: fragment(),
+    mode: "TRIANGLES",
+    count: 4
+  });
+  const updateOutput = () => {
+    if (input().constructor !== output?.constructor) {
+      bufferType = input().constructor;
+      output = new bufferType(input().length);
+    } else if (input().length !== output?.length) {
+      output = new bufferType(input().length);
+    }
   };
-  config.vertex.bind(gl, program, addToQueue, render);
-  config.fragment.bind(gl, program, addToQueue, render);
-  return {
-    config,
-    program,
-    render,
-    [IS_PROGRAM]: true
+  updateOutput();
+  return () => {
+    updateOutput();
+    clear(program);
+    program.render();
+    return read(program, getConfig());
   };
-};
-var isProgramToken = (value) => typeof value === "object" && IS_PROGRAM in value;
-var filterProgramTokens = (value) => (typeof value === "object" && Array.isArray(value) ? value : [value]).filter(isProgramToken);
-var programCache = /* @__PURE__ */ new WeakMap();
-var getProgramCache = (config) => programCache.get(config.vertex.template)?.get(config.fragment.template);
-var setProgramCache = (config) => {
-  if (!programCache.get(config.vertex.template)) {
-    programCache.set(config.vertex.template, /* @__PURE__ */ new WeakMap());
-  }
-  if (!programCache.get(config.vertex.template).get(config.fragment.template)) {
-    programCache.get(config.vertex.template).set(config.fragment.template, config.program);
-  }
 };
 var _tmpl$ = /* @__PURE__ */ template(`<canvas>`);
 var glContext = createContext();
 var useGL = () => useContext(glContext);
-var GL = (props) => {
+var Stack = (props) => {
   const [childrenProps, rest] = splitProps(props, ["children"]);
-  const canvas2 = (() => {
+  const canvas = (() => {
     const _el$ = _tmpl$();
     spread(_el$, rest, false, false);
     return _el$;
@@ -293,8 +506,8 @@ var GL = (props) => {
   return createComponent(glContext.Provider, {
     get value() {
       return {
-        canvas: canvas2,
-        gl: canvas2.getContext("webgl2"),
+        canvas,
+        gl: canvas.getContext("webgl2"),
         get onProgramCreate() {
           return props.onProgramCreate;
         }
@@ -304,28 +517,35 @@ var GL = (props) => {
       return (() => {
         const childs = children(() => childrenProps.children);
         onMount(() => {
-          const gl = createGL({
-            canvas: canvas2,
-            get programs() {
-              return filterProgramTokens(childs());
-            }
-          });
-          autosize(gl);
-          gl.render();
-          if (!gl)
-            return;
-          const animate = () => {
-            if (props.animate)
-              requestAnimationFrame(animate);
-            gl.render();
-          };
-          createEffect(() => {
-            props.animate ? animate() : createEffect(() => {
-              gl.render();
+          try {
+            const stack = createStack({
+              canvas,
+              get programs() {
+                return filterProgramTokens(childs());
+              }
             });
-          });
+            autosize(stack);
+            stack.render();
+            const render = () => {
+              if (props.clear) {
+                if (typeof props.clear === "function")
+                  props.clear(stack);
+                else
+                  clear(stack);
+              }
+              stack.render();
+            };
+            const animate = () => {
+              if (props.animate)
+                requestAnimationFrame(animate);
+              render();
+            };
+            createEffect(() => props.animate ? animate() : createEffect(render));
+          } catch (error2) {
+            console.error(error2);
+          }
         });
-        return canvas2;
+        return canvas;
       })();
     }
   });
@@ -348,209 +568,6 @@ var Program = (props) => {
     });
   });
 };
-var createToken = (name, config, other) => mergeProps(config, { name }, other);
-var bindUniformToken = (token, gl, program, onRender) => {
-  const location = gl.getUniformLocation(program, token.name);
-  onRender(location, () => {
-    gl[token.functionName](location, token.value);
-  });
-};
-var bindAttributeToken = (token, gl, program, onRender) => {
-  const target = token.options?.target;
-  const buffer = gl.createBuffer();
-  const glTarget = target ? gl[target] : gl.ARRAY_BUFFER;
-  const location = gl.getAttribLocation(program, token.name);
-  onRender(location, () => {
-    gl.bindBuffer(glTarget, buffer);
-    gl.bufferData(glTarget, token.value, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(location);
-  });
-};
-var bindSampler2DToken = (token, gl, program, effect, render) => {
-  effect(() => {
-    const {
-      format,
-      width,
-      height,
-      border,
-      minFilter,
-      magFilter,
-      wrapS,
-      wrapT,
-      internalFormat,
-      dataType
-    } = mergeProps(
-      {
-        internalFormat: "RGBA",
-        width: 2,
-        height: 1,
-        border: 0,
-        format: "RGBA",
-        dataType: "UNSIGNED_BYTE",
-        minFilter: "NEAREST",
-        magFilter: "NEAREST",
-        wrapS: "CLAMP_TO_EDGE",
-        wrapT: "CLAMP_TO_EDGE"
-      },
-      token.options
-    );
-    gl.useProgram(program);
-    const texture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0 + token.textureIndex);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl[internalFormat],
-      width,
-      height,
-      border,
-      gl[format],
-      gl[dataType],
-      token.value
-    );
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[minFilter]);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[magFilter]);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl[wrapS]);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[wrapT]);
-    gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex);
-    render();
-  });
-};
+glsl.effect = createEffect;
 
-// src/core/template.ts
-var DEBUG = false;
-var nameCacheMap = /* @__PURE__ */ new WeakMap();
-var textureIndex = 0;
-var createGlsl = (effect) => (template, ...holes) => () => {
-  const hasNameCache = nameCacheMap.has(template);
-  if (!hasNameCache)
-    nameCacheMap.set(template, []);
-  const nameCache = nameCacheMap.get(template);
-  const scopedNames = /* @__PURE__ */ new Map();
-  const tokens = holes.map((hole, index) => {
-    if (typeof hole === "function") {
-      return hole();
-    }
-    if (typeof hole === "string") {
-      const name2 = (
-        // check for cache
-        hasNameCache && nameCache[index] || // check for scoped names
-        scopedNames.get(hole) || // create new name
-        `${hole}_${zeptoid()}`
-      );
-      if (!scopedNames.has(hole))
-        scopedNames.set(hole, name2);
-      if (!hasNameCache || !nameCache[index])
-        nameCache[index] = name2;
-      return {
-        name: name2,
-        tokenType: "scope"
-      };
-    }
-    const name = hasNameCache && nameCache[index] || hole.name;
-    if (!hasNameCache)
-      nameCache[index] = name;
-    if (DEBUG && !name) {
-      console.error("id was not found for hole:", hole, "with index", index);
-    }
-    switch (hole.tokenType) {
-      case "attribute":
-      case "uniform":
-        return createToken(name, hole);
-      case "isampler2D":
-      case "sampler2D":
-        return createToken(name, hole, {
-          textureIndex: textureIndex++
-        });
-    }
-  }).filter((hole) => hole !== void 0);
-  const bind = (gl, program, onRender, render) => {
-    gl.useProgram(program);
-    tokens.forEach((token) => {
-      switch (token.tokenType) {
-        case "attribute":
-          bindAttributeToken(token, gl, program, onRender);
-          break;
-        case "sampler2D":
-        case "isampler2D":
-          bindSampler2DToken(token, gl, program, effect, render);
-          break;
-        case "shader":
-          token.bind(gl, program, onRender, render);
-          break;
-        case "uniform":
-          bindUniformToken(token, gl, program, onRender);
-          break;
-      }
-    });
-  };
-  return {
-    get source() {
-      const source = compileStrings(template, tokens);
-      DEBUG && console.log("source", source.code);
-      return source;
-    },
-    bind,
-    tokenType: "shader",
-    template
-  };
-};
-var glsl = createGlsl(createEffect);
-
-// src/solid/createComputation.ts
-var canvas = document.createElement("canvas");
-var createComputation = (input, callback, config) => {
-  let output;
-  let bufferType = input().constructor;
-  const getConfig = () => mergeProps(
-    {
-      internalFormat: "R32F",
-      format: "RED",
-      width: input().length,
-      height: 1,
-      dataType: "FLOAT",
-      output
-    },
-    getTextureConfigFromTypedArray(input()),
-    config
-  );
-  const a_vertices = attribute.vec2(
-    new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1])
-  );
-  const vertex = glsl`#version 300 es
-void main(){gl_Position = vec4(${a_vertices}, 0.0, 1.0);}`;
-  const fragment = glsl`#version 300 es
-precision highp float;
-out vec4 outColor;
-vec4 compute(){${callback(uniform.sampler2D(input, getConfig()))}}
-void main(){outColor = compute();}`;
-  const program = createProgram({
-    canvas,
-    vertex: vertex(),
-    fragment: fragment(),
-    mode: "TRIANGLES",
-    count: 4
-  });
-  const gl = createGL({
-    canvas,
-    programs: [program]
-  });
-  const updateOutput = () => {
-    if (input().constructor !== output?.constructor) {
-      bufferType = input().constructor;
-      output = new bufferType(input().length);
-    } else if (input().length !== output?.length) {
-      output = new bufferType(input().length);
-    }
-  };
-  updateOutput();
-  return () => {
-    updateOutput();
-    gl.render();
-    return read(gl, getConfig());
-  };
-};
-
-export { GL, Program, attribute, autosize, clear, createComputation, createGL, createProgram, filterProgramTokens, glsl, isProgramToken, read, renderBuffer, uniform };
+export { Program, Stack, attribute, autosize, clear, createComputation, createProgram, createStack, filterProgramTokens, glsl, isProgramToken, read, renderBuffer, uniform };
