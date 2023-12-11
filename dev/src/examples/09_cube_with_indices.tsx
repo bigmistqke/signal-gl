@@ -15,9 +15,12 @@ function App() {
     mat4.create()
   )
 
-  const render = () => {
-    const _projectionMatrix = mat4.create()
-    const _modelViewMatrix = mat4.create()
+  createEffect(() => {
+    if (!canvas()) return
+    console.log('canvas', canvas())
+
+    const _projectionMatrix = untrack(projectionMatrix)
+    const _modelViewMatrix = untrack(modelViewMatrix)
 
     mat4.perspective(
       _projectionMatrix,
@@ -36,14 +39,6 @@ function App() {
     )
     setProjectionMatrix(_projectionMatrix)
     setModelViewMatrix(_modelViewMatrix)
-
-    requestAnimationFrame(render)
-  }
-
-  createEffect(() => {
-    if (!canvas()) return
-    console.log('canvas', canvas())
-    untrack(render)
   })
 
   const u_projectionMatrix = uniform.mat4(projectionMatrix)
@@ -90,6 +85,47 @@ function App() {
     ])
   )
 
+  const a_colors = attribute.vec4(
+    // prettier-ignore
+    new Uint16Array([
+      // Front face
+      1, 0, 0, 1,
+      0, 1, 0, 1, 
+      0, 0, 1, 1,
+      1, 1, 1, 1,
+
+      // Back face
+      1, 0, 0, 1, 
+      0, 1, 0, 1, 
+      0, 0, 1, 1, 
+      1, 1, 1, 1,
+
+      // Top face
+      1, 0, 0, 1, 
+      0, 1, 0, 1, 
+      0, 0, 1, 1, 
+      1, 1, 1, 1,
+
+      // Bottom face
+      1, 0, 0, 1,
+      0, 1, 0, 1, 
+      0, 0, 1, 1, 
+      1, 1, 1, 1,
+
+      // Right face
+      1, 0, 0, 1,
+      0, 1, 0, 1, 
+      0, 0, 1, 1, 
+      1, 1, 1, 1,
+
+      // Left face
+      1, 0, 0, 1, 
+      0, 1, 0, 1, 
+      0, 0, 1, 1, 
+      1, 1, 1, 1,
+    ])
+  )
+
   const a_indices = attribute.int(
     // prettier-ignore
     new Uint16Array([
@@ -106,39 +142,27 @@ function App() {
       // Left face
       20, 21,  22, 20, 22, 23, 
     ]),
-    { target: 'ELEMENT_ARRAY_BUFFER' }
+    { target: 'ELEMENT_ARRAY_BUFFER', name: 'indices' }
   )
 
   // Vertex shader program
   const vsSource = glsl`#version 300 es
+out lowp vec4 vColor;
 void main(void) {
     gl_Position = ${u_projectionMatrix} * ${u_modelViewMatrix} * vec4(${a_positions}, 1.);
+    vColor = ${a_colors};
 }
 `
 
   // Fragment shader program
   const fsSource = glsl`#version 300 es
 precision mediump float;
+in lowp vec4 vColor;
 out vec4 color;
 void main(void) {
-  color = vec4(1.0,0.0,0.0,1.0);
+  color = vColor;
 }
 `
-
-  const indices = [
-    // Front face
-    0, 1, 2, 0, 2, 3,
-    // Back face
-    4, 5, 6, 4, 6, 7,
-    // Top face
-    8, 9, 10, 8, 10, 11,
-    // Bottom face
-    12, 13, 14, 12, 14, 15,
-    // Right face
-    16, 17, 18, 16, 18, 19,
-    // Left face
-    20, 21, 22, 20, 22, 23,
-  ]
 
   return (
     <Stack ref={setCanvas}>
@@ -147,7 +171,7 @@ void main(void) {
         vertex={vsSource}
         fragment={fsSource}
         mode="TRIANGLES"
-        indices={indices}
+        indices={a_indices}
         count={36}
       />
     </Stack>

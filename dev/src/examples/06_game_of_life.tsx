@@ -39,16 +39,9 @@ function App() {
 `
 
   return (
-    <>
-      <Stack>
-        <Program
-          fragment={fragment}
-          vertex={vertex}
-          mode="TRIANGLES"
-          count={6}
-        />
-      </Stack>
-    </>
+    <Stack>
+      <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" count={6} />
+    </Stack>
   )
 }
 

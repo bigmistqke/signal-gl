@@ -1,8 +1,9 @@
 import { mergeProps } from 'solid-js'
-
+import zeptoid from 'zeptoid'
 import type {
   AttributeProxy,
   AttributeToken,
+  BufferToken,
   OnRenderFunction,
   Sampler2DToken,
   UniformProxy,
@@ -23,14 +24,20 @@ export const bindUniformToken = (
   token: UniformToken,
   gl: WebGL2RenderingContext,
   program: WebGLProgram,
-  onRender: OnRenderFunction,
-  effect: (cb: () => void) => void
+  onRender: OnRenderFunction
 ) => {
   // get location based on token.name
   const location = gl.getUniformLocation(program, token.name)!
-  onRender(token.name, () =>
-    (gl[token.functionName] as any)(location, token.value)
-  )
+  const isMatrix = token.dataType.includes('mat')
+  if (isMatrix) {
+    onRender(token.name, () =>
+      (gl[token.functionName] as any)(location, false, token.value)
+    )
+  } else {
+    onRender(token.name, () =>
+      (gl[token.functionName] as any)(location, token.value)
+    )
+  }
 }
 
 export const bindAttributeToken = (
@@ -40,19 +47,47 @@ export const bindAttributeToken = (
   onRender: OnRenderFunction,
   effect: (cb: () => void) => void
 ) => {
+  const options = mergeProps({ stride: 0, offset: 0 } as const, token.options)
   // create buffer
   const buffer = gl.createBuffer()
   const location = gl.getAttribLocation(program, token.name)
-  const glTarget = () => gl[token.options?.target || 'ARRAY_BUFFER']
+
   onRender(token.name, () => {
     token.value // to trigger effect when value updates
-    gl.bindBuffer(glTarget(), buffer)
-    gl.vertexAttribPointer(location, token.size, gl.FLOAT, false, 0, 0)
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     gl.enableVertexAttribArray(location)
+    gl.vertexAttribPointer(
+      location,
+      token.size,
+      gl.FLOAT,
+      false,
+      options.stride,
+      options.offset
+    )
   })
   effect(() => {
-    gl.bindBuffer(glTarget(), buffer)
-    gl.bufferData(glTarget(), token.value, gl.STATIC_DRAW)
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, token.value, gl.STATIC_DRAW)
+  })
+}
+
+export const bindBufferToken = (
+  token: BufferToken,
+  gl: WebGL2RenderingContext,
+  onRender: OnRenderFunction,
+  effect: (cb: () => void) => void,
+  cb?: (buffer: WebGLBuffer) => void
+) => {
+  const buffer = gl.createBuffer()!
+  const name = zeptoid()
+  effect(() => {
+    gl.bindBuffer(gl[token.options.target], buffer)
+    gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
+  })
+  onRender(name, () => {
+    token.value
+    gl.bindBuffer(gl[token.options.target], buffer)
+    if (cb) cb(buffer)
   })
 }
 

@@ -25,6 +25,9 @@ devDependencies:
   '@types/node':
     specifier: ^20.10.0
     version: 20.10.0
+  gl-matrix:
+    specifier: ^3.4.3
+    version: 3.4.3
   tsup:
     specifier: ^8.0.1
     version: 8.0.1(typescript@5.3.2)
@@ -2351,6 +2354,10 @@ packages:
   /get-stream@6.0.1:
     resolution: {integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==}
     engines: {node: '>=10'}
+    dev: true
+
+  /gl-matrix@3.4.3:
+    resolution: {integrity: sha512-wcCp8vu8FT22BnvKVPjXa/ICBWRq/zjFfdofZy1WSpQZpphblv12/bOQLBC1rMM7SGOFS9ltVmKOHil5+Ml7gA==}
     dev: true
 
   /glob-parent@5.1.2:

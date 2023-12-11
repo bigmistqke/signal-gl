@@ -1,9 +1,11 @@
 import {
   JSXElement,
+  Setter,
   children,
   createContext,
   createEffect,
   createMemo,
+  mergeProps,
   onMount,
   splitProps,
   useContext,
@@ -12,6 +14,7 @@ import {
 } from 'solid-js'
 
 import {
+  ProgramToken,
   StackToken,
   autosize,
   clear,
@@ -29,15 +32,37 @@ const glContext = createContext<{
 
 const useGL = () => useContext(glContext)
 
-type GLProps = ComponentProps<'canvas'> & {
+const mount = (config: {
+  token: ProgramToken | StackToken
+  clear: undefined | boolean | ((token: ProgramToken | StackToken) => void)
+  animate: undefined | boolean
+}) => {
+  autosize(config.token)
+  config.token.render()
+
+  const render = () => {
+    if (config.clear) {
+      if (typeof config.clear === 'function') config.clear(config.token)
+      else clear(config.token)
+    }
+    config.token.render()
+  }
+
+  const animate = () => {
+    if (config.animate) requestAnimationFrame(animate)
+    render()
+  }
+  createEffect(() => (config.animate ? animate() : createEffect(render)))
+}
+
+type StackProps = ComponentProps<'canvas'> & {
   onProgramCreate?: () => void
   /* Enable/disable clear-function or provide a custom one. */
   clear?: boolean | ((gl: StackToken) => void)
   /* Enable/disable `rAF`-based animation or request fps. If disabled, render-loop will be `effect`-based. */
   animate?: boolean | number
 }
-
-export const Stack = (props: GLProps) => {
+export const Stack = (props: StackProps) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
   const canvas = (<canvas {...rest} />) as HTMLCanvasElement
 
@@ -62,7 +87,6 @@ export const Stack = (props: GLProps) => {
                 return filterProgramTokens(childs())
               },
             })
-
             autosize(stack)
             stack.render()
 
@@ -95,8 +119,11 @@ export const Stack = (props: GLProps) => {
 type ProgramProps = {
   count: number
   fragment: Accessor<ShaderToken>
-  vertex: Accessor<ShaderToken>
+  /** if defined `gl.drawElements` else `gl.drawArrays` */
+  indices?: number[] | Uint16Array
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  ref?: Setter<HTMLCanvasElement>
+  vertex: Accessor<ShaderToken>
   mode: 'TRIANGLES' | 'POINTS' | 'LINES'
   /**
    * @unstable
@@ -107,22 +134,19 @@ type ProgramProps = {
 
 export const Program = (props: ProgramProps) => {
   const context = useGL()
-
-  if (!context)
-    throw 'context is undefined: make sure <Program/> is sibling of <GL/>'
-
-  return createMemo(() => {
-    const vertex = props.vertex()
-    const fragment = props.fragment()
-
-    return createProgram({
+  if (!context) throw 'no context'
+  const [shader, rest] = splitProps(props, ['vertex', 'fragment'])
+  const config = mergeProps(
+    {
       canvas: context.canvas,
-      fragment: fragment,
-      vertex: vertex,
-      mode: props.mode,
-      cacheEnabled: !!props.cacheEnabled,
-      onRender: props.onRender,
-      count: props.count,
-    })
-  }) as any as JSXElement // cast to JSX
+      get fragment() {
+        return shader.fragment()
+      },
+      get vertex() {
+        return shader.vertex()
+      },
+    },
+    rest
+  )
+  return createMemo(() => createProgram(config)) as any as JSXElement // cast to JSX
 }

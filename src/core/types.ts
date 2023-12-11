@@ -7,6 +7,10 @@ export type IsUnion<T, B = T> = T extends T
     : true
   : never
 export type Check<T, U extends any[]> = T extends U[number] ? true : false
+export type TupleOf<T = number, N = 1, Acc extends T[] = []> = Acc['length'] extends N
+    ? Acc
+    : TupleOf<T, N, [T, ...Acc]>;
+export type MatrixOf<T = number, N = 1> = TupleOf<TupleOf<T, N>, N>
 
 /* TYPE ERROR MESSAGES */
 const error = Symbol()
@@ -16,19 +20,24 @@ export type GLSLError<T> = { [error]: T }
 export type UniformSetter =
   | 'uniform1f'
   | 'uniform1i'
+  | 'uniform1i'  
+  | 'uniform1fv'
+  | 'uniform1iv'
+  | 'uniform1iv'
   | 'uniform2fv'
   | 'uniform2iv'
   | 'uniform3fv'
   | 'uniform3iv'
   | 'uniform4fv'
   | 'uniform4iv'
+  | 'uniformMatrix2fv'
+  | 'uniformMatrix3fv'
+  | 'uniformMatrix4fv'
+
 export type OnRenderFunction = (
   location: WebGLUniformLocation | number,
   fn: () => void
 ) => () => void
-export type VariableOptionsBase = {
-  name?: string
-}
 
 /** VALID TYPED_ARRAY TYPES */
 export type Buffer =
@@ -39,7 +48,7 @@ export type Buffer =
   | Int16Array
   | Int32Array
   | Float32Array
-type IntBuffer = Int8Array | Int16Array | Int32Array
+type IntBuffer = Int8Array | Int16Array | Int32Array |  Uint8Array | Uint16Array | Uint32Array
 
 /* GLSL TAG TEMPLATE LITERAL */
 export type TemplateValue =
@@ -59,7 +68,7 @@ type Variable<
   const TTOptions extends TTOptionsDefault
 >(
   value: Accessor<TValue> | TValue,
-  options?: TTOptions
+  options?: Partial<TTOptions>
 ) => {
   name: string
   dataType: TDataType
@@ -73,15 +82,23 @@ export type UniformProxy = {
   float: Variable<'uniform', 'float', number>
   int: Variable<'uniform', 'int', number>
   bool: Variable<'uniform', 'bool', boolean>
-  vec2: Variable<'uniform', 'vec2', [number, number]>
-  ivec2: Variable<'uniform', 'ivec2', [number, number]>
-  bvec2: Variable<'uniform', 'bvec2', [boolean, boolean]>
-  vec3: Variable<'uniform', 'vec3', [number, number, number]>
-  ivec3: Variable<'uniform', 'ivec3', [number, number, number]>
-  bvec3: Variable<'uniform', 'bvec3', [boolean, boolean, boolean]>
-  vec4: Variable<'uniform', 'vec4', [number, number, number, number]>
-  ivec4: Variable<'uniform', 'ivec4', [number, number, number, number]>
-  bvec4: Variable<'uniform', 'bvec4', [boolean, boolean, boolean, boolean]>
+
+  vec2: Variable<'uniform', 'vec2', TupleOf<number, 2> | Buffer>
+  ivec2: Variable<'uniform', 'ivec2', TupleOf<number, 2> | Buffer>
+  bvec2: Variable<'uniform', 'bvec2', TupleOf<number, 2> | Buffer>
+
+  vec3: Variable<'uniform', 'vec3', TupleOf<number, 3> | Buffer>
+  ivec3: Variable<'uniform', 'ivec3', TupleOf<number, 3> | Buffer>
+  bvec3: Variable<'uniform', 'bvec3', TupleOf<number, 3> | Buffer>
+
+  vec4: Variable<'uniform', 'vec4', TupleOf<number, 4> | Buffer>
+  ivec4: Variable<'uniform', 'ivec4', TupleOf<number, 4> | Buffer>
+  bvec4: Variable<'uniform', 'bvec4', TupleOf<number, 4> | Buffer>
+
+  mat2: Variable<'uniform', 'mat2', TupleOf<number, 16> | Buffer>
+  mat3: Variable<'uniform', 'mat3', TupleOf<number, 9> | Buffer>
+  mat4: Variable<'uniform', 'mat4', TupleOf<number, 16> | Buffer>
+
   sampler2D: Variable<
     'sampler2D',
     'sampler2D',
@@ -94,10 +111,16 @@ export type UniformProxy = {
     ArrayBufferView,
     Sampler2DOptions
   >
+  samplerCube: Variable<
+    'samplerCube',
+    'samplerCube',
+    ArrayBufferView,
+    Sampler2DOptions
+  >
 }
 export type UniformParameters = Parameters<UniformProxy[keyof UniformProxy]>
 export type UniformReturnType = ReturnType<ValueOf<UniformProxy>>
-export type Sampler2DOptions = VariableOptionsBase & {
+export type Sampler2DOptions = {
   dataType?: DataType
   width?: number
   height?: number
@@ -111,41 +134,55 @@ export type Sampler2DOptions = VariableOptionsBase & {
   border?: number
 }
 
+
+
 /* ATTRIBUTE */
-export type AttributeOptions = VariableOptionsBase & {
-  target?:
-    | 'ARRAY_BUFFER'
-    | 'ELEMENT_ARRAY_BUFFER'
-    | 'COPY_READ_BUFFER'
-    | 'COPY_WRITE_BUFFER'
-    | 'TRANSFORM_FEEDBACK_BUFFER'
-    | 'UNIFORM_BUFFER'
-    | 'PIXEL_PACK_BUFFER'
-    | 'PIXEL_UNPACK_BUFFER'
+export type AttributeOptions = BufferOptions & {
+  stride: number
+  offset: number
 }
 export type AttributeProxy = {
   float: Variable<'attribute', 'float', Buffer, AttributeOptions>
   int: Variable<'attribute', 'int', IntBuffer, AttributeOptions>
-  bool: Variable<'attribute', 'bool', IntBuffer, AttributeOptions>
+
   vec2: Variable<'attribute', 'vec2', Buffer, AttributeOptions>
   ivec2: Variable<'attribute', 'ivec2', IntBuffer, AttributeOptions>
-  bvec2: Variable<'attribute', 'bvec2', IntBuffer, AttributeOptions>
+
   vec3: Variable<'attribute', 'vec3', Buffer, AttributeOptions>
   ivec3: Variable<'attribute', 'ivec3', IntBuffer, AttributeOptions>
-  bvec3: Variable<'attribute', 'bvec3', IntBuffer, AttributeOptions>
+
   vec4: Variable<'attribute', 'vec4', Buffer, AttributeOptions>
   ivec4: Variable<'attribute', 'ivec4', IntBuffer, AttributeOptions>
-  bvec4: Variable<'attribute', 'bvec4', IntBuffer, AttributeOptions>
 }
 export type AttributeParameters = Parameters<
   AttributeProxy[keyof AttributeProxy]
 >
 export type AttributeReturnType = ReturnType<ValueOf<AttributeProxy>>
 
+/* BUFFER */
+
+export type BufferOptions = {
+  target:
+  | 'ARRAY_BUFFER'
+  | 'ELEMENT_ARRAY_BUFFER'
+  | 'COPY_READ_BUFFER'
+  | 'COPY_WRITE_BUFFER'
+  | 'TRANSFORM_FEEDBACK_BUFFER'
+  | 'UNIFORM_BUFFER'
+  | 'PIXEL_PACK_BUFFER'
+  | 'PIXEL_UNPACK_BUFFER'
+}
+
+export interface BufferToken  {
+  name: string
+  value: Uint16Array
+  tokenType: 'buffer',
+  options: BufferOptions
+}
+
 /* TOKENS */
 interface TokenBase {
   dataType: keyof UniformProxy | keyof AttributeProxy
-  options: VariableOptionsBase
   name: string
   value: any
 }

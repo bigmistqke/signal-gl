@@ -445,6 +445,7 @@ var read = (token, config) => {
   );
   return mergedConfig.output;
 };
+var extend = ({ ctx }, extension) => ctx.getExtension(extension);
 var computationCanvas = document.createElement("canvas");
 var createComputation = function(input, callback, config) {
   let output;
@@ -477,6 +478,7 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
     mode: "TRIANGLES",
     count: 4
   });
+  extend(program, "EXT_color_buffer_float");
   const updateOutput = () => {
     if (input().constructor !== output?.constructor) {
       bufferType = input().constructor;

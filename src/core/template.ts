@@ -1,5 +1,6 @@
 import zeptoid from 'zeptoid'
 
+import { Accessor } from 'solid-js'
 import { compileStrings as compileTemplate } from './compilation'
 import {
   bindAttributeToken,
@@ -11,6 +12,8 @@ import type {
   AttributeParameters,
   AttributeProxy,
   AttributeReturnType,
+  BufferOptions,
+  BufferToken,
   Check,
   GLSLError,
   IsUnion,
@@ -119,6 +122,8 @@ export const glsl = function <T extends TemplateValue[]>(
     ) => {
       gl.useProgram(program)
 
+      gl.uniform3b
+
       tokens.forEach((token) => {
         switch (token.tokenType) {
           case 'attribute':
@@ -155,7 +160,7 @@ glsl.effect = (cb: () => void) => {}
 /* 
   TEMPLATE-HELPERS 
 */
-const dataTypeToFunctionName = (dataType: string) => {
+const dataTypeToFunctionName = (dataType: string): UniformSetter => {
   switch (dataType) {
     case 'float':
       return 'uniform1f'
@@ -163,13 +168,14 @@ const dataTypeToFunctionName = (dataType: string) => {
     case 'bool':
       return 'uniform1i'
     default:
-      return ('uniform' +
-        // 1 | 2 | 3 | 4
-        dataType[dataType.length - 1] +
-        // b | i | f
-        (dataType[0] === 'b' || dataType[0] === 'i' ? dataType[0] : 'f') +
-        // v
-        'v') as UniformSetter
+      if (dataType.includes('mat')) {
+      }
+      // 2 | 3 | 4
+      const count = dataType[dataType.length - 1] as any as 2 | 3 | 4
+      if (dataType.includes('mat')) return `uniformMatrix${count}fv`
+      //  i | f
+      const type = dataType[0] === 'b' || dataType[0] === 'i' ? 'i' : 'f'
+      return `uniform${count}${type}v`
   }
 }
 /**
@@ -248,4 +254,17 @@ export const attribute = new Proxy({} as AttributeProxy, {
       }
     }
   },
+})
+
+export const buffer = (
+  value: Uint16Array | number[] | Accessor<Uint16Array | number[]>,
+  options: BufferOptions
+): BufferToken => ({
+  name: zeptoid(),
+  tokenType: 'buffer',
+  get value() {
+    const _value = typeof value === 'function' ? value() : value
+    return _value instanceof Uint16Array ? _value : new Uint16Array(_value)
+  },
+  options,
 })

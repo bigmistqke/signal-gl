@@ -1,7 +1,8 @@
 import { Accessor, mergeProps } from 'solid-js'
 
 import { createWebGLProgram } from './compilation'
-import { attribute, glsl, uniform } from './template'
+import { attribute, buffer, glsl, uniform } from './template'
+import { bindBufferToken } from './tokens'
 import type {
   Buffer,
   DataType,
@@ -48,11 +49,15 @@ export const createStack = (config: StackConfig): StackToken => {
     ctx.getExtension('EXT_color_buffer_half_float')
   }
 
-  return {
+  const token = {
     ...config,
     ctx,
-    render: () => config.programs.forEach((program) => program.render()),
+    render: () => {
+      clear(token)
+      config.programs.forEach((program) => program.render())
+    },
   }
+  return token
 }
 
 /* 
@@ -66,13 +71,15 @@ type CreateProgramConfig = {
   count: number
   first?: number
   fragment: ShaderToken
+  indices?: number[] | Uint16Array
   mode: 'TRIANGLES' | 'LINES' | 'POINTS'
-  vertex: ShaderToken
+  offset?: number
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  vertex: ShaderToken
 }
 export type ProgramToken = CreateProgramConfig & {
-  program: WebGLProgram
   ctx: WebGL2RenderingContext
+  program: WebGLProgram
   render: () => void
   [IS_PROGRAM]: true
 }
@@ -105,13 +112,30 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
     fn: () => void
   ) => (updateQueue.set(location, fn), () => updateQueue.delete(location))
 
+  // if indices are defined, bind them to the program
+  if (config.indices) {
+    const a_indices = buffer(config.indices, {
+      target: 'ELEMENT_ARRAY_BUFFER',
+    })
+    bindBufferToken(a_indices, ctx, addToUpdateQueue, glsl.effect)
+  }
+
   /* render-function */
   const render = () => {
     ctx.useProgram(program)
     /* iterate through all uniforms/attributes and update them. */
     updateQueue.forEach((update) => update())
     config.onRender?.(ctx, program)
-    ctx.drawArrays(ctx[config.mode], config.first || 0, config.count)
+    if (config.indices) {
+      ctx.drawElements(
+        ctx.TRIANGLES,
+        config.count,
+        ctx.UNSIGNED_SHORT,
+        config.offset || 0
+      )
+    } else {
+      ctx.drawArrays(ctx[config.mode], config.first || 0, config.count)
+    }
   }
 
   /* bind all uniforms/attributes to the program and add to `updateQueue` */
