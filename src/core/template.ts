@@ -1,6 +1,6 @@
 import zeptoid from 'zeptoid'
 
-import { Accessor } from 'solid-js'
+import { Accessor, mergeProps } from 'solid-js'
 import { compileStrings as compileTemplate } from './compilation'
 import {
   bindAttributeToken,
@@ -12,6 +12,8 @@ import type {
   AttributeParameters,
   AttributeProxy,
   AttributeReturnType,
+  AttributeToken,
+  Buffer,
   BufferOptions,
   BufferToken,
   Check,
@@ -27,7 +29,7 @@ import type {
   UniformSetter,
 } from './types'
 
-const DEBUG = false //import.meta.env.DEV
+const DEBUG = import.meta.env.DEV
 const nameCacheMap = new WeakMap<TemplateStringsArray, string[]>()
 let textureIndex = 0
 
@@ -121,8 +123,6 @@ export const glsl = function <T extends TemplateValue[]>(
       render: () => void
     ) => {
       gl.useProgram(program)
-
-      gl.uniform3b
 
       tokens.forEach((token) => {
         switch (token.tokenType) {
@@ -236,35 +236,33 @@ export const uniform = new Proxy({} as UniformProxy, {
  * ```
  * */
 export const attribute = new Proxy({} as AttributeProxy, {
-  get(target, dataType) {
-    return (...[value, options]: AttributeParameters) => {
+  get(target, dataType: keyof AttributeProxy) {
+    return (...[value, _options]: AttributeParameters): AttributeToken => {
+      const options = mergeProps({ stride: 0, offset: 0 }, _options)
       const size =
         typeof dataType === 'string'
           ? +dataType[dataType.length - 1]!
           : undefined
       return {
+        buffer: buffer(value, { target: 'ARRAY_BUFFER' }),
         dataType,
         name: 'a_' + zeptoid(),
-        tokenType: 'attribute',
-        size: size && !isNaN(size) ? size : 1,
-        get value() {
-          return typeof value === 'function' ? value() : value
-        },
         options,
+        size: size && !isNaN(size) ? size : 1,
+        tokenType: 'attribute',
       }
     }
   },
 })
 
 export const buffer = (
-  value: Uint16Array | number[] | Accessor<Uint16Array | number[]>,
+  value: Buffer | Accessor<Buffer>,
   options: BufferOptions
 ): BufferToken => ({
-  name: zeptoid(),
+  name: options.name || zeptoid(),
   tokenType: 'buffer',
   get value() {
-    const _value = typeof value === 'function' ? value() : value
-    return _value instanceof Uint16Array ? _value : new Uint16Array(_value)
+    return typeof value === 'function' ? value() : value
   },
   options,
 })

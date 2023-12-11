@@ -137,7 +137,7 @@ export type Sampler2DOptions = {
 
 
 /* ATTRIBUTE */
-export type AttributeOptions = BufferOptions & {
+export type AttributeOptions = {
   stride: number
   offset: number
 }
@@ -162,6 +162,7 @@ export type AttributeReturnType = ReturnType<ValueOf<AttributeProxy>>
 /* BUFFER */
 
 export type BufferOptions = {
+  name?: string
   target:
   | 'ARRAY_BUFFER'
   | 'ELEMENT_ARRAY_BUFFER'
@@ -175,7 +176,7 @@ export type BufferOptions = {
 
 export interface BufferToken  {
   name: string
-  value: Uint16Array
+  value: Buffer
   tokenType: 'buffer',
   options: BufferOptions
 }
@@ -184,18 +185,20 @@ export interface BufferToken  {
 interface TokenBase {
   dataType: keyof UniformProxy | keyof AttributeProxy
   name: string
-  value: any
 }
 export interface AttributeToken extends TokenBase {
-  size: number
   tokenType: 'attribute'
+  size: number
   options: AttributeOptions
+  buffer: BufferToken
 }
 export interface UniformToken extends TokenBase {
+  value: any
   functionName: UniformSetter
   tokenType: 'uniform'
 }
 export interface Sampler2DToken extends TokenBase {
+  value: Buffer
   options: Sampler2DOptions
   textureIndex: number
   tokenType: 'sampler2D' | 'isampler2D'

@@ -56,9 +56,10 @@ const mount = (config: {
 }
 
 type StackProps = ComponentProps<'canvas'> & {
+  onResize?: () => void
   onProgramCreate?: () => void
   /* Enable/disable clear-function or provide a custom one. */
-  clear?: boolean | ((gl: StackToken) => void)
+  clear?: boolean | ((gl: StackToken | ProgramToken) => void)
   /* Enable/disable `rAF`-based animation or request fps. If disabled, render-loop will be `effect`-based. */
   animate?: boolean | number
 }
@@ -87,8 +88,8 @@ export const Stack = (props: StackProps) => {
                 return filterProgramTokens(childs())
               },
             })
-            autosize(stack)
-            stack.render()
+
+            autosize(stack, props.onResize)
 
             const render = () => {
               if (props.clear) {
@@ -102,9 +103,10 @@ export const Stack = (props: StackProps) => {
               if (props.animate) requestAnimationFrame(animate)
               render()
             }
-            createEffect(() =>
-              props.animate ? animate() : createEffect(render)
-            )
+            createEffect(() => {
+              if (props.animate) animate()
+              else createEffect(render)
+            })
           } catch (error) {
             console.error(error)
           }
@@ -116,11 +118,8 @@ export const Stack = (props: StackProps) => {
   )
 }
 
-type ProgramProps = {
-  count: number
+interface ProgramPropsBase {
   fragment: Accessor<ShaderToken>
-  /** if defined `gl.drawElements` else `gl.drawArrays` */
-  indices?: number[] | Uint16Array
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   ref?: Setter<HTMLCanvasElement>
   vertex: Accessor<ShaderToken>
@@ -131,6 +130,18 @@ type ProgramProps = {
    */
   cacheEnabled?: boolean
 }
+
+/* Program rendered with gl.drawElements */
+interface ArrayProgramProps extends ProgramPropsBase {
+  count: number
+}
+
+/* Program rendered with gl.drawArray */
+interface ElementProgramProps extends ProgramPropsBase {
+  indices: number[] | Uint16Array
+}
+
+type ProgramProps = ArrayProgramProps | ElementProgramProps
 
 export const Program = (props: ProgramProps) => {
   const context = useGL()

@@ -28,7 +28,7 @@ type StackConfig = {
 }
 export type StackToken = StackConfig & {
   ctx: WebGL2RenderingContext
-  render: () => void
+  render: () => StackToken
 }
 /**
  * Returns `ComposerToken`.
@@ -49,14 +49,13 @@ export const createStack = (config: StackConfig): StackToken => {
     ctx.getExtension('EXT_color_buffer_half_float')
   }
 
-  const token = {
-    ...config,
-    ctx,
-    render: () => {
-      clear(token)
-      config.programs.forEach((program) => program.render())
-    },
+  const render = () => {
+    clear(token).programs.forEach((program) => program.render())
+    return token
   }
+
+  const token = mergeProps({ ctx, render }, config)
+
   return token
 }
 
@@ -65,22 +64,35 @@ export const createStack = (config: StackConfig): StackToken => {
 */
 
 const IS_PROGRAM = Symbol('is-program')
-type CreateProgramConfig = {
+
+interface CreateProgramConfigBase {
   canvas: HTMLCanvasElement
   cacheEnabled?: boolean
-  count: number
   first?: number
   fragment: ShaderToken
-  indices?: number[] | Uint16Array
   mode: 'TRIANGLES' | 'LINES' | 'POINTS'
   offset?: number
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   vertex: ShaderToken
 }
+
+interface CreateArrayProgramConfig extends CreateProgramConfigBase {
+  count: number
+}
+
+interface CreateElementsProgramConfig extends CreateProgramConfigBase {
+  indices: number[] | Uint16Array
+}
+
+type CreateProgramConfig =
+  | CreateArrayProgramConfig
+  | CreateElementsProgramConfig
+
 export type ProgramToken = CreateProgramConfig & {
   ctx: WebGL2RenderingContext
   program: WebGLProgram
-  render: () => void
+  render: () => ProgramToken
+  onResize?: () => void
   [IS_PROGRAM]: true
 }
 /**
@@ -113,10 +125,15 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
   ) => (updateQueue.set(location, fn), () => updateQueue.delete(location))
 
   // if indices are defined, bind them to the program
-  if (config.indices) {
-    const a_indices = buffer(config.indices, {
-      target: 'ELEMENT_ARRAY_BUFFER',
-    })
+  if ('indices' in config) {
+    const a_indices = buffer(
+      Array.isArray(config.indices)
+        ? new Uint16Array(config.indices)
+        : config.indices,
+      {
+        target: 'ELEMENT_ARRAY_BUFFER',
+      }
+    )
     bindBufferToken(a_indices, ctx, addToUpdateQueue, glsl.effect)
   }
 
@@ -126,29 +143,31 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
     /* iterate through all uniforms/attributes and update them. */
     updateQueue.forEach((update) => update())
     config.onRender?.(ctx, program)
-    if (config.indices) {
+    if ('indices' in config) {
       ctx.drawElements(
         ctx.TRIANGLES,
-        config.count,
+        config.indices.length,
         ctx.UNSIGNED_SHORT,
         config.offset || 0
       )
     } else {
       ctx.drawArrays(ctx[config.mode], config.first || 0, config.count)
     }
+    return token
   }
 
   /* bind all uniforms/attributes to the program and add to `updateQueue` */
   config.vertex.bind(ctx, program, addToUpdateQueue, render)
   config.fragment.bind(ctx, program, addToUpdateQueue, render)
 
-  return {
+  const token: ProgramToken = {
     ...config,
     program,
     ctx,
     render,
     [IS_PROGRAM]: true,
   }
+  return token
 }
 
 /* Manages program-cache of `createProgram` */
@@ -197,19 +216,20 @@ export const filterProgramTokens = (value: any) =>
  * @param gl
  * @returns void
  */
-export const autosize = ({
-  canvas,
-  ctx,
-  render,
-}: StackToken | ProgramToken) => {
+export const autosize = (
+  token: StackToken | ProgramToken,
+  onResize?: () => void
+) => {
   /* Observe resize-events canvas */
   const resizeObserver = new ResizeObserver(() => {
-    canvas.width = canvas.clientWidth
-    canvas.height = canvas.clientHeight
-    ctx.viewport(0, 0, canvas.width, canvas.height)
-    render()
+    token.canvas.width = token.canvas.clientWidth
+    token.canvas.height = token.canvas.clientHeight
+    token.ctx.viewport(0, 0, token.canvas.width, token.canvas.height)
+    token.render()
+    onResize?.()
   })
-  resizeObserver.observe(canvas)
+  resizeObserver.observe(token.canvas)
+  return token
 }
 
 /**
@@ -217,12 +237,13 @@ export const autosize = ({
  * @param `GLToken | ProgramToken`
  * @returns void
  */
-export const clear = ({ ctx }: StackToken | ProgramToken) => {
-  ctx.clearColor(0.0, 0.0, 0.0, 1.0)
-  ctx.clearDepth(1.0)
-  ctx.enable(ctx.DEPTH_TEST)
-  ctx.depthFunc(ctx.LEQUAL)
-  ctx.clear(ctx.COLOR_BUFFER_BIT | ctx.DEPTH_BUFFER_BIT)
+export const clear = <T extends StackToken | ProgramToken>(token: T) => {
+  token.ctx.clearColor(0.0, 0.0, 0.0, 1.0)
+  token.ctx.clearDepth(1.0)
+  token.ctx.enable(token.ctx.DEPTH_TEST)
+  token.ctx.depthFunc(token.ctx.LEQUAL)
+  token.ctx.clear(token.ctx.COLOR_BUFFER_BIT | token.ctx.DEPTH_BUFFER_BIT)
+  return token
 }
 
 type RenderBufferConfig = {
@@ -237,26 +258,33 @@ type RenderBufferConfig = {
  * @returns `typeof config.output`
  */
 export const renderBuffer = (
-  { ctx }: StackToken | ProgramToken,
+  token: StackToken | ProgramToken,
   { internalFormat, width, height }: RenderBufferConfig
 ) => {
-  const framebuffer = ctx.createFramebuffer()
-  ctx.bindFramebuffer(ctx.FRAMEBUFFER, framebuffer)
+  const framebuffer = token.ctx.createFramebuffer()
+  token.ctx.bindFramebuffer(token.ctx.FRAMEBUFFER, framebuffer)
 
   /* Create a renderbuffer */
-  const renderBuffer = ctx.createRenderbuffer()
-  ctx.bindRenderbuffer(ctx.RENDERBUFFER, renderBuffer)
-  ctx.renderbufferStorage(ctx.RENDERBUFFER, ctx[internalFormat], width, height)
+  const renderBuffer = token.ctx.createRenderbuffer()
+  token.ctx.bindRenderbuffer(token.ctx.RENDERBUFFER, renderBuffer)
+  token.ctx.renderbufferStorage(
+    token.ctx.RENDERBUFFER,
+    token.ctx[internalFormat],
+    width,
+    height
+  )
 
   /* Attach the renderbuffer to the framebuffer */
-  ctx.framebufferRenderbuffer(
-    ctx.FRAMEBUFFER,
-    ctx.COLOR_ATTACHMENT0,
-    ctx.RENDERBUFFER,
+  token.ctx.framebufferRenderbuffer(
+    token.ctx.FRAMEBUFFER,
+    token.ctx.COLOR_ATTACHMENT0,
+    token.ctx.RENDERBUFFER,
     renderBuffer
   )
 
-  ctx.finish()
+  token.ctx.finish()
+
+  return token
 }
 
 const readCache = new WeakMap<WebGL2RenderingContext, Record<string, any>>()
@@ -295,17 +323,16 @@ export const read = (token: StackToken | ProgramToken, config?: ReadConfig) => {
   }
 
   clear(token)
-  token.render()
-
-  token.ctx.readPixels(
-    0,
-    0,
-    mergedConfig.width,
-    mergedConfig.height,
-    token.ctx[mergedConfig.format],
-    token.ctx[mergedConfig.dataType],
-    mergedConfig.output
-  )
+    .render()
+    .ctx.readPixels(
+      0,
+      0,
+      mergedConfig.width,
+      mergedConfig.height,
+      token.ctx[mergedConfig.format],
+      token.ctx[mergedConfig.dataType],
+      mergedConfig.output
+    )
 
   return mergedConfig.output
 }
@@ -406,8 +433,7 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
 
   return () => {
     updateOutput()
-    clear(program)
-    program.render()
+    clear(program).render()
     return read(program, getConfig())
   }
 }

@@ -1,5 +1,4 @@
 import { mergeProps } from 'solid-js'
-import zeptoid from 'zeptoid'
 import type {
   AttributeProxy,
   AttributeToken,
@@ -47,30 +46,23 @@ export const bindAttributeToken = (
   onRender: OnRenderFunction,
   effect: (cb: () => void) => void
 ) => {
-  const options = mergeProps({ stride: 0, offset: 0 } as const, token.options)
-  // create buffer
-  const buffer = gl.createBuffer()
   const location = gl.getAttribLocation(program, token.name)
-
-  onRender(token.name, () => {
-    token.value // to trigger effect when value updates
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+  bindBufferToken(token.buffer, gl, onRender, effect, () => {
     gl.enableVertexAttribArray(location)
     gl.vertexAttribPointer(
       location,
       token.size,
       gl.FLOAT,
       false,
-      options.stride,
-      options.offset
+      token.options.stride,
+      token.options.offset
     )
-  })
-  effect(() => {
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-    gl.bufferData(gl.ARRAY_BUFFER, token.value, gl.STATIC_DRAW)
   })
 }
 
+/**
+ * bind BufferToken made with `buffer()`
+ * */
 export const bindBufferToken = (
   token: BufferToken,
   gl: WebGL2RenderingContext,
@@ -79,16 +71,22 @@ export const bindBufferToken = (
   cb?: (buffer: WebGLBuffer) => void
 ) => {
   const buffer = gl.createBuffer()!
-  const name = zeptoid()
   effect(() => {
     gl.bindBuffer(gl[token.options.target], buffer)
     gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
   })
-  onRender(name, () => {
-    token.value
-    gl.bindBuffer(gl[token.options.target], buffer)
-    if (cb) cb(buffer)
-  })
+  // NOTE: a bit of code-duplication, but better then unnecessary conditional in render-loop
+  const renderFn = cb
+    ? () => {
+        token.value
+        gl.bindBuffer(gl[token.options.target], buffer)
+        cb(buffer)
+      }
+    : () => {
+        token.value
+        gl.bindBuffer(gl[token.options.target], buffer)
+      }
+  onRender(token.name, renderFn)
 }
 
 export const bindSampler2DToken = (
