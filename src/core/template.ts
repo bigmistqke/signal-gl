@@ -1,13 +1,12 @@
 import zeptoid from 'zeptoid'
 
 import { Accessor, mergeProps } from 'solid-js'
-import { compileStrings as compileTemplate } from './compilation'
 import {
   bindAttributeToken,
   bindSampler2DToken,
   bindUniformToken,
-  createToken,
-} from './tokens'
+} from './bindings'
+import { compileStrings as compileTemplate } from './compilation'
 import type {
   AttributeParameters,
   AttributeProxy,
@@ -27,11 +26,21 @@ import type {
   UniformProxy,
   UniformReturnType,
   UniformSetter,
+  ValueOf,
 } from './types'
 
 const DEBUG = import.meta.env.DEV
 const nameCacheMap = new WeakMap<TemplateStringsArray, string[]>()
 let textureIndex = 0
+
+const createToken = <
+  TConfig extends ReturnType<ValueOf<UniformProxy> | ValueOf<AttributeProxy>>,
+  TOther extends Record<string, any>
+>(
+  name: number | string,
+  config: TConfig,
+  other?: TOther
+) => mergeProps(config, { name }, other)
 
 /* 
   GLSL TAG TEMPLATE LITERAL 
@@ -127,18 +136,14 @@ export const glsl = function <T extends TemplateValue[]>(
       tokens.forEach((token) => {
         switch (token.tokenType) {
           case 'attribute':
-            bindAttributeToken(token, gl, program, onRender, glsl.effect)
-            break
+            return bindAttributeToken(token, gl, program, onRender, glsl.effect)
           case 'sampler2D':
           case 'isampler2D':
-            bindSampler2DToken(token, gl, program, onRender, glsl.effect)
-            break
+            return bindSampler2DToken(token, gl, program, onRender, glsl.effect)
           case 'shader':
-            token.bind(gl, program, onRender, render)
-            break
+            return token.bind(gl, program, onRender, render)
           case 'uniform':
-            bindUniformToken(token, gl, program, onRender, glsl.effect)
-            break
+            return bindUniformToken(token, gl, program, onRender)
         }
       })
     }

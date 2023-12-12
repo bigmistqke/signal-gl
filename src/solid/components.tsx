@@ -24,39 +24,26 @@ import {
 } from '@core/hooks'
 import type { ShaderToken } from '@core/types'
 
-const glContext = createContext<{
+const internalContext = createContext<{
   canvas: HTMLCanvasElement
   gl: WebGL2RenderingContext
   onProgramCreate?: () => void
 }>()
 
-const useGL = () => useContext(glContext)
+const useInternal = () => useContext(internalContext)
 
-const mount = (config: {
-  token: ProgramToken | StackToken
-  clear: undefined | boolean | ((token: ProgramToken | StackToken) => void)
-  animate: undefined | boolean
-}) => {
-  autosize(config.token)
-  config.token.render()
+const signalGLContext = createContext<{
+  canvas: HTMLCanvasElement
+  gl: WebGL2RenderingContext
+  onRender: (callback: () => void) => () => void
+  onResize: (callback: () => void) => () => void
+}>()
 
-  const render = () => {
-    if (config.clear) {
-      if (typeof config.clear === 'function') config.clear(config.token)
-      else clear(config.token)
-    }
-    config.token.render()
-  }
-
-  const animate = () => {
-    if (config.animate) requestAnimationFrame(animate)
-    render()
-  }
-  createEffect(() => (config.animate ? animate() : createEffect(render)))
-}
+export const useSignalGL = () => useContext(signalGLContext)
 
 type StackProps = ComponentProps<'canvas'> & {
-  onResize?: () => void
+  onRender?: () => void
+  onResize?: (token: StackToken) => void
   onProgramCreate?: () => void
   /* Enable/disable clear-function or provide a custom one. */
   clear?: boolean | ((gl: StackToken | ProgramToken) => void)
@@ -66,55 +53,81 @@ type StackProps = ComponentProps<'canvas'> & {
 export const Stack = (props: StackProps) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
   const canvas = (<canvas {...rest} />) as HTMLCanvasElement
+  const gl = canvas.getContext('webgl2')!
+
+  const events = {
+    onResize: new Set<() => void>(),
+    onRender: new Set<() => void>(),
+  }
 
   return (
-    <glContext.Provider
+    <internalContext.Provider
       value={{
         canvas,
-        gl: canvas.getContext('webgl2')!,
+        gl,
         get onProgramCreate() {
           return props.onProgramCreate
         },
       }}
     >
-      {(() => {
-        const childs = children(() => childrenProps.children)
+      <signalGLContext.Provider
+        value={{
+          canvas,
+          gl,
+          onResize: (callback: () => void) => {
+            events.onResize.add(callback)
+            return () => events.onResize.delete(callback)
+          },
+          onRender: (callback: () => void) => {
+            events.onRender.add(callback)
+            return () => events.onRender.delete(callback)
+          },
+        }}
+      >
+        {(() => {
+          const childs = children(() => childrenProps.children)
 
-        onMount(() => {
-          try {
-            const stack = createStack({
-              canvas,
-              get programs() {
-                return filterProgramTokens(childs())
-              },
-            })
+          onMount(() => {
+            try {
+              const stack = createStack({
+                canvas,
+                get programs() {
+                  return filterProgramTokens(childs())
+                },
+              })
 
-            autosize(stack, props.onResize)
+              autosize(stack, () => {
+                props.onResize?.(stack)
+                events.onResize.forEach((fn) => fn())
+              })
 
-            const render = () => {
-              if (props.clear) {
-                if (typeof props.clear === 'function') props.clear(stack)
-                else clear(stack)
+              const render = () => {
+                if (props.clear) {
+                  if (typeof props.clear === 'function') props.clear(stack)
+                  else clear(stack)
+                }
+                props.onRender?.()
+                events.onRender.forEach((fn) => fn())
+                stack.render()
               }
-              stack.render()
-            }
 
-            const animate = () => {
-              if (props.animate) requestAnimationFrame(animate)
-              render()
+              const animate = () => {
+                if (props.animate) requestAnimationFrame(animate)
+                render()
+              }
+              createEffect(() => {
+                if (props.animate) animate()
+                else createEffect(render)
+              })
+            } catch (error) {
+              console.error(error)
             }
-            createEffect(() => {
-              if (props.animate) animate()
-              else createEffect(render)
-            })
-          } catch (error) {
-            console.error(error)
-          }
-        })
+          })
 
-        return canvas
-      })()}
-    </glContext.Provider>
+          return canvas
+        })()}
+      </signalGLContext.Provider>
+    </internalContext.Provider>
   )
 }
 
@@ -144,7 +157,7 @@ interface ElementProgramProps extends ProgramPropsBase {
 type ProgramProps = ArrayProgramProps | ElementProgramProps
 
 export const Program = (props: ProgramProps) => {
-  const context = useGL()
+  const context = useInternal()
   if (!context) throw 'no context'
   const [shader, rest] = splitProps(props, ['vertex', 'fragment'])
   const config = mergeProps(

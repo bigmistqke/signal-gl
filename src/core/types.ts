@@ -1,3 +1,5 @@
+import { mat2, mat3, mat4 } from "gl-matrix";
+
 /* TYPE UTILITIES */
 export type Accessor<T> = () => T
 export type ValueOf<T extends Record<string, any>> = T[keyof T]
@@ -95,9 +97,9 @@ export type UniformProxy = {
   ivec4: Variable<'uniform', 'ivec4', TupleOf<number, 4> | Buffer>
   bvec4: Variable<'uniform', 'bvec4', TupleOf<number, 4> | Buffer>
 
-  mat2: Variable<'uniform', 'mat2', TupleOf<number, 16> | Buffer>
-  mat3: Variable<'uniform', 'mat3', TupleOf<number, 9> | Buffer>
-  mat4: Variable<'uniform', 'mat4', TupleOf<number, 16> | Buffer>
+  mat2: Variable<'uniform', 'mat2', TupleOf<number, 16> | Buffer | mat2>
+  mat3: Variable<'uniform', 'mat3', TupleOf<number, 9> | Buffer | mat3>
+  mat4: Variable<'uniform', 'mat4', TupleOf<number, 16> | Buffer | mat4>
 
   sampler2D: Variable<
     'sampler2D',
