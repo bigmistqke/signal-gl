@@ -36,6 +36,8 @@ export type UniformSetter =
   | 'uniformMatrix3fv'
   | 'uniformMatrix4fv'
 
+export type RenderMode = 'TRIANGLES' | 'LINES' | 'POINTS' | 'TRIANGLE_FAN' | 'TRIANGLE_STRIP' | 'LINE_STRIP' | 'LINE_LOOP'
+
 export type OnRenderFunction = (
   location: WebGLUniformLocation | number,
   fn: () => void
@@ -221,12 +223,12 @@ export type ShaderToken = {
   }
   template: TemplateStringsArray
   tokenType: 'shader'
-  bind: (
+  bind: (config: {
     gl: WebGL2RenderingContext,
     program: WebGLProgram,
     onRender: OnRenderFunction,
     render: () => void
-  ) => void
+  }) => void
 }
 export type Token =
   | ShaderToken
@@ -332,3 +334,9 @@ export type DataType =
 
 /* createComputation  */
 export type Computation = (u_buffer: ReturnType<UniformProxy['sampler2D' ]>) => Accessor<ShaderToken>
+
+/* tuples */
+
+export type Vector2 = TupleOf<number, 2>
+export type Vector3 = TupleOf<number, 3>
+export type Vector4 = TupleOf<number, 4>

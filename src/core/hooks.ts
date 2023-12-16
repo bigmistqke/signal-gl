@@ -8,6 +8,7 @@ import type {
   DataType,
   Format,
   InternalFormat,
+  RenderMode,
   ShaderToken,
 } from './types'
 import { objectsAreEqual } from './utils'
@@ -69,7 +70,7 @@ interface CreateProgramConfigBase {
   cacheEnabled?: boolean
   first?: number
   fragment: ShaderToken
-  mode: 'TRIANGLES' | 'LINES' | 'POINTS'
+  mode: RenderMode
   offset?: number
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   vertex: ShaderToken
@@ -83,7 +84,7 @@ interface CreateElementsProgramConfig extends CreateProgramConfigBase {
   indices: number[] | Uint16Array
 }
 
-type CreateProgramConfig =
+export type CreateProgramConfig =
   | CreateArrayProgramConfig
   | CreateElementsProgramConfig
 
@@ -91,6 +92,7 @@ export type ProgramToken = CreateProgramConfig & {
   ctx: WebGL2RenderingContext
   program: WebGLProgram
   render: () => ProgramToken
+  buffer?: WebGLBuffer
   onResize?: () => void
   [IS_PROGRAM]: true
 }
@@ -123,8 +125,34 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
     fn: () => void
   ) => (updateQueue.set(location, fn), () => updateQueue.delete(location))
 
+  /* render-function */
+  const render = () => {
+    ctx.useProgram(program)
+    /* iterate through all uniforms/attributes and update them. */
+    updateQueue.forEach((update) => update())
+    config.onRender?.(ctx, program)
+    if ('indices' in config && config.indices) {
+      ctx.drawElements(
+        ctx[config.mode],
+        config.indices.length,
+        ctx.UNSIGNED_SHORT,
+        config.offset || 0
+      )
+    } else if ('count' in config) {
+      ctx.drawArrays(ctx[config.mode], config.first || 0, config.count)
+    } else {
+      console.error('neither indices nor count defined')
+    }
+    return token
+  }
+
+  /* BINDINGS */
+
+  // bind all uniforms/attributes to the program and add to `updateQueue`
+  config.vertex.bind({ gl: ctx, program, onRender: addToUpdateQueue, render })
+  config.fragment.bind({ gl: ctx, program, onRender: addToUpdateQueue, render })
   // if indices are defined, bind them to the program
-  if ('indices' in config) {
+  if ('indices' in config && config.indices) {
     const a_indices = buffer(
       Array.isArray(config.indices)
         ? new Uint16Array(config.indices)
@@ -133,31 +161,14 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
         target: 'ELEMENT_ARRAY_BUFFER',
       }
     )
-    bindBufferToken(a_indices, ctx, addToUpdateQueue, glsl.effect)
+    bindBufferToken({
+      token: a_indices,
+      gl: ctx,
+      onRender: addToUpdateQueue,
+      effect: glsl.effect,
+      render,
+    })
   }
-
-  /* render-function */
-  const render = () => {
-    ctx.useProgram(program)
-    /* iterate through all uniforms/attributes and update them. */
-    updateQueue.forEach((update) => update())
-    config.onRender?.(ctx, program)
-    if ('indices' in config) {
-      ctx.drawElements(
-        ctx[config.mode],
-        config.indices.length,
-        ctx.UNSIGNED_SHORT,
-        config.offset || 0
-      )
-    } else {
-      ctx.drawArrays(ctx[config.mode], config.first || 0, config.count)
-    }
-    return token
-  }
-
-  /* bind all uniforms/attributes to the program and add to `updateQueue` */
-  config.vertex.bind(ctx, program, addToUpdateQueue, render)
-  config.fragment.bind(ctx, program, addToUpdateQueue, render)
 
   const token: ProgramToken = {
     ...config,
@@ -242,6 +253,7 @@ export const clear = <T extends StackToken | ProgramToken>(token: T) => {
   token.ctx.enable(token.ctx.DEPTH_TEST)
   token.ctx.depthFunc(token.ctx.LEQUAL)
   token.ctx.clear(token.ctx.COLOR_BUFFER_BIT | token.ctx.DEPTH_BUFFER_BIT)
+  token.ctx.depthRange(0.2, 10)
   return token
 }
 
@@ -287,7 +299,7 @@ export const renderBuffer = (
 }
 
 const readCache = new WeakMap<WebGL2RenderingContext, Record<string, any>>()
-type ReadConfig = {
+export type ReadConfig = {
   width?: number
   height?: number
   internalFormat?: InternalFormat
@@ -334,4 +346,9 @@ export const read = (token: StackToken | ProgramToken, config?: ReadConfig) => {
     )
 
   return mergedConfig.output
+}
+
+export const createBuffer = (config: { canvas: HTMLCanvasElement }) => {
+  const context = config.canvas.getContext('webgl2')
+  return context?.createBuffer()
 }

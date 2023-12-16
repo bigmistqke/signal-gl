@@ -1,10 +1,17 @@
 import { Accessor, mergeProps } from 'solid-js'
-import { Format } from 'tsup'
-import { ProgramToken, StackToken, clear, createProgram, read } from './hooks'
+import {
+  ProgramToken,
+  ReadConfig,
+  StackToken,
+  clear,
+  createProgram,
+  read,
+} from './hooks'
 import { attribute, glsl, uniform } from './template'
 import {
   Buffer,
   DataType,
+  Format,
   InternalFormat,
   ShaderToken,
   UniformProxy,
@@ -56,7 +63,7 @@ export const createComputation = function <TBuffer extends Buffer>(
     new (length: number): TBuffer
   }
 
-  const getConfig = () =>
+  const getConfig = (): ReadConfig =>
     mergeProps(
       {
         internalFormat: 'R32F',

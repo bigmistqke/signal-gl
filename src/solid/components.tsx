@@ -14,6 +14,7 @@ import {
 } from 'solid-js'
 
 import {
+  CreateProgramConfig,
   ProgramToken,
   StackToken,
   autosize,
@@ -22,7 +23,7 @@ import {
   createStack,
   filterProgramTokens,
 } from '@core/hooks'
-import type { ShaderToken } from '@core/types'
+import type { RenderMode, ShaderToken } from '@core/types'
 
 const internalContext = createContext<{
   canvas: HTMLCanvasElement
@@ -40,6 +41,57 @@ const signalGLContext = createContext<{
 }>()
 
 export const useSignalGL = () => useContext(signalGLContext)
+
+interface ProgramPropsBase {
+  fragment: Accessor<ShaderToken>
+  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  ref?: Setter<HTMLCanvasElement>
+  vertex: Accessor<ShaderToken>
+  buffer?: any
+  /**
+   * default "TRIANGLES"
+   */
+  mode?: RenderMode
+  /**
+   * @unstable
+   * ⚠️ Caching can cause issues when used in combination with dynamic and/or conditional glsl-snippets. Only enable cache when generated source is static. ⚠️
+   */
+  cacheEnabled?: boolean
+}
+
+/* Program rendered with gl.drawElements */
+interface ArrayProgramProps extends ProgramPropsBase {
+  count: number
+}
+
+/* Program rendered with gl.drawArray */
+interface ElementProgramProps extends ProgramPropsBase {
+  indices: number[] | Uint16Array
+}
+
+type ProgramProps = ArrayProgramProps | ElementProgramProps
+
+export const Program = (props: ProgramProps) => {
+  const context = useInternal()
+  if (!context) throw 'no context'
+  const [shader, rest] = splitProps(props, ['vertex', 'fragment'])
+  const config = mergeProps(
+    {
+      canvas: context.canvas,
+      get fragment() {
+        return shader.fragment()
+      },
+      get vertex() {
+        return shader.vertex()
+      },
+      mode: 'TRIANGLES',
+    },
+    rest
+  )
+  return createMemo(() =>
+    createProgram(config as CreateProgramConfig)
+  ) as any as JSXElement // cast to JSX
+}
 
 type StackProps = ComponentProps<'canvas'> & {
   onRender?: () => void
@@ -129,48 +181,4 @@ export const Stack = (props: StackProps) => {
       </signalGLContext.Provider>
     </internalContext.Provider>
   )
-}
-
-interface ProgramPropsBase {
-  fragment: Accessor<ShaderToken>
-  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-  ref?: Setter<HTMLCanvasElement>
-  vertex: Accessor<ShaderToken>
-  mode: 'TRIANGLES' | 'POINTS' | 'LINES'
-  /**
-   * @unstable
-   * ⚠️ Caching can cause issues when used in combination with dynamic and/or conditional glsl-snippets. Only enable cache when generated source is static. ⚠️
-   */
-  cacheEnabled?: boolean
-}
-
-/* Program rendered with gl.drawElements */
-interface ArrayProgramProps extends ProgramPropsBase {
-  count: number
-}
-
-/* Program rendered with gl.drawArray */
-interface ElementProgramProps extends ProgramPropsBase {
-  indices: number[] | Uint16Array
-}
-
-type ProgramProps = ArrayProgramProps | ElementProgramProps
-
-export const Program = (props: ProgramProps) => {
-  const context = useInternal()
-  if (!context) throw 'no context'
-  const [shader, rest] = splitProps(props, ['vertex', 'fragment'])
-  const config = mergeProps(
-    {
-      canvas: context.canvas,
-      get fragment() {
-        return shader.fragment()
-      },
-      get vertex() {
-        return shader.vertex()
-      },
-    },
-    rest
-  )
-  return createMemo(() => createProgram(config)) as any as JSXElement // cast to JSX
 }

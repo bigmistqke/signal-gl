@@ -19,12 +19,20 @@ export const createToken = <
   other?: TOther
 ) => mergeProps(config, { name }, other)
 
-export const bindUniformToken = (
-  token: UniformToken,
-  gl: WebGL2RenderingContext,
-  program: WebGLProgram,
+type BindUniformTokenConfig = {
+  token: UniformToken
+  gl: WebGL2RenderingContext
+  program: WebGLProgram
   onRender: OnRenderFunction
-) => {
+}
+
+export const bindUniformToken = ({
+  token,
+  gl,
+  program,
+  onRender,
+}: BindUniformTokenConfig) => {
+  console.log('binding')
   // get location based on token.name
   const location = gl.getUniformLocation(program, token.name)!
   const isMatrix = token.dataType.includes('mat')
@@ -39,47 +47,75 @@ export const bindUniformToken = (
   }
 }
 
-export const bindAttributeToken = (
-  token: AttributeToken,
-  gl: WebGL2RenderingContext,
-  program: WebGLProgram,
-  onRender: OnRenderFunction,
+type bindAttributeTokenConfig = {
+  token: AttributeToken
+  gl: WebGL2RenderingContext
+  program: WebGLProgram
+  onRender: OnRenderFunction
   effect: (cb: () => void) => void
-) => {
+  render: () => void
+}
+export const bindAttributeToken = ({
+  token,
+  gl,
+  program,
+  onRender,
+  effect,
+  render,
+}: bindAttributeTokenConfig) => {
   const location = gl.getAttribLocation(program, token.name)
-  bindBufferToken(token.buffer, gl, onRender, effect, () => {
-    gl.enableVertexAttribArray(location)
-    gl.vertexAttribPointer(
-      location,
-      token.size,
-      gl.FLOAT,
-      false,
-      token.options.stride,
-      token.options.offset
-    )
+  bindBufferToken({
+    token: token.buffer,
+    gl,
+    onRender,
+    effect,
+    render,
+    cb: () => {
+      gl.enableVertexAttribArray(location)
+      gl.vertexAttribPointer(
+        location,
+        token.size,
+        gl.FLOAT,
+        false,
+        token.options.stride,
+        token.options.offset
+      )
+    },
   })
 }
 
+type BindBufferTokenConfig = {
+  token: BufferToken
+  gl: WebGL2RenderingContext
+  onRender: OnRenderFunction
+  effect: (cb: () => void) => void
+  render: () => void
+  cb?: (buffer: WebGLBuffer) => void
+}
 /**
  * bind BufferToken made with `buffer()`
  * */
-export const bindBufferToken = (
-  token: BufferToken,
-  gl: WebGL2RenderingContext,
-  onRender: OnRenderFunction,
-  effect: (cb: () => void) => void,
-  cb?: (buffer: WebGLBuffer) => void
-) => {
+export const bindBufferToken = ({
+  token,
+  gl,
+  onRender,
+  effect,
+  render,
+  cb,
+}: BindBufferTokenConfig) => {
   const buffer = gl.createBuffer()!
   effect(() => {
+    console.log('update!')
     gl.bindBuffer(gl[token.options.target], buffer)
     gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
+    gl.finish()
+    render()
   })
   // NOTE: a bit of code-duplication, but better then unnecessary conditional in render-loop
   const renderFn = cb
     ? () => {
-        token.value
         gl.bindBuffer(gl[token.options.target], buffer)
+        gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
         cb(buffer)
       }
     : () => {
@@ -89,13 +125,22 @@ export const bindBufferToken = (
   onRender(token.name, renderFn)
 }
 
-export const bindSampler2DToken = (
-  token: Sampler2DToken,
-  gl: WebGL2RenderingContext,
-  program: WebGLProgram,
-  onRender: OnRenderFunction,
+type BindSampler2DTokenConfig = {
+  token: Sampler2DToken
+  gl: WebGL2RenderingContext
+  program: WebGLProgram
+  onRender: OnRenderFunction
   effect: (cb: () => void) => void
-) => {
+  render: () => void
+}
+export const bindSampler2DToken = ({
+  token,
+  gl,
+  program,
+  onRender,
+  effect,
+  render,
+}: BindSampler2DTokenConfig) => {
   // create texture
   const texture = gl.createTexture()
   const options = mergeProps(
@@ -116,6 +161,7 @@ export const bindSampler2DToken = (
   // render-loop
   onRender(token.name, () => {
     token.value // to trigger effect when value updates
+    gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
     gl.bindTexture(gl.TEXTURE_2D, texture)
   })
   effect(() => {
@@ -131,6 +177,7 @@ export const bindSampler2DToken = (
       internalFormat,
       dataType,
     } = options
+    gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(
       gl.TEXTURE_2D,

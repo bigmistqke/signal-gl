@@ -125,25 +125,44 @@ export const glsl = function <T extends TemplateValue[]>(
       })
       .filter((hole) => hole !== undefined) as Token[]
 
-    const bind = (
-      gl: WebGL2RenderingContext,
-      program: WebGLProgram,
-      onRender: OnRenderFunction,
+    const bind = ({
+      gl,
+      program,
+      onRender,
+      render,
+    }: {
+      gl: WebGL2RenderingContext
+      program: WebGLProgram
+      onRender: OnRenderFunction
       render: () => void
-    ) => {
+    }) => {
       gl.useProgram(program)
 
       tokens.forEach((token) => {
         switch (token.tokenType) {
           case 'attribute':
-            return bindAttributeToken(token, gl, program, onRender, glsl.effect)
+            return bindAttributeToken({
+              token,
+              gl,
+              program,
+              onRender,
+              effect: glsl.effect,
+              render,
+            })
           case 'sampler2D':
           case 'isampler2D':
-            return bindSampler2DToken(token, gl, program, onRender, glsl.effect)
+            return bindSampler2DToken({
+              token,
+              gl,
+              program,
+              onRender,
+              effect: glsl.effect,
+              render,
+            })
           case 'shader':
-            return token.bind(gl, program, onRender, render)
+            return token.bind({ gl, program, onRender, render })
           case 'uniform':
-            return bindUniformToken(token, gl, program, onRender)
+            return bindUniformToken({ token, gl, program, onRender })
         }
       })
     }
