@@ -13,17 +13,9 @@ import {
   type ComponentProps,
 } from 'solid-js'
 
-import {
-  CreateProgramConfig,
-  ProgramToken,
-  StackToken,
-  autosize,
-  clear,
-  createProgram,
-  createStack,
-  filterProgramTokens,
-} from '@core/hooks'
+import { CreateProgramConfig } from '@core/hooks'
 import type { RenderMode, ShaderToken } from '@core/types'
+import { GLProgram, GLStack, filterGLPrograms } from '.'
 
 const internalContext = createContext<{
   canvas: HTMLCanvasElement
@@ -88,17 +80,17 @@ export const Program = (props: ProgramProps) => {
     },
     rest
   )
-  return createMemo(() =>
-    createProgram(config as CreateProgramConfig)
+  return createMemo(
+    () => new GLProgram(config as CreateProgramConfig)
   ) as any as JSXElement // cast to JSX
 }
 
 type StackProps = ComponentProps<'canvas'> & {
   onRender?: () => void
-  onResize?: (token: StackToken) => void
+  onResize?: (token: GLStack) => void
   onProgramCreate?: () => void
   /* Enable/disable clear-function or provide a custom one. */
-  clear?: boolean | ((gl: StackToken | ProgramToken) => void)
+  clear?: boolean | ((gl: GLStack) => void)
   /* Enable/disable `rAF`-based animation or request fps. If disabled, render-loop will be `effect`-based. */
   animate?: boolean | number
 }
@@ -141,14 +133,14 @@ export const Stack = (props: StackProps) => {
 
           onMount(() => {
             try {
-              const stack = createStack({
+              const stack = new GLStack({
                 canvas,
                 get programs() {
-                  return filterProgramTokens(childs())
+                  return filterGLPrograms(childs())
                 },
               })
 
-              autosize(stack, () => {
+              stack.autosize(() => {
                 props.onResize?.(stack)
                 events.onResize.forEach((fn) => fn())
               })
@@ -156,7 +148,7 @@ export const Stack = (props: StackProps) => {
               const render = () => {
                 if (props.clear) {
                   if (typeof props.clear === 'function') props.clear(stack)
-                  else clear(stack)
+                  else stack.clear()
                 }
                 props.onRender?.()
                 events.onRender.forEach((fn) => fn())
