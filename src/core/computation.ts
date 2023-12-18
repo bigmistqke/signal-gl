@@ -7,9 +7,11 @@ import {
   createProgram,
   read,
 } from './hooks'
-import { attribute, glsl, uniform } from './template'
+import { glsl } from './template/glsl'
+import { attribute, uniform } from './template/tokens'
+
 import {
-  Buffer,
+  BufferArray,
   DataType,
   Format,
   InternalFormat,
@@ -51,7 +53,7 @@ type ComputationConfig = {
  * @param config.internalFormat _Uint8Array_ `R8` _Float32Array_ `R32F` _default_ `R32F`
  * @returns TBuffer
  */
-export const createComputation = function <TBuffer extends Buffer>(
+export const createComputation = function <TBuffer extends BufferArray>(
   input: Accessor<TBuffer>,
   callback: (
     uniform: ReturnType<UniformProxy['sampler2D']>

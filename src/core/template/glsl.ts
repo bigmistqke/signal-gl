@@ -1,20 +1,9 @@
+import { mergeProps } from 'solid-js'
 import zeptoid from 'zeptoid'
 
-import { Accessor, mergeProps } from 'solid-js'
-import {
-  bindAttributeToken,
-  bindSampler2DToken,
-  bindUniformToken,
-} from './bindings'
-import { compileStrings as compileTemplate } from './compilation'
 import type {
-  AttributeParameters,
   AttributeProxy,
   AttributeReturnType,
-  AttributeToken,
-  Buffer,
-  BufferOptions,
-  BufferToken,
   Check,
   GLSLError,
   IsUnion,
@@ -22,12 +11,15 @@ import type {
   ShaderToken,
   TemplateValue,
   Token,
-  UniformParameters,
   UniformProxy,
   UniformReturnType,
-  UniformSetter,
   ValueOf,
-} from './types'
+} from '../types'
+import {
+  bindAttributeToken,
+  bindSampler2DToken,
+  bindUniformToken,
+} from './bindings'
 
 const DEBUG = import.meta.env.DEV
 const nameCacheMap = new WeakMap<TemplateStringsArray, string[]>()
@@ -168,7 +160,7 @@ export const glsl = function <T extends TemplateValue[]>(
     }
     return {
       get source() {
-        const source = compileTemplate(template, tokens)
+        const source = compileStrings(template, tokens)
         DEBUG && console.log('source', source.code)
         return source
       },
@@ -182,111 +174,62 @@ export const glsl = function <T extends TemplateValue[]>(
 glsl.effect = (cb: () => void) => {}
 
 /* 
-  TEMPLATE-HELPERS 
+  COMPILATION BY SIGNAL-GL 
 */
-const dataTypeToFunctionName = (dataType: string): UniformSetter => {
-  switch (dataType) {
-    case 'float':
-      return 'uniform1f'
-    case 'int':
-    case 'bool':
-      return 'uniform1i'
-    default:
-      if (dataType.includes('mat')) {
-      }
-      // 2 | 3 | 4
-      const count = dataType[dataType.length - 1] as any as 2 | 3 | 4
-      if (dataType.includes('mat')) return `uniformMatrix${count}fv`
-      //  i | f
-      const type = dataType[0] === 'b' || dataType[0] === 'i' ? 'i' : 'f'
-      return `uniform${count}${type}v`
+const tokenToString = (token: Token) => {
+  switch (token.tokenType) {
+    case 'shader':
+      return token.source.parts.variables
+    case 'attribute':
+      return `in ${token.dataType} ${token.name};`
+    case 'uniform':
+    case 'sampler2D':
+      return `uniform ${token.dataType} ${token.name};`
+    case 'isampler2D':
+      return `uniform highp ${token.dataType} ${token.name};`
   }
 }
-/**
- * template-helper to inject uniform into `glsl`
- * @example
- *
- * ```ts
- * // dynamic
- * const [color] = createSignal([0, 1, 2])
- * glsl`
- *  vec3 color = ${uniform.vec3(color)};
- * `
- * // static
- * glsl`
- *  vec3 color = ${uniform.vec3([0, 1, 2])};
- * `
- * ```
- * */
-export const uniform = new Proxy({} as UniformProxy, {
-  get(target, dataType) {
-    return (...[value, options]: UniformParameters) => ({
-      dataType,
-      name: 'u_' + zeptoid(),
-      functionName: dataTypeToFunctionName(dataType as string),
-      tokenType:
-        dataType === 'sampler2D'
-          ? 'sampler2D'
-          : dataType === 'isampler2D'
-          ? 'isampler2D'
-          : 'uniform',
-      get value() {
-        return typeof value === 'function' ? value() : value
-      },
-      options,
-    })
-  },
-})
-/**
- * template-helper to inject attribute into `glsl`
- * @example
- * ```ts
- * // dynamic
- * const [vertices] = createSignal
- *  new Float32Array([
-      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-    ])
- * )
- * glsl`
- *  vec2 vertices = ${attribute.vec2(vertices)};
- * `
- * 
- * // static
- * glsl`
- *  vec2 vertices = ${attribute.vec2(new Float32Array([
-      -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
-    ]))};
- * `
- * ```
- * */
-export const attribute = new Proxy({} as AttributeProxy, {
-  get(target, dataType: keyof AttributeProxy) {
-    return (...[value, _options]: AttributeParameters): AttributeToken => {
-      const options = mergeProps({ stride: 0, offset: 0 }, _options)
-      const size =
-        typeof dataType === 'string'
-          ? +dataType[dataType.length - 1]!
-          : undefined
-      return {
-        buffer: buffer(value, { target: 'ARRAY_BUFFER' }),
-        dataType,
-        name: 'a_' + zeptoid(),
-        options,
-        size: size && !isNaN(size) ? size : 1,
-        tokenType: 'attribute',
+export const compileStrings = (
+  strings: TemplateStringsArray,
+  tokens: Token[]
+) => {
+  const code = [
+    ...strings.flatMap((string, index) => {
+      const variable = tokens[index]
+      if (variable) {
+        if (variable.tokenType === 'shader')
+          return [string, variable.source.parts.body]
       }
-    }
-  },
-})
+      if (!variable || !('name' in variable)) return string
+      return [string, variable.name]
+    }),
+  ].join('')
+  const variables = Array.from(new Set(tokens.flatMap(tokenToString))).join(
+    '\n'
+  )
 
-export const buffer = (
-  value: Buffer | Accessor<Buffer>,
-  options: BufferOptions
-): BufferToken => ({
-  name: options.name || zeptoid(),
-  tokenType: 'buffer',
-  get value() {
-    return typeof value === 'function' ? value() : value
-  },
-  options,
-})
+  const precision = code.match(/precision.*;/)?.[0]
+  if (precision) {
+    const [version, body] = code.split(/precision.*;/)
+    return {
+      code: [version, precision, variables, body].join('\n'),
+      parts: {
+        version,
+        precision,
+        variables,
+        body,
+      },
+    }
+  }
+  const version = code.match(/#version.*/)?.[0]
+  const [pre, after] = code.split(/#version.*/)
+  const body = after || pre
+  return {
+    code: [version, variables, body].join('\n'),
+    parts: {
+      version,
+      variables,
+      body,
+    },
+  }
+}

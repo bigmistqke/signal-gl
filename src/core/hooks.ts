@@ -1,17 +1,17 @@
 import { mergeProps } from 'solid-js'
 
-import { bindBufferToken } from './bindings'
-import { createWebGLProgram } from './compilation'
-import { buffer, glsl } from './template'
+import { bindBufferToken } from './template/bindings'
+import { glsl } from './template/glsl'
+import { buffer } from './template/tokens'
 import type {
-  Buffer,
+  BufferArray,
   DataType,
   Format,
   InternalFormat,
   RenderMode,
   ShaderToken,
 } from './types'
-import { objectsAreEqual } from './utils'
+import { createWebGLProgram, objectsAreEqual } from './utils'
 
 /* 
   CREATE_STACK-HOOK 
@@ -305,7 +305,7 @@ export type ReadConfig = {
   internalFormat?: InternalFormat
   format?: Format
   dataType?: DataType
-  output: Buffer
+  output: BufferArray
 }
 /**
  * Utility-function to read the pixel-data of a `GLToken['context']`.

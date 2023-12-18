@@ -8,7 +8,7 @@ import type {
   UniformProxy,
   UniformToken,
   ValueOf,
-} from './types'
+} from '../types'
 
 export const createToken = <
   TConfig extends ReturnType<ValueOf<UniformProxy> | ValueOf<AttributeProxy>>,
@@ -105,7 +105,6 @@ export const bindBufferToken = ({
 }: BindBufferTokenConfig) => {
   const buffer = gl.createBuffer()!
   effect(() => {
-    console.log('update!')
     gl.bindBuffer(gl[token.options.target], buffer)
     gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
     gl.finish()

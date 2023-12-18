@@ -44,7 +44,7 @@ export type OnRenderFunction = (
 ) => () => void
 
 /** VALID TYPED_ARRAY TYPES */
-export type Buffer =
+export type BufferArray =
   | Uint8Array
   | Uint16Array
   | Uint32Array
@@ -52,7 +52,7 @@ export type Buffer =
   | Int16Array
   | Int32Array
   | Float32Array
-type IntBuffer = Int8Array | Int16Array | Int32Array |  Uint8Array | Uint16Array | Uint32Array
+type IntBufferArray = Int8Array | Int16Array | Int32Array |  Uint8Array | Uint16Array | Uint32Array
 
 /* GLSL TAG TEMPLATE LITERAL */
 export type TemplateValue =
@@ -87,21 +87,21 @@ export type UniformProxy = {
   int: Variable<'uniform', 'int', number>
   bool: Variable<'uniform', 'bool', boolean>
 
-  vec2: Variable<'uniform', 'vec2', TupleOf<number, 2> | Buffer>
-  ivec2: Variable<'uniform', 'ivec2', TupleOf<number, 2> | Buffer>
-  bvec2: Variable<'uniform', 'bvec2', TupleOf<number, 2> | Buffer>
+  vec2: Variable<'uniform', 'vec2', TupleOf<number, 2> | BufferArray>
+  ivec2: Variable<'uniform', 'ivec2', TupleOf<number, 2> | BufferArray>
+  bvec2: Variable<'uniform', 'bvec2', TupleOf<number, 2> | BufferArray>
 
-  vec3: Variable<'uniform', 'vec3', TupleOf<number, 3> | Buffer>
-  ivec3: Variable<'uniform', 'ivec3', TupleOf<number, 3> | Buffer>
-  bvec3: Variable<'uniform', 'bvec3', TupleOf<number, 3> | Buffer>
+  vec3: Variable<'uniform', 'vec3', TupleOf<number, 3> | BufferArray>
+  ivec3: Variable<'uniform', 'ivec3', TupleOf<number, 3> | BufferArray>
+  bvec3: Variable<'uniform', 'bvec3', TupleOf<number, 3> | BufferArray>
 
-  vec4: Variable<'uniform', 'vec4', TupleOf<number, 4> | Buffer>
-  ivec4: Variable<'uniform', 'ivec4', TupleOf<number, 4> | Buffer>
-  bvec4: Variable<'uniform', 'bvec4', TupleOf<number, 4> | Buffer>
+  vec4: Variable<'uniform', 'vec4', TupleOf<number, 4> | BufferArray>
+  ivec4: Variable<'uniform', 'ivec4', TupleOf<number, 4> | BufferArray>
+  bvec4: Variable<'uniform', 'bvec4', TupleOf<number, 4> | BufferArray>
 
-  mat2: Variable<'uniform', 'mat2', TupleOf<number, 16> | Buffer | mat2>
-  mat3: Variable<'uniform', 'mat3', TupleOf<number, 9> | Buffer | mat3>
-  mat4: Variable<'uniform', 'mat4', TupleOf<number, 16> | Buffer | mat4>
+  mat2: Variable<'uniform', 'mat2', TupleOf<number, 16> | BufferArray | mat2>
+  mat3: Variable<'uniform', 'mat3', TupleOf<number, 9> | BufferArray | mat3>
+  mat4: Variable<'uniform', 'mat4', TupleOf<number, 16> | BufferArray | mat4>
 
   sampler2D: Variable<
     'sampler2D',
@@ -146,17 +146,17 @@ export type AttributeOptions = {
   offset: number
 }
 export type AttributeProxy = {
-  float: Variable<'attribute', 'float', Buffer, AttributeOptions>
-  int: Variable<'attribute', 'int', IntBuffer, AttributeOptions>
+  float: Variable<'attribute', 'float', BufferArray, AttributeOptions>
+  int: Variable<'attribute', 'int', IntBufferArray, AttributeOptions>
 
-  vec2: Variable<'attribute', 'vec2', Buffer, AttributeOptions>
-  ivec2: Variable<'attribute', 'ivec2', IntBuffer, AttributeOptions>
+  vec2: Variable<'attribute', 'vec2', BufferArray, AttributeOptions>
+  ivec2: Variable<'attribute', 'ivec2', IntBufferArray, AttributeOptions>
 
-  vec3: Variable<'attribute', 'vec3', Buffer, AttributeOptions>
-  ivec3: Variable<'attribute', 'ivec3', IntBuffer, AttributeOptions>
+  vec3: Variable<'attribute', 'vec3', BufferArray, AttributeOptions>
+  ivec3: Variable<'attribute', 'ivec3', IntBufferArray, AttributeOptions>
 
-  vec4: Variable<'attribute', 'vec4', Buffer, AttributeOptions>
-  ivec4: Variable<'attribute', 'ivec4', IntBuffer, AttributeOptions>
+  vec4: Variable<'attribute', 'vec4', BufferArray, AttributeOptions>
+  ivec4: Variable<'attribute', 'ivec4', IntBufferArray, AttributeOptions>
 }
 export type AttributeParameters = Parameters<
   AttributeProxy[keyof AttributeProxy]
@@ -180,7 +180,7 @@ export type BufferOptions = {
 
 export interface BufferToken  {
   name: string
-  value: Buffer
+  value: BufferArray
   tokenType: 'buffer',
   options: BufferOptions
 }
@@ -202,7 +202,7 @@ export interface UniformToken extends TokenBase {
   tokenType: 'uniform'
 }
 export interface Sampler2DToken extends TokenBase {
-  value: Buffer
+  value: BufferArray
   options: Sampler2DOptions
   textureIndex: number
   tokenType: 'sampler2D' | 'isampler2D'

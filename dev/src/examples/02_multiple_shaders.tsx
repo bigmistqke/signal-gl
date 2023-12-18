@@ -5,7 +5,7 @@ import {
   attribute,
   glsl,
   uniform,
-  type Buffer,
+  type BufferArray,
 } from '@bigmistqke/signal-gl'
 import { Accessor, createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
@@ -13,7 +13,7 @@ import { render } from 'solid-js/web'
 import './index.css'
 
 const Plane = (props: {
-  vertices: Buffer | Accessor<Buffer>
+  vertices: BufferArray | Accessor<BufferArray>
   fragment: Accessor<ShaderToken>
 }) => {
   const vertex = glsl`#version 300 es

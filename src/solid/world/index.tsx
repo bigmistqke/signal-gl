@@ -137,6 +137,7 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
         }`}
         mode="TRIANGLES"
         indices={props.indices}
+        cacheEnabled
       />
     </Group>
   )
