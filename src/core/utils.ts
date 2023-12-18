@@ -2,12 +2,13 @@ import { BufferArray, DataType, Format, InternalFormat } from './types'
 
 /* MISC */
 
-export function objectsAreEqual(
+export const objectsAreEqual = (
   a?: Record<string, any>,
   b?: Record<string, any>
-) {
-  return a && b && Object.keys(a).every((key) => b[key] === a[key])
-}
+) => a && b && Object.keys(a).every((key) => b[key] === a[key])
+
+export const castToArray = (value: any) =>
+  typeof value === 'object' && Array.isArray(value) ? (value as any[]) : [value]
 
 /* ERRORS */
 

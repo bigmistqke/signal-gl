@@ -38,7 +38,7 @@ export type UniformSetter =
 
 export type RenderMode = 'TRIANGLES' | 'LINES' | 'POINTS' | 'TRIANGLE_FAN' | 'TRIANGLE_STRIP' | 'LINE_STRIP' | 'LINE_LOOP'
 
-export type OnRenderFunction = (
+export type AddToRenderQueue = (
   location: WebGLUniformLocation | number,
   fn: () => void
 ) => () => void
@@ -124,18 +124,21 @@ export type UniformProxy = {
 }
 export type UniformParameters = Parameters<UniformProxy[keyof UniformProxy]>
 export type UniformReturnType = ReturnType<ValueOf<UniformProxy>>
-export type Sampler2DOptions = {
-  dataType?: DataType
-  width?: number
-  height?: number
-  type?: 'float' | 'integer'
-  format?: Format
-  internalFormat?: InternalFormat
-  wrapS?: 'CLAMP_TO_EDGE'
-  wrapT?: 'CLAMP_TO_EDGE'
-  magFilter?: 'NEAREST' | 'LINEAR'
-  minFilter?: 'NEAREST' | 'LINEAR'
-  border?: number
+export type Sampler2DOptions =TextureOptions & {  
+  border: number
+  magFilter: 'NEAREST' | 'LINEAR'
+  minFilter: 'NEAREST' | 'LINEAR'
+  wrapS: 'CLAMP_TO_EDGE'
+  wrapT: 'CLAMP_TO_EDGE'
+}
+
+export type TextureOptions = {
+  dataType: DataType
+  format: Format
+  height: number
+  internalFormat: InternalFormat
+  type: 'float' | 'integer'
+  width: number
 }
 
 
@@ -226,7 +229,7 @@ export type ShaderToken = {
   bind: (config: {
     gl: WebGL2RenderingContext,
     program: WebGLProgram,
-    onRender: OnRenderFunction,
+    addToRenderQueue: AddToRenderQueue,
     render: () => void
   }) => void
 }

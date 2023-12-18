@@ -1,9 +1,9 @@
 import { mergeProps } from 'solid-js'
 import type {
+  AddToRenderQueue,
   AttributeProxy,
   AttributeToken,
   BufferToken,
-  OnRenderFunction,
   Sampler2DToken,
   UniformProxy,
   UniformToken,
@@ -23,28 +23,28 @@ type BindUniformTokenConfig = {
   token: UniformToken
   gl: WebGL2RenderingContext
   program: WebGLProgram
-  onRender: OnRenderFunction
+  addToRenderQueue: AddToRenderQueue
 }
 
 export const bindUniformToken = ({
   token,
   gl,
   program,
-  onRender,
+  addToRenderQueue,
 }: BindUniformTokenConfig) => {
   const location = gl.getUniformLocation(program, token.name)!
   const isMatrix = token.dataType.includes('mat')
   const update = isMatrix
     ? () => (gl[token.functionName] as any)(location, false, token.value)
     : () => (gl[token.functionName] as any)(location, token.value)
-  onRender(token.name, update)
+  addToRenderQueue(token.name, update)
 }
 
 type bindAttributeTokenConfig = {
   token: AttributeToken
   gl: WebGL2RenderingContext
   program: WebGLProgram
-  onRender: OnRenderFunction
+  addToRenderQueue: AddToRenderQueue
   effect: (cb: () => void) => void
   render: () => void
 }
@@ -52,7 +52,7 @@ export const bindAttributeToken = ({
   token,
   gl,
   program,
-  onRender,
+  addToRenderQueue,
   effect,
   render,
 }: bindAttributeTokenConfig) => {
@@ -60,7 +60,7 @@ export const bindAttributeToken = ({
   bindBufferToken({
     token: token.buffer,
     gl,
-    onRender,
+    addToRenderQueue,
     effect,
     render,
     cb: () => {
@@ -80,7 +80,7 @@ export const bindAttributeToken = ({
 type BindBufferTokenConfig = {
   token: BufferToken
   gl: WebGL2RenderingContext
-  onRender: OnRenderFunction
+  addToRenderQueue: AddToRenderQueue
   effect: (cb: () => void) => void
   render: () => void
   cb?: (buffer: WebGLBuffer) => void
@@ -91,13 +91,13 @@ type BindBufferTokenConfig = {
 export const bindBufferToken = ({
   token,
   gl,
-  onRender,
+  addToRenderQueue,
   effect,
   render,
   cb,
 }: BindBufferTokenConfig) => {
   const buffer = gl.createBuffer()!
-  onRender(token.name, () => {
+  addToRenderQueue(token.name, () => {
     gl.bindBuffer(gl[token.options.target], buffer)
     gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
     cb?.(buffer)
@@ -114,7 +114,7 @@ type BindSampler2DTokenConfig = {
   token: Sampler2DToken
   gl: WebGL2RenderingContext
   program: WebGLProgram
-  onRender: OnRenderFunction
+  addToRenderQueue: AddToRenderQueue
   effect: (cb: () => void) => void
   render: () => void
 }
@@ -122,7 +122,7 @@ export const bindSampler2DToken = ({
   token,
   gl,
   program,
-  onRender,
+  addToRenderQueue,
   effect,
   render,
 }: BindSampler2DTokenConfig) => {
@@ -144,7 +144,7 @@ export const bindSampler2DToken = ({
     token.options
   )
   // render-loop
-  onRender(token.name, () => {
+  addToRenderQueue(token.name, () => {
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
     gl.bindTexture(gl.TEXTURE_2D, texture)
   })

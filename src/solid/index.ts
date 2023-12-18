@@ -1,3 +1,4 @@
+export * from '@core/classes'
 export * from '@core/computation'
 export * from '@core/hooks'
 export * from '@core/template/bindings'

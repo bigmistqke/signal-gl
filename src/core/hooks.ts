@@ -72,7 +72,7 @@ interface CreateProgramConfigBase {
   fragment: ShaderToken
   mode: RenderMode
   offset?: number
-  onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
+  addToRenderQueue?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   vertex: ShaderToken
 }
 
@@ -130,7 +130,7 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
     gl.useProgram(program)
     /* iterate through all uniforms/attributes and update them. */
     updateQueue.forEach((update) => update())
-    config.onRender?.(gl, program)
+    config.addToRenderQueue?.(gl, program)
     if ('indices' in config && config.indices) {
       gl.drawElements(
         gl[config.mode],
@@ -149,8 +149,18 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
   /* BINDINGS */
 
   // bind all uniforms/attributes to the program and add to `updateQueue`
-  config.vertex.bind({ gl: gl, program, onRender: addToUpdateQueue, render })
-  config.fragment.bind({ gl: gl, program, onRender: addToUpdateQueue, render })
+  config.vertex.bind({
+    gl: gl,
+    program,
+    addToRenderQueue: addToUpdateQueue,
+    render,
+  })
+  config.fragment.bind({
+    gl: gl,
+    program,
+    addToRenderQueue: addToUpdateQueue,
+    render,
+  })
   // if indices are defined, bind them to the program
   if ('indices' in config && config.indices) {
     const a_indices = buffer(
@@ -164,7 +174,7 @@ export const createProgram = (config: CreateProgramConfig): ProgramToken => {
     bindBufferToken({
       token: a_indices,
       gl,
-      onRender: addToUpdateQueue,
+      addToRenderQueue: addToUpdateQueue,
       effect: glsl.effect,
       render,
     })

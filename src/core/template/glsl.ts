@@ -2,12 +2,12 @@ import { mergeProps } from 'solid-js'
 import zeptoid from 'zeptoid'
 
 import type {
+  AddToRenderQueue,
   AttributeProxy,
   AttributeReturnType,
   Check,
   GLSLError,
   IsUnion,
-  OnRenderFunction,
   ShaderToken,
   TemplateValue,
   Token,
@@ -120,12 +120,12 @@ export const glsl = function <T extends TemplateValue[]>(
     const bind = ({
       gl,
       program,
-      onRender,
+      addToRenderQueue,
       render,
     }: {
       gl: WebGL2RenderingContext
       program: WebGLProgram
-      onRender: OnRenderFunction
+      addToRenderQueue: AddToRenderQueue
       render: () => void
     }) => {
       gl.useProgram(program)
@@ -137,7 +137,7 @@ export const glsl = function <T extends TemplateValue[]>(
               token,
               gl,
               program,
-              onRender,
+              addToRenderQueue,
               effect: glsl.effect,
               render,
             })
@@ -147,14 +147,19 @@ export const glsl = function <T extends TemplateValue[]>(
               token,
               gl,
               program,
-              onRender,
+              addToRenderQueue,
               effect: glsl.effect,
               render,
             })
           case 'shader':
-            return token.bind({ gl, program, onRender, render })
+            return token.bind({
+              gl,
+              program,
+              addToRenderQueue: addToRenderQueue,
+              render,
+            })
           case 'uniform':
-            return bindUniformToken({ token, gl, program, onRender })
+            return bindUniformToken({ token, gl, program, addToRenderQueue })
         }
       })
     }

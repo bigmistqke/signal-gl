@@ -119,22 +119,22 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
       <Program
         // prettier-ignore
         vertex={
-        glsl`#version 300 es
-        precision mediump float;
-        out vec3 color_in;
-        void main(void) {
-        color_in = ${attribute.vec3(props.colors)};
-        gl_Position = ${scene.projection} * ${modelView(props)} * vec4(${attribute.vec3(props.positions)}, 1.);
-        }`}
+          glsl`#version 300 es
+          precision mediump float;
+          out vec3 color_in;
+          void main(void) {
+            color_in = ${attribute.vec3(props.colors)};
+            gl_Position = ${scene.projection} * ${modelView(props)} * vec4(${attribute.vec3(props.positions)}, 1.);
+          }`}
         // prettier-ignore
         fragment={
-        glsl`#version 300 es
-        precision mediump float;
-        in vec3 color_in;
-        out vec4 color_out;
-        void main(void) {
-          color_out = vec4(color_in, 1.);
-        }`}
+          glsl`#version 300 es
+          precision mediump float;
+          in vec3 color_in;
+          out vec4 color_out;
+          void main(void) {
+            color_out = vec4(color_in, 1.);
+          }`}
         mode="TRIANGLES"
         indices={props.indices}
         cacheEnabled
