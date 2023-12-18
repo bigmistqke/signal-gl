@@ -159,7 +159,6 @@ export const bindSampler2DToken = ({
   )
   // render-loop
   onRender(token.name, () => {
-    token.value // to trigger effect when value updates
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
     gl.bindTexture(gl.TEXTURE_2D, texture)
   })
@@ -196,5 +195,6 @@ export const bindSampler2DToken = ({
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[wrapT])
     // Bind the texture to the uniform sampler
     gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex)
+    render()
   })
 }
