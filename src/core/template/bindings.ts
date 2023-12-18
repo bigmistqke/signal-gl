@@ -32,19 +32,12 @@ export const bindUniformToken = ({
   program,
   onRender,
 }: BindUniformTokenConfig) => {
-  console.log('binding')
-  // get location based on token.name
   const location = gl.getUniformLocation(program, token.name)!
   const isMatrix = token.dataType.includes('mat')
-  if (isMatrix) {
-    onRender(token.name, () =>
-      (gl[token.functionName] as any)(location, false, token.value)
-    )
-  } else {
-    onRender(token.name, () =>
-      (gl[token.functionName] as any)(location, token.value)
-    )
-  }
+  const update = isMatrix
+    ? () => (gl[token.functionName] as any)(location, false, token.value)
+    : () => (gl[token.functionName] as any)(location, token.value)
+  onRender(token.name, update)
 }
 
 type bindAttributeTokenConfig = {
@@ -104,24 +97,17 @@ export const bindBufferToken = ({
   cb,
 }: BindBufferTokenConfig) => {
   const buffer = gl.createBuffer()!
+  onRender(token.name, () => {
+    gl.bindBuffer(gl[token.options.target], buffer)
+    gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
+    cb?.(buffer)
+  })
   effect(() => {
     gl.bindBuffer(gl[token.options.target], buffer)
     gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
     gl.finish()
     render()
   })
-  // NOTE: a bit of code-duplication, but better then unnecessary conditional in render-loop
-  const renderFn = cb
-    ? () => {
-        gl.bindBuffer(gl[token.options.target], buffer)
-        gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
-        cb(buffer)
-      }
-    : () => {
-        token.value
-        gl.bindBuffer(gl[token.options.target], buffer)
-      }
-  onRender(token.name, renderFn)
 }
 
 type BindSampler2DTokenConfig = {
