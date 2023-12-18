@@ -17,12 +17,17 @@ import { CreateProgramConfig } from '@core/hooks'
 import type { RenderMode, ShaderToken } from '@core/types'
 import { GLProgram, GLStack, filterGLPrograms } from '.'
 
+/* CONTEXT */
+
 const internalContext = createContext<{
   canvas: HTMLCanvasElement
   gl: WebGL2RenderingContext
   onProgramCreate?: () => void
+  events: {
+    onResize: Set<() => void>
+    onRender: Set<() => void>
+  }
 }>()
-
 const useInternal = () => useContext(internalContext)
 
 const signalGLContext = createContext<{
@@ -31,8 +36,45 @@ const signalGLContext = createContext<{
   onRender: (callback: () => void) => () => void
   onResize: (callback: () => void) => () => void
 }>()
-
 export const useSignalGL = () => useContext(signalGLContext)
+
+/* UTILS */
+
+const createRenderLoop = (
+  config: StackProps & {
+    stack: GLStack
+  }
+) => {
+  const context = useInternal()
+
+  if (!context) return
+
+  config.stack.autosize(() => {
+    config.onResize?.(config.stack)
+    context.events.onResize.forEach((fn) => fn())
+  })
+
+  const render = () => {
+    if (config.clear) {
+      if (typeof config.clear === 'function') config.clear(config.stack)
+      else config.stack.clear()
+    }
+    config.onRender?.()
+    context.events.onRender.forEach((fn) => fn())
+    config.stack.render()
+  }
+
+  const animate = () => {
+    if (config.animate) requestAnimationFrame(animate)
+    render()
+  }
+  createEffect(() => {
+    if (config.animate) animate()
+    else createEffect(render)
+  })
+}
+
+/* PROGRAM */
 
 interface ProgramPropsBase {
   fragment: Accessor<ShaderToken>
@@ -112,6 +154,7 @@ export const Stack = (props: StackProps) => {
         get onProgramCreate() {
           return props.onProgramCreate
         },
+        events,
       }}
     >
       <signalGLContext.Provider
@@ -130,7 +173,6 @@ export const Stack = (props: StackProps) => {
       >
         {(() => {
           const childs = children(() => childrenProps.children)
-
           onMount(() => {
             try {
               const stack = new GLStack({
@@ -139,30 +181,7 @@ export const Stack = (props: StackProps) => {
                   return filterGLPrograms(childs())
                 },
               })
-
-              stack.autosize(() => {
-                props.onResize?.(stack)
-                events.onResize.forEach((fn) => fn())
-              })
-
-              const render = () => {
-                if (props.clear) {
-                  if (typeof props.clear === 'function') props.clear(stack)
-                  else stack.clear()
-                }
-                props.onRender?.()
-                events.onRender.forEach((fn) => fn())
-                stack.render()
-              }
-
-              const animate = () => {
-                if (props.animate) requestAnimationFrame(animate)
-                render()
-              }
-              createEffect(() => {
-                if (props.animate) animate()
-                else createEffect(render)
-              })
+              createRenderLoop(mergeProps(props, { stack }))
             } catch (error) {
               console.error(error)
             }
