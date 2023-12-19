@@ -6,6 +6,7 @@ import {
   children,
   createContext,
   createEffect,
+  createMemo,
   mergeProps,
   onMount,
   splitProps,
@@ -149,13 +150,13 @@ export const Stack = (props: CanvasProps) => {
       >
         {(() => {
           const childs = children(() => childrenProps.children)
-
+          const programs = createMemo(() => filterGLPrograms(childs()))
           onMount(() => {
             try {
               const stack = new GLStack({
                 canvas,
                 get programs() {
-                  return filterGLPrograms(childs())
+                  return programs()
                 },
               })
               createRenderLoop(mergeProps(merged, { stack }))
@@ -206,21 +207,13 @@ type ProgramProps = ArrayProgramProps | ElementProgramProps
 export const Program = (props: ProgramProps) => {
   const context = useInternal()
   if (!context) throw 'no context'
-  const [shader, rest] = splitProps(props, ['vertex', 'fragment'])
-  const config: GLProgramConfig = mergeProps(
+  const config = mergeProps(
     {
       canvas: context.canvas,
-      get fragment() {
-        return shader.fragment
-      },
-      get vertex() {
-        return shader.vertex
-      },
-      mode: 'TRIANGLES',
     },
-    rest
+    props
   )
-  return (() => new GLProgram(config)) as any as JSXElement // cast to JSX
+  return (() => new GLProgram(config as GLProgramConfig)) as any as JSXElement // cast to JSX
 }
 
 /** JSX-wrapper around `GLRenderTextureStack`. */
