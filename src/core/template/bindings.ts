@@ -120,33 +120,17 @@ export const bindSampler2DToken = ({
   addToRenderQueue,
   requestRender,
 }: BindSampler2DTokenConfig) => {
+  const isGLRenderTexture = (value: any): value is GLRenderTexture =>
+    value instanceof GLRenderTexture
   // create texture
-
-  const texture = untrack(() => {
-    return token.value instanceof GLRenderTexture
-      ? token.value.texture
-      : gl.createTexture()
-  })
-  const options = mergeProps(
-    {
-      internalFormat: 'RGBA8',
-      width: 2,
-      height: 2,
-      border: 0,
-      format: 'RGBA',
-      dataType: 'UNSIGNED_BYTE',
-      minFilter: 'NEAREST',
-      magFilter: 'NEAREST',
-      wrapS: 'CLAMP_TO_EDGE',
-      wrapT: 'CLAMP_TO_EDGE',
-    } as const,
-    token.options
-  )
+  const _texture = gl.createTexture()
+  const texture = () =>
+    isGLRenderTexture(token.value) ? token.value.texture : _texture
   // requestRender-loop
   addToRenderQueue(token.name, () => {
-    token.value
+    // @ts-ignore
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
-    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.bindTexture(gl.TEXTURE_2D, texture())
   })
   createRenderEffect(() => {
     gl.useProgram(program)
@@ -161,10 +145,11 @@ export const bindSampler2DToken = ({
       wrapT,
       internalFormat,
       dataType,
-    } = options
+    } = token.options
+    // @ts-ignore
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    if (!(untrack(() => token.value) instanceof GLRenderTexture)) {
+    gl.bindTexture(gl.TEXTURE_2D, texture())
+    if (!untrack(() => isGLRenderTexture(token.value))) {
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,

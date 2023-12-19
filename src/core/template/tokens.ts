@@ -52,22 +52,46 @@ const dataTypeToFunctionName = (dataType: string): UniformSetter => {
 let textureIndex = 0
 export const uniform = new Proxy({} as UniformProxy, {
   get(target, dataType) {
-    return (...[value, options]: UniformParameters) => ({
-      dataType,
-      name: 'u_' + zeptoid(),
-      functionName: dataTypeToFunctionName(dataType as string),
-      tokenType:
-        dataType === 'sampler2D'
-          ? 'sampler2D'
-          : dataType === 'isampler2D'
-          ? 'isampler2D'
-          : 'uniform',
-      get value() {
-        return typeof value === 'function' ? value() : value
-      },
-      options,
-      textureIndex: textureIndex++,
-    })
+    return (...[value, options]: UniformParameters) => {
+      if (dataType === 'sampler2D') {
+        return {
+          dataType,
+          name: 'u_' + zeptoid(),
+          functionName: dataTypeToFunctionName(dataType as string),
+          tokenType: dataType,
+          get value() {
+            return typeof value === 'function' ? value() : value
+          },
+          options: mergeProps(
+            {
+              border: 0,
+              dataType: 'UNSIGNED_BYTE',
+              format: 'RGBA',
+              height: 2,
+              internalFormat: 'RGBA8',
+              magFilter: 'NEAREST',
+              minFilter: 'NEAREST',
+              width: 2,
+              wrapS: 'CLAMP_TO_EDGE',
+              wrapT: 'CLAMP_TO_EDGE',
+            },
+            options
+          ),
+          textureIndex: textureIndex++,
+        }
+      }
+
+      return {
+        dataType,
+        functionName: dataTypeToFunctionName(dataType as string),
+        get value() {
+          return typeof value === 'function' ? value() : value
+        },
+        name: 'u_' + zeptoid(),
+        options: options,
+        tokenType: 'uniform',
+      }
+    }
   },
 })
 /**
