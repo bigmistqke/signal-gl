@@ -1,6 +1,5 @@
 import { createSignal, mergeProps } from 'solid-js'
 import { bindBufferToken } from './template/bindings'
-import { glsl } from './template/glsl'
 import { buffer } from './template/tokens'
 import {
   BufferArray,
@@ -148,7 +147,6 @@ export class GLProgram extends Base {
       bindBufferToken(
         mergeProps(this, {
           token,
-          effect: glsl.effect,
         })
       )
     }
