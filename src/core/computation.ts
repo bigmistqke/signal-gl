@@ -84,8 +84,8 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
 
   const program = new GLProgram({
     canvas: computationCanvas,
-    vertex: vertex(),
-    fragment: fragment(),
+    vertex,
+    fragment,
     mode: 'TRIANGLES',
     count: 4,
   })
