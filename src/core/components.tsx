@@ -6,12 +6,10 @@ import {
   children,
   createContext,
   createEffect,
-  createMemo,
   mergeProps,
   onMount,
   splitProps,
   useContext,
-  type Accessor,
   type ComponentProps,
 } from 'solid-js'
 
@@ -63,10 +61,12 @@ const createRenderLoop = (
   })
 
   const render = () => {
-    if (config.clear) {
+    /* if (config.clear) {
       if (typeof config.clear === 'function') config.clear(config.stack)
       else config.stack.clear()
-    }
+    } */
+
+    config.stack.clear()
     config.onRender?.()
     context.events.onRender.forEach((fn) => fn())
     config.stack.render()
@@ -149,6 +149,7 @@ export const Stack = (props: CanvasProps) => {
       >
         {(() => {
           const childs = children(() => childrenProps.children)
+
           onMount(() => {
             try {
               const stack = new GLStack({
@@ -173,10 +174,10 @@ export const Stack = (props: CanvasProps) => {
 /* PROGRAM */
 
 interface ProgramPropsBase {
-  fragment: Accessor<ShaderToken>
+  fragment: ShaderToken
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   ref?: Setter<HTMLCanvasElement>
-  vertex: Accessor<ShaderToken>
+  vertex: ShaderToken
   buffer?: any
   /**
    * default "TRIANGLES"
@@ -210,16 +211,16 @@ export const Program = (props: ProgramProps) => {
     {
       canvas: context.canvas,
       get fragment() {
-        return shader.fragment()
+        return shader.fragment
       },
       get vertex() {
-        return shader.vertex()
+        return shader.vertex
       },
       mode: 'TRIANGLES',
     },
     rest
   )
-  return createMemo(() => new GLProgram(config)) as any as JSXElement // cast to JSX
+  return (() => new GLProgram(config)) as any as JSXElement // cast to JSX
 }
 
 /** JSX-wrapper around `GLRenderTextureStack`. */
@@ -228,6 +229,8 @@ export const RenderTexture: Component<
     onTextureUpdate: (texture: GLRenderTexture) => void
   }
 > = (props) => {
+  const merged = mergeProps({ clear: true }, props)
+
   const internal = useInternal()
   if (!internal) throw 'internal context undefined'
 
@@ -239,8 +242,18 @@ export const RenderTexture: Component<
       get programs() {
         return filterGLPrograms(childs())
       },
+      width: internal.canvas.width,
+      height: internal.canvas.width,
     })
-    createRenderLoop(mergeProps(props, { stack }))
+    createRenderLoop(
+      mergeProps(merged, {
+        stack,
+        onRender: () => {
+          props.onTextureUpdate(stack.texture)
+          props.onRender?.()
+        },
+      })
+    )
   } catch (error) {
     console.error(error)
   }

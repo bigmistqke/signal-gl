@@ -1,9 +1,8 @@
-import { mergeProps } from 'solid-js'
+import { createMemo, mergeProps } from 'solid-js'
 import zeptoid from 'zeptoid'
 
 import type {
   AddToRenderQueue,
-  AttributeProxy,
   AttributeReturnType,
   Check,
   GLSLError,
@@ -11,9 +10,7 @@ import type {
   ShaderToken,
   TemplateValue,
   Token,
-  UniformProxy,
   UniformReturnType,
-  ValueOf,
 } from '../types'
 import {
   bindAttributeToken,
@@ -23,16 +20,6 @@ import {
 
 const DEBUG = import.meta.env.DEV
 const nameCacheMap = new WeakMap<TemplateStringsArray, string[]>()
-let textureIndex = 0
-
-const createToken = <
-  TConfig extends ReturnType<ValueOf<UniformProxy> | ValueOf<AttributeProxy>>,
-  TOther extends Record<string, any>
->(
-  name: number | string,
-  config: TConfig,
-  other?: TOther
-) => mergeProps(config, { name }, other)
 
 /* 
   GLSL TAG TEMPLATE LITERAL 
@@ -61,117 +48,109 @@ export const glsl = function <T extends TemplateValue[]>(
   template: TemplateStringsArray,
   ...holes: CheckTemplateValues<T>
 ) {
-  return () => {
-    const hasNameCache = nameCacheMap.has(template)
-    if (!hasNameCache) nameCacheMap.set(template, [])
-    const nameCache = nameCacheMap.get(template)!
+  const hasNameCache = nameCacheMap.has(template)
+  if (!hasNameCache) nameCacheMap.set(template, [])
+  const nameCache = nameCacheMap.get(template)!
 
-    const scopedNames = new Map<string, string>()
-    const tokens = holes
-      .map((hole, index) => {
-        if (typeof hole === 'function') {
-          // if token is a function
-          // it is interpret as a glsl-module / Accessor<ShaderResult>
-          return hole()
-        }
-
-        if (typeof hole === 'string') {
-          // if token is a function
-          // it is interpret as a scoped variable name
-          const name =
-            // check for cache
-            (hasNameCache && nameCache[index]) ||
-            // check for scoped names
-            scopedNames.get(hole) ||
-            // create new name
-            `${hole}_${zeptoid()}`
-
-          if (!scopedNames.has(hole)) scopedNames.set(hole, name)
-          if (!hasNameCache || !nameCache[index]) nameCache[index] = name
-
-          return {
-            name,
-            tokenType: 'scope',
+  const scopedNames = new Map<string, string>()
+  const tokens = createMemo(
+    () =>
+      holes
+        .map((hole, index) => {
+          if (typeof hole === 'function') {
+            // if token is a function
+            // it is interpret as a glsl-module / Accessor<ShaderResult>
+            return hole()
           }
-        }
 
-        // generate name if cache is disabled or it's not included in
-        const name = (hasNameCache && nameCache[index]) || hole.name
+          if (typeof hole === 'string') {
+            // if token is a function
+            // it is interpret as a scoped variable name
+            const name =
+              // check for cache
+              (hasNameCache && nameCache[index]) ||
+              // check for scoped names
+              scopedNames.get(hole) ||
+              // create new name
+              `${hole}_${zeptoid()}`
 
-        if (!hasNameCache) nameCache[index] = name
+            if (!scopedNames.has(hole)) scopedNames.set(hole, name)
+            if (!hasNameCache || !nameCache[index]) nameCache[index] = name
 
-        if (DEBUG && !name) {
-          console.error('id was not found for hole:', hole, 'with index', index)
-        }
+            return {
+              name,
+              tokenType: 'scope',
+            }
+          }
 
-        switch (hole.tokenType) {
-          case 'attribute':
-          case 'uniform':
-            return createToken(name, hole)
-          case 'isampler2D':
-          case 'sampler2D':
-            return createToken(name, hole, {
-              textureIndex: textureIndex++,
-            })
-        }
-      })
-      .filter((hole) => hole !== undefined) as Token[]
+          // generate name if cache is disabled or it's not included in
+          const name = (hasNameCache && nameCache[index]) || hole.name
 
-    const bind = ({
+          if (!hasNameCache) nameCache[index] = name
+
+          if (DEBUG && !name) {
+            console.error(
+              'id was not found for hole:',
+              hole,
+              'with index',
+              index
+            )
+          }
+
+          return mergeProps(hole, { name })
+        })
+        .filter((hole) => hole !== undefined) as Token[]
+  )
+
+  const bind = ({
+    gl,
+    program,
+    addToRenderQueue,
+    requestRender,
+  }: {
+    gl: WebGL2RenderingContext
+    program: WebGLProgram
+    addToRenderQueue: AddToRenderQueue
+    requestRender: () => void
+  }) => {
+    gl.useProgram(program)
+
+    const data = {
       gl,
       program,
       addToRenderQueue,
       requestRender,
-    }: {
-      gl: WebGL2RenderingContext
-      program: WebGLProgram
-      addToRenderQueue: AddToRenderQueue
-      requestRender: () => void
-    }) => {
-      gl.useProgram(program)
+    } as const
 
-      tokens.forEach((token) => {
-        switch (token.tokenType) {
-          case 'attribute':
-            return bindAttributeToken({
-              token,
-              gl,
-              program,
-              addToRenderQueue,
-              requestRender,
-            })
-          case 'sampler2D':
-          case 'isampler2D':
-            return bindSampler2DToken({
-              token,
-              gl,
-              program,
-              addToRenderQueue,
-              requestRender,
-            })
-          case 'shader':
-            return token.bind({
-              gl,
-              program,
-              addToRenderQueue: addToRenderQueue,
-              requestRender,
-            })
-          case 'uniform':
-            return bindUniformToken({ token, gl, program, addToRenderQueue })
-        }
-      })
-    }
-    return {
-      get source() {
-        const source = compileStrings(template, tokens)
-        DEBUG && console.log('source', source.code)
-        return source
-      },
-      bind,
-      tokenType: 'shader',
-      template,
-    } as ShaderToken
+    const visitedTokens = new Set()
+    tokens().forEach((token) => {
+      if (visitedTokens.has(token.name)) return
+      visitedTokens.add(token.name)
+      switch (token.tokenType) {
+        case 'attribute':
+          return bindAttributeToken({ token, ...data })
+        case 'sampler2D':
+        case 'isampler2D':
+          return bindSampler2DToken({ token, ...data })
+        case 'uniform':
+          return bindUniformToken({ token, ...data })
+        case 'shader':
+          return token.bind(data)
+      }
+    })
   }
+
+  return {
+    get source() {
+      const source = compileStrings(template, tokens())
+      DEBUG && console.log('source', source.code)
+      return source
+    },
+    bind,
+    tokenType: 'shader',
+    template,
+    name: 's_' + zeptoid(),
+  } as ShaderToken
 }
 
 /* 

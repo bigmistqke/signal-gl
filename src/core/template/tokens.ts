@@ -49,6 +49,7 @@ const dataTypeToFunctionName = (dataType: string): UniformSetter => {
  * `
  * ```
  * */
+let textureIndex = 0
 export const uniform = new Proxy({} as UniformProxy, {
   get(target, dataType) {
     return (...[value, options]: UniformParameters) => ({
@@ -65,6 +66,7 @@ export const uniform = new Proxy({} as UniformProxy, {
         return typeof value === 'function' ? value() : value
       },
       options,
+      textureIndex: textureIndex++,
     })
   },
 })

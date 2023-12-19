@@ -31,17 +31,19 @@ class Base {
     const gl = config.canvas.getContext('webgl2')
     if (!gl) throw 'can not get webgl2 context'
     this.gl = gl
+    this.gl.clearColor(0.0, 0.0, 0.0, 1.0)
+    this.gl.enable(this.gl.DEPTH_TEST)
+    this.gl.depthFunc(this.gl.LEQUAL)
+    this.gl.depthRange(0.2, 10)
+    this.gl.clearDepth(1.0)
   }
   render() {
     return this
   }
   clear() {
-    this.gl.clearColor(0.0, 0.0, 0.0, 1.0)
-    this.gl.clearDepth(1.0)
-    this.gl.enable(this.gl.DEPTH_TEST)
-    this.gl.depthFunc(this.gl.LEQUAL)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
-    this.gl.depthRange(0.2, 10)
+    this.gl.depthMask(true)
+
     return this
   }
   autosize(onResize?: (token: Base) => void) {
@@ -98,6 +100,7 @@ export class GLProgram extends Base {
   program: WebGLProgram
   constructor(_config: GLProgramConfig) {
     super(_config)
+
     const config = mergeProps(
       {
         mode: 'TRIANGLES' as const,
@@ -111,8 +114,9 @@ export class GLProgram extends Base {
 
     if (!this.gl) throw 'webgl2 is not supported'
 
-    /* create program */
     const cachedProgram = config.cacheEnabled && getProgramCache(config)
+
+    /* create program */
     const program =
       cachedProgram ||
       createWebGLProgram(
@@ -258,6 +262,7 @@ export class GLRenderTextureStack extends GLStack {
   }
   render() {
     this.texture.activate()
+    super.clear()
     super.render()
     this.texture.deactivate()
     return this
@@ -302,11 +307,13 @@ export class GLRenderTexture extends UtilityBase<
       return
     }
 
+    this.renderBuffer.activate()
+
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture)
     this.gl.texImage2D(
       this.gl.TEXTURE_2D,
       0, // level
-      this.gl[this.config.internalFormat || 'RGBA'],
+      this.gl[this.config.internalFormat || 'RGBA8'],
       this.gl.drawingBufferWidth,
       this.gl.drawingBufferHeight,
       0, // border
@@ -321,7 +328,6 @@ export class GLRenderTexture extends UtilityBase<
       this.texture,
       0
     )
-    this.renderBuffer.activate()
   }
 
   deactivate() {
@@ -336,31 +342,41 @@ type RenderBufferConfig = {
 }
 export class GLRenderBuffer extends UtilityBase<RenderBufferConfig> {
   framebuffer: WebGLFramebuffer
-  renderbuffer: WebGLRenderbuffer
+  depthbuffer: WebGLFramebuffer
+  colorbuffer: WebGLRenderbuffer
   constructor(
     gl: WebGL2RenderingContext,
     config: Partial<RenderBufferConfig> = {}
   ) {
     super(gl, config)
-    const framebuffer = this.gl.createFramebuffer()
-    const renderbuffer = this.gl.createRenderbuffer()
-    if (!framebuffer || !renderbuffer)
+    const framebuffer = gl.createFramebuffer()
+    const renderbuffer = gl.createRenderbuffer()
+    const depthbuffer = gl.createRenderbuffer()
+    if (!framebuffer || !renderbuffer || !depthbuffer)
       throw 'could not create framebuffer or renderbuffer'
     this.config = config
     this.framebuffer = framebuffer
-    this.renderbuffer = renderbuffer
+    this.colorbuffer = renderbuffer
+    this.depthbuffer = depthbuffer
   }
 
   activate() {
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer)
 
     /* Create a renderbuffer */
-    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.renderbuffer)
+    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.colorbuffer)
     this.gl.renderbufferStorage(
       this.gl.RENDERBUFFER,
-      this.gl[this.config.internalFormat || 'RGBA'],
-      this.config.width || this.gl.canvas.width,
-      this.config.height || this.gl.canvas.height
+      this.gl.RGBA8,
+      this.gl.drawingBufferWidth,
+      this.gl.drawingBufferHeight
+    )
+    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.depthbuffer)
+    this.gl.renderbufferStorage(
+      this.gl.RENDERBUFFER,
+      this.gl.DEPTH_COMPONENT16,
+      this.gl.drawingBufferWidth,
+      this.gl.drawingBufferHeight
     )
 
     /* Attach the renderbuffer to the framebuffer */
@@ -368,7 +384,14 @@ export class GLRenderBuffer extends UtilityBase<RenderBufferConfig> {
       this.gl.FRAMEBUFFER,
       this.gl.COLOR_ATTACHMENT0,
       this.gl.RENDERBUFFER,
-      this.renderbuffer
+      this.colorbuffer
+    )
+
+    this.gl.framebufferRenderbuffer(
+      this.gl.FRAMEBUFFER,
+      this.gl.DEPTH_ATTACHMENT,
+      this.gl.RENDERBUFFER,
+      this.depthbuffer
     )
 
     this.gl.finish()

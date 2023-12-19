@@ -592,8 +592,8 @@ import { Program } from "@bigmistqke/solid-gl"
 
 ```ts
 type ProgramProps = {
-  fragment: Accessor<ShaderToken>
-  vertex: Accessor<ShaderToken>
+  fragment: ShaderToken
+  vertex: ShaderToken
   mode: 'TRIANGLES' | 'LINES' | 'POINTS'
 }
 ```

@@ -81,7 +81,9 @@ const Cube: Component<{
   ]
 
   const render = () => {
-    setModelView((matrix) => mat4.rotate(matrix, matrix, 0.05, [1, 1, 1]))
+    if (props.rotate) {
+      setModelView((matrix) => mat4.rotate(matrix, matrix, 0.05, [1, 1, 1]))
+    }
     requestAnimationFrame(render)
   }
   render()
@@ -143,21 +145,20 @@ function App() {
   return (
     <Stack ref={setCanvas} onResize={onResize}>
       <RenderTexture onTextureUpdate={setTexture}>
-        <Cube projection={projection()} position={[0, 0, -5]} />
+        <Cube projection={projection()} position={[0, 0, -5]} rotate />
       </RenderTexture>
       <Cube
         projection={projection()}
         position={[0, 0, -5]}
+        texture={texture()}
+        rotate
         fragment={glsl`#version 300 es
         precision highp float;
         in vec3 color_in;
         in vec4 coord;
         out vec4 color_out;
         void main(void) {
-          color_out = texture(${tex}, mod(coord.xy, 1.0)) 
-            + texture(${tex}, mod(coord.yz, 1.0)) 
-            + texture(${tex}, mod(coord.zx, 1.0)) 
-            + vec4(0.125, 0., 0.25, 1.0);
+          color_out = texture(${tex}, mod(coord.xy, 1.0)) + texture(${tex}, mod(coord.yz, 1.0)) + texture(${tex}, mod(coord.zx, 1.0)) + vec4(0.125, 0., 0.25, 1.0);
         }`}
       />
     </Stack>

@@ -1,4 +1,5 @@
 import { mat2, mat3, mat4 } from "gl-matrix";
+import { GLRenderTexture } from "./classes";
 
 /* TYPE UTILITIES */
 export type Accessor<T> = () => T
@@ -106,7 +107,7 @@ export type UniformProxy = {
   sampler2D: Variable<
     'sampler2D',
     'sampler2D',
-    ArrayBufferView,
+    ArrayBufferView | GLRenderTexture,
     Sampler2DOptions
   >
   isampler2D: Variable<
@@ -214,6 +215,14 @@ export type ScopedVariableToken = {
   tokenType: 'scope'
 }
 export type ShaderToken = {
+  bind: (config: {
+    gl: WebGL2RenderingContext,
+    program: WebGLProgram,
+    addToRenderQueue: AddToRenderQueue,
+    requestRender: (name: string) => void
+  }) => void
+  name: string
+
   source: {
     code: string
     parts: {
@@ -225,12 +234,6 @@ export type ShaderToken = {
   }
   template: TemplateStringsArray
   tokenType: 'shader'
-  bind: (config: {
-    gl: WebGL2RenderingContext,
-    program: WebGLProgram,
-    addToRenderQueue: AddToRenderQueue,
-    requestRender: (name: string) => void
-  }) => void
 }
 export type Token =
   | ShaderToken

@@ -14,7 +14,7 @@ import './index.css'
 
 const Plane = (props: {
   vertices: BufferArray | Accessor<BufferArray>
-  fragment: Accessor<ShaderToken>
+  fragment: ShaderToken
 }) => {
   const vertex = glsl`#version 300 es
     out vec2 v_coord;  

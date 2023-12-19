@@ -1,4 +1,5 @@
-import { createRenderEffect, mergeProps } from 'solid-js'
+import { GLRenderTexture } from '@core/classes'
+import { createRenderEffect, mergeProps, untrack } from 'solid-js'
 import type {
   AddToRenderQueue,
   AttributeProxy,
@@ -120,12 +121,17 @@ export const bindSampler2DToken = ({
   requestRender,
 }: BindSampler2DTokenConfig) => {
   // create texture
-  const texture = gl.createTexture()
+
+  const texture = untrack(() => {
+    return token.value instanceof GLRenderTexture
+      ? token.value.texture
+      : gl.createTexture()
+  })
   const options = mergeProps(
     {
-      internalFormat: 'RGBA',
+      internalFormat: 'RGBA8',
       width: 2,
-      height: 1,
+      height: 2,
       border: 0,
       format: 'RGBA',
       dataType: 'UNSIGNED_BYTE',
@@ -138,10 +144,12 @@ export const bindSampler2DToken = ({
   )
   // requestRender-loop
   addToRenderQueue(token.name, () => {
+    token.value
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
     gl.bindTexture(gl.TEXTURE_2D, texture)
   })
   createRenderEffect(() => {
+    gl.useProgram(program)
     const {
       format,
       width,
@@ -156,17 +164,20 @@ export const bindSampler2DToken = ({
     } = options
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
     gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl[internalFormat],
-      width,
-      height,
-      border,
-      gl[format],
-      gl[dataType],
-      token.value
-    )
+    if (!(untrack(() => token.value) instanceof GLRenderTexture)) {
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl[internalFormat],
+        width,
+        height,
+        border,
+        gl[format],
+        gl[dataType],
+        token.value
+      )
+    }
+
     // Set texture parameters
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl[minFilter])
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[magFilter])
