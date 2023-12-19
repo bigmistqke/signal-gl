@@ -253,6 +253,8 @@ export class GLRenderTextureStack extends GLStack {
   constructor(
     config: BaseConfig & {
       programs: GLProgram[]
+      color?: boolean
+      depth?: boolean
     } & Partial<RenderTextureConfig>
   ) {
     super(config)
@@ -337,6 +339,8 @@ type RenderBufferConfig = {
   internalFormat: InternalFormat
   width: number
   height: number
+  color: boolean
+  depth: boolean
 }
 export class GLRenderBuffer extends UtilityBase<RenderBufferConfig> {
   framebuffer: WebGLFramebuffer
@@ -352,7 +356,7 @@ export class GLRenderBuffer extends UtilityBase<RenderBufferConfig> {
     const depthbuffer = gl.createRenderbuffer()
     if (!framebuffer || !renderbuffer || !depthbuffer)
       throw 'could not create framebuffer or renderbuffer'
-    this.config = config
+    this.config = mergeProps({ color: true, depth: true }, config)
     this.framebuffer = framebuffer
     this.colorbuffer = renderbuffer
     this.depthbuffer = depthbuffer
@@ -360,39 +364,41 @@ export class GLRenderBuffer extends UtilityBase<RenderBufferConfig> {
 
   activate() {
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer)
+    if (this.config.color) {
+      /* Create a renderbuffer */
+      this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.colorbuffer)
+      this.gl.renderbufferStorage(
+        this.gl.RENDERBUFFER,
+        this.gl.RGBA8,
+        this.gl.drawingBufferWidth,
+        this.gl.drawingBufferHeight
+      )
+      /* Attach the renderbuffer to the framebuffer */
+      this.gl.framebufferRenderbuffer(
+        this.gl.FRAMEBUFFER,
+        this.gl.COLOR_ATTACHMENT0,
+        this.gl.RENDERBUFFER,
+        this.colorbuffer
+      )
+    }
+    if (this.config.depth) {
+      this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.depthbuffer)
+      this.gl.renderbufferStorage(
+        this.gl.RENDERBUFFER,
+        this.gl.DEPTH_COMPONENT16,
+        this.gl.drawingBufferWidth,
+        this.gl.drawingBufferHeight
+      )
 
-    /* Create a renderbuffer */
-    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.colorbuffer)
-    this.gl.renderbufferStorage(
-      this.gl.RENDERBUFFER,
-      this.gl.RGBA8,
-      this.gl.drawingBufferWidth,
-      this.gl.drawingBufferHeight
-    )
-    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.depthbuffer)
-    this.gl.renderbufferStorage(
-      this.gl.RENDERBUFFER,
-      this.gl.DEPTH_COMPONENT16,
-      this.gl.drawingBufferWidth,
-      this.gl.drawingBufferHeight
-    )
+      this.gl.framebufferRenderbuffer(
+        this.gl.FRAMEBUFFER,
+        this.gl.DEPTH_ATTACHMENT,
+        this.gl.RENDERBUFFER,
+        this.depthbuffer
+      )
+    }
 
-    /* Attach the renderbuffer to the framebuffer */
-    this.gl.framebufferRenderbuffer(
-      this.gl.FRAMEBUFFER,
-      this.gl.COLOR_ATTACHMENT0,
-      this.gl.RENDERBUFFER,
-      this.colorbuffer
-    )
-
-    this.gl.framebufferRenderbuffer(
-      this.gl.FRAMEBUFFER,
-      this.gl.DEPTH_ATTACHMENT,
-      this.gl.RENDERBUFFER,
-      this.depthbuffer
-    )
-
-    this.gl.finish()
+    //this.gl.finish()
 
     return this
   }
