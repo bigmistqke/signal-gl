@@ -1,15 +1,8 @@
 import { Accessor, mergeProps } from 'solid-js'
-import {
-  ProgramToken,
-  ReadConfig,
-  StackToken,
-  clear,
-  createProgram,
-  read,
-} from './hooks'
 import { glsl } from './template/glsl'
 import { attribute, uniform } from './template/tokens'
 
+import { GLProgram, GLStack } from './classes'
 import {
   BufferArray,
   DataType,
@@ -24,9 +17,9 @@ import { getTextureConfigFromTypedArray } from './utils'
   CREATE_COMPUTATION-HOOK 
 */
 const extend = (
-  { ctx }: StackToken | ProgramToken,
+  { gl }: GLStack | GLProgram,
   extension: Parameters<WebGLRenderingContextBase['getExtension']>[0]
-) => ctx.getExtension(extension)
+) => gl.getExtension(extension)
 
 const computationCanvas = document.createElement('canvas')
 type ComputationConfig = {
@@ -65,7 +58,7 @@ export const createComputation = function <TBuffer extends BufferArray>(
     new (length: number): TBuffer
   }
 
-  const getConfig = (): ReadConfig =>
+  const getConfig = () =>
     mergeProps(
       {
         internalFormat: 'R32F',
@@ -73,8 +66,7 @@ export const createComputation = function <TBuffer extends BufferArray>(
         width: input().length,
         height: 1,
         dataType: 'FLOAT',
-        output,
-      },
+      } as const,
       getTextureConfigFromTypedArray(input()),
       config
     )
@@ -90,7 +82,7 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
     uniform.sampler2D(input, getConfig())
   )}} void main(){outColor = compute();}`
 
-  const program = createProgram({
+  const program = new GLProgram({
     canvas: computationCanvas,
     vertex: vertex(),
     fragment: fragment(),
@@ -115,7 +107,7 @@ precision highp float; out vec4 outColor; vec4 compute(){${callback(
 
   return () => {
     updateOutput()
-    clear(program).render()
-    return read(program, getConfig())
+    program.clear().render()
+    return program.read(output, getConfig())
   }
 }

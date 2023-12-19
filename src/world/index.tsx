@@ -8,8 +8,14 @@ import {
   splitProps,
   useContext,
 } from 'solid-js'
-import { attribute, glsl, uniform } from '..'
-import { Program, Stack, useSignalGL } from '../components'
+import {
+  Program,
+  Stack,
+  attribute,
+  glsl,
+  uniform,
+  useSignalGL,
+} from '../core/components'
 
 type Vector3 = [number, number, number]
 type Pose = {

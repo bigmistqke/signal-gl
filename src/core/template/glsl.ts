@@ -121,12 +121,12 @@ export const glsl = function <T extends TemplateValue[]>(
       gl,
       program,
       addToRenderQueue,
-      render,
+      requestRender,
     }: {
       gl: WebGL2RenderingContext
       program: WebGLProgram
       addToRenderQueue: AddToRenderQueue
-      render: () => void
+      requestRender: () => void
     }) => {
       gl.useProgram(program)
 
@@ -138,8 +138,7 @@ export const glsl = function <T extends TemplateValue[]>(
               gl,
               program,
               addToRenderQueue,
-              effect: glsl.effect,
-              render,
+              requestRender,
             })
           case 'sampler2D':
           case 'isampler2D':
@@ -148,15 +147,14 @@ export const glsl = function <T extends TemplateValue[]>(
               gl,
               program,
               addToRenderQueue,
-              effect: glsl.effect,
-              render,
+              requestRender,
             })
           case 'shader':
             return token.bind({
               gl,
               program,
               addToRenderQueue: addToRenderQueue,
-              render,
+              requestRender,
             })
           case 'uniform':
             return bindUniformToken({ token, gl, program, addToRenderQueue })
@@ -175,8 +173,6 @@ export const glsl = function <T extends TemplateValue[]>(
     } as ShaderToken
   }
 }
-/** Stubbed effect. Overwrite this value to create bindings for other signal-implementations. */
-glsl.effect = (cb: () => void) => {}
 
 /* 
   COMPILATION BY SIGNAL-GL 

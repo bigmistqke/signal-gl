@@ -19,7 +19,7 @@
     "baseUrl": ".",
     "paths": {
       "@bigmistqke/signal-gl": ["./src"],
-      "@bigmistqke/signal-gl/world": ["./src/solid/world"],
+      "@bigmistqke/signal-gl/world": ["src/world"],
       "@core/*": ["./src/core/*"]
     }
   },

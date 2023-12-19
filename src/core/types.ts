@@ -137,7 +137,6 @@ export type TextureOptions = {
   format: Format
   height: number
   internalFormat: InternalFormat
-  type: 'float' | 'integer'
   width: number
 }
 
@@ -230,7 +229,7 @@ export type ShaderToken = {
     gl: WebGL2RenderingContext,
     program: WebGLProgram,
     addToRenderQueue: AddToRenderQueue,
-    render: () => void
+    requestRender: (name: string) => void
   }) => void
 }
 export type Token =

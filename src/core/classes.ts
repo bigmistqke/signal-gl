@@ -1,4 +1,4 @@
-import { mergeProps } from 'solid-js'
+import { createSignal, mergeProps } from 'solid-js'
 import { bindBufferToken } from './template/bindings'
 import { glsl } from './template/glsl'
 import { buffer } from './template/tokens'
@@ -89,14 +89,14 @@ type BaseProgramConfig = BaseConfig & {
   vertex: ShaderToken
 }
 
-export type ProgramConfig =
+export type GLProgramConfig =
   | ({ count: number } & BaseProgramConfig)
   | ({ indices: number[] | Uint16Array } & BaseProgramConfig)
 export type ProgramInstance = typeof GLProgram
 export class GLProgram extends Base {
-  config: ProgramConfig
+  config: GLProgramConfig
   program: WebGLProgram
-  constructor(_config: ProgramConfig) {
+  constructor(_config: GLProgramConfig) {
     super(_config)
     const config = mergeProps(
       {
@@ -159,7 +159,17 @@ export class GLProgram extends Base {
     this.renderQueue.set(location, fn), () => this.renderQueue.delete(location)
   )
 
+  private renderRequestSignal = createSignal(0)
+
+  private getRenderRequest = this.renderRequestSignal[0]
+  private setRenderRequest = this.renderRequestSignal[1]
+
+  requestRender = () => {
+    this.setRenderRequest((number) => (number + 1) % Number.MAX_SAFE_INTEGER)
+  }
+
   render = () => {
+    this.getRenderRequest()
     this.gl.useProgram(this.program)
 
     /* iterate through all uniforms/attributes and update them. */
@@ -220,14 +230,17 @@ const setProgramCache = ({
   }
 }
 
+type GLStackConfig = BaseConfig & { programs: GLProgram[] }
 export class GLStack extends Base {
-  programs: GLProgram[]
-  constructor(config: BaseConfig & { programs: GLProgram[] }) {
+  config: GLStackConfig
+  get programs() {
+    return this.config.programs
+  }
+  constructor(config: GLStackConfig) {
     super(config)
-    this.programs = config.programs
+    this.config = config
   }
   render() {
-    this.clear()
     this.programs.forEach((program) => program.render())
     return this
   }

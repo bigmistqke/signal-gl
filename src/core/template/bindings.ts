@@ -1,4 +1,4 @@
-import { mergeProps } from 'solid-js'
+import { createRenderEffect, mergeProps } from 'solid-js'
 import type {
   AddToRenderQueue,
   AttributeProxy,
@@ -24,6 +24,7 @@ type BindUniformTokenConfig = {
   gl: WebGL2RenderingContext
   program: WebGLProgram
   addToRenderQueue: AddToRenderQueue
+  requestRender: () => void
 }
 
 export const bindUniformToken = ({
@@ -45,24 +46,21 @@ type bindAttributeTokenConfig = {
   gl: WebGL2RenderingContext
   program: WebGLProgram
   addToRenderQueue: AddToRenderQueue
-  effect: (cb: () => void) => void
-  render: () => void
+  requestRender: () => void
 }
 export const bindAttributeToken = ({
   token,
   gl,
   program,
   addToRenderQueue,
-  effect,
-  render,
+  requestRender,
 }: bindAttributeTokenConfig) => {
   const location = gl.getAttribLocation(program, token.name)
   bindBufferToken({
     token: token.buffer,
     gl,
     addToRenderQueue,
-    effect,
-    render,
+    requestRender,
     cb: () => {
       gl.enableVertexAttribArray(location)
       gl.vertexAttribPointer(
@@ -81,8 +79,7 @@ type BindBufferTokenConfig = {
   token: BufferToken
   gl: WebGL2RenderingContext
   addToRenderQueue: AddToRenderQueue
-  effect: (cb: () => void) => void
-  render: () => void
+  requestRender: () => void
   cb?: (buffer: WebGLBuffer) => void
 }
 /**
@@ -92,21 +89,19 @@ export const bindBufferToken = ({
   token,
   gl,
   addToRenderQueue,
-  effect,
-  render,
+  requestRender,
   cb,
 }: BindBufferTokenConfig) => {
   const buffer = gl.createBuffer()!
   addToRenderQueue(token.name, () => {
     gl.bindBuffer(gl[token.options.target], buffer)
-    gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
     cb?.(buffer)
   })
-  effect(() => {
+  createRenderEffect(() => {
     gl.bindBuffer(gl[token.options.target], buffer)
     gl.bufferData(gl[token.options.target], token.value, gl.STATIC_DRAW)
     gl.finish()
-    render()
+    requestRender()
   })
 }
 
@@ -115,16 +110,14 @@ type BindSampler2DTokenConfig = {
   gl: WebGL2RenderingContext
   program: WebGLProgram
   addToRenderQueue: AddToRenderQueue
-  effect: (cb: () => void) => void
-  render: () => void
+  requestRender: () => void
 }
 export const bindSampler2DToken = ({
   token,
   gl,
   program,
   addToRenderQueue,
-  effect,
-  render,
+  requestRender,
 }: BindSampler2DTokenConfig) => {
   // create texture
   const texture = gl.createTexture()
@@ -143,12 +136,12 @@ export const bindSampler2DToken = ({
     } as const,
     token.options
   )
-  // render-loop
+  // requestRender-loop
   addToRenderQueue(token.name, () => {
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`])
     gl.bindTexture(gl.TEXTURE_2D, texture)
   })
-  effect(() => {
+  createRenderEffect(() => {
     const {
       format,
       width,
@@ -181,6 +174,6 @@ export const bindSampler2DToken = ({
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl[wrapT])
     // Bind the texture to the uniform sampler
     gl.uniform1i(gl.getUniformLocation(program, token.name), token.textureIndex)
-    render()
+    requestRender()
   })
 }
