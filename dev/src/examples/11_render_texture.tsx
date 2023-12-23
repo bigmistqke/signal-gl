@@ -1,9 +1,10 @@
 import {
+  Canvas,
   GLRenderTexture,
+  GLTexture,
   Program,
   RenderTexture,
   ShaderToken,
-  Stack,
   attribute,
   glsl,
   uniform,
@@ -46,6 +47,18 @@ const Cube: Component<{
     ])
   )
 
+  const a_uv = attribute.vec2(
+    // prettier-ignore
+    new Float32Array([
+    0, 0,   1, 0,   1, 1,   0, 1,  // Front face
+    0, 0,   1, 0,   1, 1,   0, 1,  // Back face
+    0, 0,   1, 0,   1, 1,   0, 1,  // Top face
+    0, 0,   1, 0,   1, 1,   0, 1,  // Bottom face
+    0, 0,   1, 0,   1, 1,   0, 1,  // Right face
+    0, 0,   1, 0,   1, 1,   0, 1,  // Left face
+  ])
+  )
+
   const a_colors = attribute.vec3(
     // prettier-ignore
     new Float32Array([
@@ -81,9 +94,7 @@ const Cube: Component<{
   ]
 
   const render = () => {
-    if (props.rotate) {
-      setModelView((matrix) => mat4.rotate(matrix, matrix, 0.05, [1, 1, 1]))
-    }
+    setModelView((matrix) => mat4.rotate(matrix, matrix, 0.05, [1, 1, 1]))
     requestAnimationFrame(render)
   }
   render()
@@ -94,11 +105,11 @@ const Cube: Component<{
         vertex={
           glsl`#version 300 es
           precision mediump float;
-          out vec3 color_in;
-          out vec4 coord;
+          out vec3 color;
+          out vec2 uv;
           void main(void) {
-            color_in = ${a_colors};
-            coord = vec4(${a_positions}, 1.);
+            color = ${a_colors};
+            uv = ${a_uv};
             gl_Position = ${uniform.mat4(props.projection)} * ${uniform.mat4(modelView)} * vec4(${a_positions}, 1.);
           }`
         }
@@ -106,10 +117,10 @@ const Cube: Component<{
           props.fragment ||
           glsl`#version 300 es
         precision mediump float;
-        in vec3 color_in;
-        out vec4 color_out;
+        in vec3 color;
+        out vec4 result;
         void main(void) {
-          color_out = vec4(color_in, 1.);
+          result = vec4(color, 1.);
         }`
         }
         mode="TRIANGLES"
@@ -125,9 +136,6 @@ function App() {
   const [projection, setProjection] = createSignal(mat4.create(), {
     equals: false,
   })
-  const [texture, setTexture] = createSignal<GLRenderTexture>(null!, {
-    equals: false,
-  })
   const onResize = () => {
     setProjection(
       mat4.perspective(
@@ -140,28 +148,28 @@ function App() {
     )
   }
 
+  const [texture, setTexture] = createSignal<GLTexture>(null!, {
+    equals: false,
+  })
   const tex = uniform.sampler2D(texture)
 
   return (
-    <Stack ref={setCanvas} onResize={onResize}>
-      <RenderTexture onTextureUpdate={setTexture}>
-        <Cube projection={projection()} position={[0, 0, -5]} rotate />
+    <Canvas ref={setCanvas} onResize={onResize}>
+      <RenderTexture onTextureUpdate={setTexture} passthrough>
+        <Cube projection={projection()} position={[0, 0, -10]} />
       </RenderTexture>
       <Cube
         projection={projection()}
-        position={[0, 0, -5]}
-        texture={texture()}
-        rotate
+        position={[0, -2, -5]}
         fragment={glsl`#version 300 es
         precision highp float;
-        in vec3 color_in;
-        in vec4 coord;
-        out vec4 color_out;
+        in vec2 uv;
+        out vec4 result;
         void main(void) {
-          color_out = texture(${tex}, mod(coord.xy, 1.0)) + texture(${tex}, mod(coord.yz, 1.0)) + texture(${tex}, mod(coord.zx, 1.0)) + vec4(0.125, 0., 0.25, 1.0);
+          result = texture(${tex}, mod(uv, 1.0)) + vec4(0.125, 0., 0.25, 1.0);
         }`}
       />
-    </Stack>
+    </Canvas>
   )
 }
 

@@ -5,10 +5,7 @@ import solidPlugin from 'vite-plugin-solid'
 export default defineConfig({
   resolve: {
     alias: {
-      '@bigmistqke/signal-gl/world': path.resolve(
-        __dirname,
-        '../src/solid/world'
-      ),
+      '@bigmistqke/signal-gl/world': path.resolve(__dirname, '../src/world'),
       '@bigmistqke/signal-gl': path.resolve(__dirname, '../src'),
       '@core': path.resolve(__dirname, '../src/core'),
     },

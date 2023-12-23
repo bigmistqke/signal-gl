@@ -1,4 +1,4 @@
-import { Program, Stack } from '@bigmistqke/signal-gl'
+import { Canvas, Program } from '@bigmistqke/signal-gl'
 import { attribute, glsl, uniform } from '@core/template'
 import { mat4 } from 'gl-matrix'
 import { createEffect, createSignal, untrack } from 'solid-js'
@@ -152,7 +152,7 @@ void main(void) {
 `
 
   return (
-    <Stack ref={setCanvas}>
+    <Canvas ref={setCanvas}>
       <Program
         ref={setCanvas}
         vertex={vsSource}
@@ -160,7 +160,7 @@ void main(void) {
         mode="TRIANGLES"
         count={36}
       />
-    </Stack>
+    </Canvas>
   )
 }
 

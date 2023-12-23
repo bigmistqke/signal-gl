@@ -1,24 +1,25 @@
+import { mat2, mat3, mat4 } from 'gl-matrix';
 import * as solid_js from 'solid-js';
-import { Accessor as Accessor$1, ComponentProps } from 'solid-js';
+import { Component, ParentProps, ComponentProps, Setter, Accessor as Accessor$1 } from 'solid-js';
 
 type Accessor<T> = () => T;
 type ValueOf<T extends Record<string, any>> = T[keyof T];
 type IsUnion<T, B = T> = T extends T ? [B] extends [T] ? false : true : never;
 type Check<T, U extends any[]> = T extends U[number] ? true : false;
+type TupleOf<T = number, N = 1, Acc extends T[] = []> = Acc['length'] extends N ? Acc : TupleOf<T, N, [T, ...Acc]>;
+type MatrixOf<T = number, N = 1> = TupleOf<TupleOf<T, N>, N>;
 declare const error: unique symbol;
 type GLSLError<T> = {
     [error]: T;
 };
-type UniformSetter = 'uniform1f' | 'uniform1i' | 'uniform2fv' | 'uniform2iv' | 'uniform3fv' | 'uniform3iv' | 'uniform4fv' | 'uniform4iv';
-type OnRenderFunction = (location: WebGLUniformLocation | number, fn: () => void) => () => void;
-type VariableOptionsBase = {
-    name?: string;
-};
+type UniformSetter = 'uniform1f' | 'uniform1i' | 'uniform1i' | 'uniform1fv' | 'uniform1iv' | 'uniform1iv' | 'uniform2fv' | 'uniform2iv' | 'uniform3fv' | 'uniform3iv' | 'uniform4fv' | 'uniform4iv' | 'uniformMatrix2fv' | 'uniformMatrix3fv' | 'uniformMatrix4fv';
+type RenderMode = 'TRIANGLES' | 'LINES' | 'POINTS' | 'TRIANGLE_FAN' | 'TRIANGLE_STRIP' | 'LINE_STRIP' | 'LINE_LOOP';
+type AddToRenderQueue = (location: WebGLUniformLocation | number, fn: () => void) => () => void;
 /** VALID TYPED_ARRAY TYPES */
-type Buffer = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Int32Array | Float32Array;
-type IntBuffer = Int8Array | Int16Array | Int32Array;
+type BufferArray = Uint8Array | Uint16Array | Uint32Array | Int8Array | Int16Array | Int32Array | Float32Array;
+type IntBufferArray = Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array;
 type TemplateValue = ReturnType<ValueOf<AttributeProxy>> | ReturnType<ValueOf<UniformProxy>> | string | Accessor<ShaderToken>;
-type Variable<TTokenType extends string, TDataType extends string, TValueDefault extends any, TTOptionsDefault = unknown> = <const TValue extends TValueDefault, const TTOptions extends TTOptionsDefault>(value: Accessor<TValue> | TValue, options?: TTOptions) => {
+type Variable<TTokenType extends string, TDataType extends string, TValueDefault extends any, TTOptionsDefault = unknown> = <const TValue extends TValueDefault, const TTOptions extends TTOptionsDefault>(value: Accessor<TValue> | TValue, options?: Partial<TTOptions>) => {
     name: string;
     dataType: TDataType;
     tokenType: TTokenType;
@@ -29,68 +30,81 @@ type UniformProxy = {
     float: Variable<'uniform', 'float', number>;
     int: Variable<'uniform', 'int', number>;
     bool: Variable<'uniform', 'bool', boolean>;
-    vec2: Variable<'uniform', 'vec2', [number, number]>;
-    ivec2: Variable<'uniform', 'ivec2', [number, number]>;
-    bvec2: Variable<'uniform', 'bvec2', [boolean, boolean]>;
-    vec3: Variable<'uniform', 'vec3', [number, number, number]>;
-    ivec3: Variable<'uniform', 'ivec3', [number, number, number]>;
-    bvec3: Variable<'uniform', 'bvec3', [boolean, boolean, boolean]>;
-    vec4: Variable<'uniform', 'vec4', [number, number, number, number]>;
-    ivec4: Variable<'uniform', 'ivec4', [number, number, number, number]>;
-    bvec4: Variable<'uniform', 'bvec4', [boolean, boolean, boolean, boolean]>;
-    sampler2D: Variable<'sampler2D', 'sampler2D', ArrayBufferView, Sampler2DOptions>;
+    vec2: Variable<'uniform', 'vec2', TupleOf<number, 2> | BufferArray>;
+    ivec2: Variable<'uniform', 'ivec2', TupleOf<number, 2> | BufferArray>;
+    bvec2: Variable<'uniform', 'bvec2', TupleOf<number, 2> | BufferArray>;
+    vec3: Variable<'uniform', 'vec3', TupleOf<number, 3> | BufferArray>;
+    ivec3: Variable<'uniform', 'ivec3', TupleOf<number, 3> | BufferArray>;
+    bvec3: Variable<'uniform', 'bvec3', TupleOf<number, 3> | BufferArray>;
+    vec4: Variable<'uniform', 'vec4', TupleOf<number, 4> | BufferArray>;
+    ivec4: Variable<'uniform', 'ivec4', TupleOf<number, 4> | BufferArray>;
+    bvec4: Variable<'uniform', 'bvec4', TupleOf<number, 4> | BufferArray>;
+    mat2: Variable<'uniform', 'mat2', TupleOf<number, 16> | BufferArray | mat2>;
+    mat3: Variable<'uniform', 'mat3', TupleOf<number, 9> | BufferArray | mat3>;
+    mat4: Variable<'uniform', 'mat4', TupleOf<number, 16> | BufferArray | mat4>;
+    sampler2D: Variable<'sampler2D', 'sampler2D', ArrayBufferView | GLRenderTexture, Sampler2DOptions>;
     isampler2D: Variable<'isampler2D', 'isampler2D', ArrayBufferView, Sampler2DOptions>;
+    samplerCube: Variable<'samplerCube', 'samplerCube', ArrayBufferView, Sampler2DOptions>;
 };
 type UniformParameters = Parameters<UniformProxy[keyof UniformProxy]>;
 type UniformReturnType = ReturnType<ValueOf<UniformProxy>>;
-type Sampler2DOptions = VariableOptionsBase & {
-    dataType?: DataType;
-    width?: number;
-    height?: number;
-    type?: 'float' | 'integer';
-    format?: Format;
-    internalFormat?: InternalFormat;
-    wrapS?: 'CLAMP_TO_EDGE';
-    wrapT?: 'CLAMP_TO_EDGE';
-    magFilter?: 'NEAREST' | 'LINEAR';
-    minFilter?: 'NEAREST' | 'LINEAR';
-    border?: number;
+type Sampler2DOptions = TextureOptions & {
+    border: number;
+    magFilter: 'NEAREST' | 'LINEAR';
+    minFilter: 'NEAREST' | 'LINEAR';
+    wrapS: 'CLAMP_TO_EDGE';
+    wrapT: 'CLAMP_TO_EDGE';
 };
-type AttributeOptions = VariableOptionsBase & {
-    target?: 'ARRAY_BUFFER' | 'ELEMENT_ARRAY_BUFFER' | 'COPY_READ_BUFFER' | 'COPY_WRITE_BUFFER' | 'TRANSFORM_FEEDBACK_BUFFER' | 'UNIFORM_BUFFER' | 'PIXEL_PACK_BUFFER' | 'PIXEL_UNPACK_BUFFER';
+type TextureOptions = {
+    dataType: DataType;
+    format: Format;
+    height: number;
+    internalFormat: InternalFormat;
+    width: number;
+};
+type AttributeOptions = {
+    stride: number;
+    offset: number;
 };
 type AttributeProxy = {
-    float: Variable<'attribute', 'float', Buffer, AttributeOptions>;
-    int: Variable<'attribute', 'int', IntBuffer, AttributeOptions>;
-    bool: Variable<'attribute', 'bool', IntBuffer, AttributeOptions>;
-    vec2: Variable<'attribute', 'vec2', Buffer, AttributeOptions>;
-    ivec2: Variable<'attribute', 'ivec2', IntBuffer, AttributeOptions>;
-    bvec2: Variable<'attribute', 'bvec2', IntBuffer, AttributeOptions>;
-    vec3: Variable<'attribute', 'vec3', Buffer, AttributeOptions>;
-    ivec3: Variable<'attribute', 'ivec3', IntBuffer, AttributeOptions>;
-    bvec3: Variable<'attribute', 'bvec3', IntBuffer, AttributeOptions>;
-    vec4: Variable<'attribute', 'vec4', Buffer, AttributeOptions>;
-    ivec4: Variable<'attribute', 'ivec4', IntBuffer, AttributeOptions>;
-    bvec4: Variable<'attribute', 'bvec4', IntBuffer, AttributeOptions>;
+    float: Variable<'attribute', 'float', BufferArray, AttributeOptions>;
+    int: Variable<'attribute', 'int', IntBufferArray, AttributeOptions>;
+    vec2: Variable<'attribute', 'vec2', BufferArray, AttributeOptions>;
+    ivec2: Variable<'attribute', 'ivec2', IntBufferArray, AttributeOptions>;
+    vec3: Variable<'attribute', 'vec3', BufferArray, AttributeOptions>;
+    ivec3: Variable<'attribute', 'ivec3', IntBufferArray, AttributeOptions>;
+    vec4: Variable<'attribute', 'vec4', BufferArray, AttributeOptions>;
+    ivec4: Variable<'attribute', 'ivec4', IntBufferArray, AttributeOptions>;
 };
 type AttributeParameters = Parameters<AttributeProxy[keyof AttributeProxy]>;
 type AttributeReturnType = ReturnType<ValueOf<AttributeProxy>>;
+type BufferOptions = {
+    name?: string;
+    target: 'ARRAY_BUFFER' | 'ELEMENT_ARRAY_BUFFER' | 'COPY_READ_BUFFER' | 'COPY_WRITE_BUFFER' | 'TRANSFORM_FEEDBACK_BUFFER' | 'UNIFORM_BUFFER' | 'PIXEL_PACK_BUFFER' | 'PIXEL_UNPACK_BUFFER';
+};
+interface BufferToken {
+    name: string;
+    value: BufferArray;
+    tokenType: 'buffer';
+    options: BufferOptions;
+}
 interface TokenBase {
     dataType: keyof UniformProxy | keyof AttributeProxy;
-    options: VariableOptionsBase;
     name: string;
-    value: any;
 }
 interface AttributeToken extends TokenBase {
-    size: number;
     tokenType: 'attribute';
+    size: number;
     options: AttributeOptions;
+    buffer: BufferToken;
 }
 interface UniformToken extends TokenBase {
+    value: any;
     functionName: UniformSetter;
     tokenType: 'uniform';
 }
 interface Sampler2DToken extends TokenBase {
+    value: BufferArray;
     options: Sampler2DOptions;
     textureIndex: number;
     tokenType: 'sampler2D' | 'isampler2D';
@@ -100,6 +114,13 @@ type ScopedVariableToken = {
     tokenType: 'scope';
 };
 type ShaderToken = {
+    bind: (config: {
+        gl: WebGL2RenderingContext;
+        program: WebGLProgram;
+        addToRenderQueue: AddToRenderQueue;
+        requestRender: (name: string) => void;
+    }) => void;
+    name: string;
     source: {
         code: string;
         parts: {
@@ -111,7 +132,6 @@ type ShaderToken = {
     };
     template: TemplateStringsArray;
     tokenType: 'shader';
-    bind: (gl: WebGL2RenderingContext, program: WebGLProgram, onRender: OnRenderFunction, render: () => void) => void;
 };
 type Token = ShaderToken | ScopedVariableToken | AttributeToken | UniformToken | Sampler2DToken;
 type FormatWebGL = 'RGBA' | 'RGB' | 'ALPHA' | 'LUMINANCE' | 'LUMINANCE_ALPHA' | 'DEPTH_COMPONENT' | 'DEPTH_STENCIL';
@@ -122,118 +142,155 @@ type InternalFormatWebGL2 = 'R8' | 'R8_SNORM' | 'R8UI' | 'R8I' | 'R16UI' | 'R16I
 type InternalFormat = InternalFormatWebGL | InternalFormatWebGL2;
 type DataType = 'UNSIGNED_BYTE' | 'BYTE' | 'UNSIGNED_SHORT' | 'SHORT' | 'UNSIGNED_INT' | 'INT' | 'FLOAT' | 'HALF_FLOAT';
 type Computation = (u_buffer: ReturnType<UniformProxy['sampler2D']>) => Accessor<ShaderToken>;
+type Vector2 = TupleOf<number, 2>;
+type Vector3 = TupleOf<number, 3>;
+type Vector4 = TupleOf<number, 4>;
 
-type StackConfig = {
-    canvas: HTMLCanvasElement;
-    programs: ReturnType<typeof createProgram>[];
-    extensions?: {
-        /** default true */
-        float?: boolean;
-        /** default false */
-        half_float?: boolean;
-    };
-};
-type StackToken = StackConfig & {
-    ctx: WebGL2RenderingContext;
-    render: () => void;
-};
-/**
- * Returns `ComposerToken`.
- * @param config `ComposerConfig`
- * @returns `ComposerToken`
- */
-declare const createStack: (config: StackConfig) => StackToken;
-declare const IS_PROGRAM: unique symbol;
-type CreateProgramConfig = {
-    canvas: HTMLCanvasElement;
+type BaseConfig = {
+    canvas: HTMLCanvasElement | OffscreenCanvas;
     cacheEnabled?: boolean;
-    count: number;
     first?: number;
-    fragment: ShaderToken;
-    mode: 'TRIANGLES' | 'LINES' | 'POINTS';
-    vertex: ShaderToken;
+    /** default TRIANGLES */
+    mode?: RenderMode;
+    offset?: number;
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
 };
-type ProgramToken = CreateProgramConfig & {
-    program: WebGLProgram;
-    ctx: WebGL2RenderingContext;
-    render: () => void;
-    [IS_PROGRAM]: true;
+declare class Base {
+    gl: WebGL2RenderingContext;
+    canvas: HTMLCanvasElement | OffscreenCanvas;
+    constructor(config: BaseConfig);
+    render(): this;
+    clear(): this;
+    autosize(onResize?: (token: Base) => void): this;
+    read(output: BufferArray, config: Partial<TextureOptions>): BufferArray;
+}
+type BaseProgramConfig = BaseConfig & {
+    fragment: ShaderToken;
+    vertex: ShaderToken;
 };
-/**
- * Returns `ProgramToken`. Manages `WebGLProgram` of given vertex- and fragment- `glsl` shaders.
- * @param config
- * @returns
- */
-declare const createProgram: (config: CreateProgramConfig) => ProgramToken;
+type GLProgramConfig = ({
+    count: number;
+} & BaseProgramConfig) | ({
+    indices: number[] | Uint16Array;
+} & BaseProgramConfig);
+type ProgramInstance = typeof GLProgram;
+declare class GLProgram extends Base {
+    config: GLProgramConfig;
+    program: WebGLProgram;
+    constructor(_config: GLProgramConfig);
+    renderQueue: Map<WebGLUniformLocation | number, () => void>;
+    addToRenderQueue: (location: WebGLUniformLocation | number, fn: () => void) => () => boolean;
+    private renderRequestSignal;
+    private getRenderRequest;
+    private setRenderRequest;
+    requestRender: () => void;
+    render: () => this;
+}
 /** Checks if a given value is a `ProgramToken` */
-declare const isProgramToken: (value: any) => value is ProgramToken;
+declare const isGLProgram: (value: any) => value is GLProgram;
 /** Filters `any` for `ProgramTokens`. Returns `ProgramToken[]` */
-declare const filterProgramTokens: (value: any) => ProgramToken[];
-/**
- * Utility-function to automatically update `GLToken['canvas'] | ProgramToken['canvas']` width/height on resize.
- * @param gl
- * @returns void
- */
-declare const autosize: ({ canvas, ctx, render, }: StackToken | ProgramToken) => void;
-/**
- * Utility-function to clear canvas with sensible defaults.
- * @param `GLToken | ProgramToken`
- * @returns void
- */
-declare const clear: ({ ctx }: StackToken | ProgramToken) => void;
+declare const filterGLPrograms: (value: any) => GLProgram[];
+type GLStackConfig = BaseConfig & {
+    programs: GLProgram[];
+};
+declare class GLStack extends Base {
+    config: GLStackConfig;
+    get programs(): GLProgram[];
+    constructor(config: GLStackConfig);
+    render(): this;
+}
+declare class GLRenderTextureStack extends GLStack {
+    texture: GLRenderTexture;
+    constructor(config: BaseConfig & {
+        programs: GLProgram[];
+        color?: boolean;
+        depth?: boolean;
+    } & Partial<RenderTextureConfig>);
+    render(): this;
+}
+declare class UtilityBase<T> {
+    gl: WebGL2RenderingContext;
+    config: Partial<T>;
+    constructor(gl: WebGL2RenderingContext, config?: Partial<T>);
+}
+type RenderTextureConfig = RenderBufferConfig & {
+    format: Format;
+    dataType: DataType;
+};
+declare class GLRenderTexture extends UtilityBase<RenderBufferConfig & {
+    format: Format;
+    dataType: DataType;
+}> {
+    renderBuffer: GLRenderBuffer;
+    texture: WebGLTexture;
+    constructor(gl: WebGL2RenderingContext, config?: Partial<RenderBufferConfig & {
+        format: Format;
+        dataType: DataType;
+    }>);
+    activate(): void;
+    deactivate(): void;
+}
 type RenderBufferConfig = {
     internalFormat: InternalFormat;
     width: number;
     height: number;
+    color: boolean;
+    depth: boolean;
 };
-/**
- * Utility-function to set renderBuffer of a `GLToken['context'] | ProgramToken['context']`.
- * @param gl
- * @param {RenderBufferConfig} config
- * @returns `typeof config.output`
- */
-declare const renderBuffer: ({ ctx }: StackToken | ProgramToken, { internalFormat, width, height }: RenderBufferConfig) => void;
-type ReadConfig = {
-    width?: number;
-    height?: number;
-    internalFormat?: InternalFormat;
-    format?: Format;
-    dataType?: DataType;
-    output: Buffer;
+declare class GLRenderBuffer extends UtilityBase<RenderBufferConfig> {
+    framebuffer: WebGLFramebuffer;
+    depthbuffer: WebGLFramebuffer;
+    colorbuffer: WebGLRenderbuffer;
+    constructor(gl: WebGL2RenderingContext, config?: Partial<RenderBufferConfig>);
+    activate(): this;
+    deactivate(): void;
+}
+
+declare const useSignalGL: () => {
+    canvas: HTMLCanvasElement;
+    gl: WebGL2RenderingContext;
+    onRender: (callback: () => void) => () => void;
+    onResize: (callback: () => void) => () => void;
+} | undefined;
+type StackProps = {
+    onRender?: () => void;
+    onResize?: (token: GLStack) => void;
+    onProgramCreate?: () => void;
+    clear?: boolean | ((gl: GLStack) => void);
+    animate?: boolean | number;
 };
-/**
- * Utility-function to read the pixel-data of a `GLToken['context']`.
- * @param token
- * @param {ReadConfig} config
- * @returns `typeof config.output`
- */
-declare const read: (token: StackToken | ProgramToken, config?: ReadConfig) => Buffer;
-type ComputationConfig = {
-    /** _Uint8Array_ `UNSIGNED_BYTE` _Float32Array_ `FLOAT` _default_ `FLOAT` */
-    dataType?: DataType;
-    /** _default_ input.length */
-    width?: number;
-    /** _default_ 1 */
-    height?: number;
-    /**  _Uint8Array_ `R8` _Float32Array_ `R32F` _default_ `R32F` */
-    internalFormat?: InternalFormat;
-    /** _Uint8Array_ `RED` _Float32Array_ `RED` _default_ `RED` */
-    format?: Format;
-};
-/**
- * currently fully supported: `Uint8Array` and `Float32Array`
- * @param input _required_ () => Buffer
- * @param callback _required_ glsl-lambda: expects a `vec2` to be returned
- * @param config _optional_
- * @param config.width _default_ input.length
- * @param config.height _default_ 1
- * @param config.dataType _Uint8Array_ `UNSIGNED_BYTE` _Float32Array_ `FLOAT` _default_ `FLOAT`
- * @param config.format _Uint8Array_ `RED` _Float32Array_ `RED` _default_ `RED`
- * @param config.internalFormat _Uint8Array_ `R8` _Float32Array_ `R32F` _default_ `R32F`
- * @returns TBuffer
- */
-declare const createComputation: <TBuffer extends Buffer>(input: Accessor$1<TBuffer>, callback: (uniform: ReturnType<UniformProxy['sampler2D']>) => Accessor$1<ShaderToken>, config?: ComputationConfig) => () => Buffer;
+type CanvasProps = ComponentProps<'canvas'> & StackProps;
+/** Root-element containing `<canvas/>` and `GLStack`. */
+declare const Stack: (props: CanvasProps) => solid_js.JSX.Element;
+interface ProgramPropsBase {
+    fragment: ShaderToken;
+    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
+    ref?: Setter<HTMLCanvasElement>;
+    vertex: ShaderToken;
+    buffer?: any;
+    /**
+     * default "TRIANGLES"
+     */
+    mode?: RenderMode;
+    /**
+     * @unstable
+     * ⚠️ Caching can cause issues when used in combination with dynamic and/or conditional glsl-snippets. Only enable cache when generated source is static. ⚠️
+     */
+    cacheEnabled?: boolean;
+}
+interface ArrayProgramProps extends ProgramPropsBase {
+    count: number;
+}
+interface ElementProgramProps extends ProgramPropsBase {
+    indices: number[] | Uint16Array;
+}
+type ProgramProps = ArrayProgramProps | ElementProgramProps;
+/** JSX-wrapper around `GLProgram`. */
+declare const Program: (props: ProgramProps) => solid_js.JSX.Element;
+/** JSX-wrapper around `GLRenderTextureStack`. */
+declare const RenderTexture: Component<ParentProps<StackProps> & {
+    onTextureUpdate: (texture: GLRenderTexture) => void;
+}>;
 
 type ShouldNotUnion<T> = Check<T, [
     UniformReturnType,
@@ -246,27 +303,25 @@ type CheckTemplateValues<T extends any[]> = {
 /**
  * Tag template literal to compose glsl-shaders.
  */
-declare const glsl: {
-    <T extends TemplateValue[]>(template: TemplateStringsArray, ...holes: CheckTemplateValues<T>): () => ShaderToken;
-    /** Stubbed effect. Overwrite this value to create bindings for other signal-implementations. */
-    effect(cb: () => void): void;
+declare const glsl: <T extends TemplateValue[]>(template: TemplateStringsArray, ...holes: CheckTemplateValues<T>) => ShaderToken;
+declare const compileStrings: (strings: TemplateStringsArray, tokens: Token[]) => {
+    code: string;
+    parts: {
+        version: string | undefined;
+        precision: string;
+        variables: string;
+        body: string | undefined;
+    };
+} | {
+    code: string;
+    parts: {
+        version: string | undefined;
+        variables: string;
+        body: string | undefined;
+        precision?: undefined;
+    };
 };
-/**
- * template-helper to inject uniform into `glsl`
- * @example
- *
- * ```ts
- * // dynamic
- * const [color] = createSignal([0, 1, 2])
- * glsl`
- *  vec3 color = ${uniform.vec3(color)};
- * `
- * // static
- * glsl`
- *  vec3 color = ${uniform.vec3([0, 1, 2])};
- * `
- * ```
- * */
+
 declare const uniform: UniformProxy;
 /**
  * template-helper to inject attribute into `glsl`
@@ -291,25 +346,6 @@ declare const uniform: UniformProxy;
  * ```
  * */
 declare const attribute: AttributeProxy;
+declare const buffer: (value: BufferArray | Accessor$1<BufferArray>, options: BufferOptions) => BufferToken;
 
-type GLProps = ComponentProps<'canvas'> & {
-    onProgramCreate?: () => void;
-    clear?: boolean | ((gl: StackToken) => void);
-    animate?: boolean | number;
-};
-declare const Stack: (props: GLProps) => solid_js.JSX.Element;
-type ProgramProps = {
-    count: number;
-    fragment: Accessor$1<ShaderToken>;
-    vertex: Accessor$1<ShaderToken>;
-    onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
-    mode: 'TRIANGLES' | 'POINTS' | 'LINES';
-    /**
-     * @unstable
-     * ⚠️ Caching can cause issues when used in combination with dynamic and/or conditional glsl-snippets. Only enable cache when generated source is static. ⚠️
-     */
-    cacheEnabled?: boolean;
-};
-declare const Program: (props: ProgramProps) => solid_js.JSX.Element;
-
-export { type Accessor, type AttributeOptions, type AttributeParameters, type AttributeProxy, type AttributeReturnType, type AttributeToken, type Buffer, type Check, type Computation, type DataType, type Format, type GLSLError, type InternalFormat, type IsUnion, type OnRenderFunction, Program, type ProgramToken, type Sampler2DOptions, type Sampler2DToken, type ScopedVariableToken, type ShaderToken, Stack, type StackToken, type TemplateValue, type Token, type UniformParameters, type UniformProxy, type UniformReturnType, type UniformSetter, type UniformToken, type ValueOf, type VariableOptionsBase, attribute, autosize, clear, createComputation, createProgram, createStack, filterProgramTokens, glsl, isProgramToken, read, renderBuffer, uniform };
+export { type Accessor, type AddToRenderQueue, type AttributeOptions, type AttributeParameters, type AttributeProxy, type AttributeReturnType, type AttributeToken, type BufferArray, type BufferOptions, type BufferToken, type Check, type Computation, type DataType, type Format, GLProgram, type GLProgramConfig, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, type GLSLError, GLStack, type InternalFormat, type IsUnion, type MatrixOf, Program, type ProgramInstance, type RenderMode, RenderTexture, type Sampler2DOptions, type Sampler2DToken, type ScopedVariableToken, type ShaderToken, Stack, type TemplateValue, type TextureOptions, type Token, type TupleOf, type UniformParameters, type UniformProxy, type UniformReturnType, type UniformSetter, type UniformToken, type ValueOf, type Vector2, type Vector3, type Vector4, attribute, buffer, compileStrings, filterGLPrograms, glsl, isGLProgram, uniform, useSignalGL };

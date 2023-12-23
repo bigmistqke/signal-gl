@@ -1,7 +1,7 @@
 import {
+  Canvas,
   Program,
   ShaderToken,
-  Stack,
   attribute,
   glsl,
   uniform,
@@ -58,7 +58,7 @@ function App() {
     }`
 
   return (
-    <Stack
+    <Canvas
       style={{
         width: '100vw',
         height: '100vh',
@@ -106,7 +106,7 @@ function App() {
           ])
         }
       />
-    </Stack>
+    </Canvas>
   )
 }
 

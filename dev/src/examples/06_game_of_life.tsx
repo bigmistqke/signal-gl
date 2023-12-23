@@ -2,7 +2,13 @@ import { createEffect } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
 import { render } from 'solid-js/web'
 
-import { Program, Stack, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
+import {
+  Canvas,
+  Program,
+  attribute,
+  glsl,
+  uniform,
+} from '@bigmistqke/signal-gl'
 
 type Matrix<T = any> = T[][]
 
@@ -39,9 +45,9 @@ function App() {
 `
 
   return (
-    <Stack>
+    <Canvas>
       <Program fragment={fragment} vertex={vertex} mode="TRIANGLES" count={6} />
-    </Stack>
+    </Canvas>
   )
 }
 

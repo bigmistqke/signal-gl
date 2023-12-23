@@ -1,4 +1,10 @@
-import { Program, Stack, attribute, glsl, uniform } from '@bigmistqke/signal-gl'
+import {
+  Canvas,
+  Program,
+  attribute,
+  glsl,
+  uniform,
+} from '@bigmistqke/signal-gl'
 import { mat4 } from 'gl-matrix'
 import { createSignal } from 'solid-js'
 import { render } from 'solid-js/web'
@@ -88,7 +94,7 @@ function App() {
   }
 
   return (
-    <Stack ref={setCanvas} onResize={onResize}>
+    <Canvas ref={setCanvas} onResize={onResize}>
       <Program
         // prettier-ignore
         vertex={
@@ -113,7 +119,7 @@ function App() {
         mode="TRIANGLES"
         indices={indices}
       />
-    </Stack>
+    </Canvas>
   )
 }
 

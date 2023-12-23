@@ -1,5 +1,5 @@
 import { mat2, mat3, mat4 } from "gl-matrix";
-import { GLRenderTexture } from "./classes";
+import { GLTexture } from "./classes";
 
 /* TYPE UTILITIES */
 export type Accessor<T> = () => T
@@ -107,7 +107,7 @@ export type UniformProxy = {
   sampler2D: Variable<
     'sampler2D',
     'sampler2D',
-    ArrayBufferView | GLRenderTexture,
+    ArrayBufferView | GLTexture,
     Sampler2DOptions
   >
   isampler2D: Variable<

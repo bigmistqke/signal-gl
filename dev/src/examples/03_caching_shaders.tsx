@@ -1,6 +1,6 @@
 import {
+  Canvas,
   Program,
-  Stack,
   attribute,
   glsl,
   uniform,
@@ -149,7 +149,7 @@ function App() {
    }`
 
   return (
-    <Stack
+    <Canvas
       style={{
         width: '100vw',
         height: '100vh',
@@ -170,7 +170,7 @@ function App() {
           )
         }}
       </Index>
-    </Stack>
+    </Canvas>
   )
 }
 

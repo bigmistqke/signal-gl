@@ -57,6 +57,7 @@ class Base {
       this.canvas.width = this.canvas.clientWidth
       this.canvas.height = this.canvas.clientHeight
       this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
+      this.clear()
       this.render()
       onResize?.(this)
     })
@@ -261,8 +262,8 @@ export class GLRenderTextureStack extends GLStack {
     this.texture = new GLRenderTexture(this.gl, config)
   }
   render() {
-    this.texture.activate()
     super.clear()
+    this.texture.activate()
     super.render()
     this.texture.deactivate()
     return this
@@ -283,10 +284,10 @@ type RenderTextureConfig = RenderBufferConfig & {
   format: Format
   dataType: DataType
 }
-export class GLRenderTexture extends UtilityBase<
+
+export class GLTexture extends UtilityBase<
   RenderBufferConfig & { format: Format; dataType: DataType }
 > {
-  renderBuffer: GLRenderBuffer
   texture: WebGLTexture
   constructor(
     gl: WebGL2RenderingContext,
@@ -295,18 +296,25 @@ export class GLRenderTexture extends UtilityBase<
     > = {}
   ) {
     super(gl, config)
-    this.renderBuffer = new GLRenderBuffer(gl, config)
     const texture = this.gl.createTexture()
-    if (!texture) throw 'unable to render texture'
+    if (!texture) throw 'unable to create texture'
     this.texture = texture
+  }
+}
+
+export class GLRenderTexture extends GLTexture {
+  renderBuffer: GLRenderBuffer
+  constructor(
+    gl: WebGL2RenderingContext,
+    config: Partial<
+      RenderBufferConfig & { format: Format; dataType: DataType }
+    > = {}
+  ) {
+    super(gl, config)
+    this.renderBuffer = new GLRenderBuffer(gl, config)
   }
 
   activate() {
-    if (!this.gl) {
-      console.error('this.gl is undefined')
-      return
-    }
-
     this.renderBuffer.activate()
 
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture)
@@ -397,8 +405,6 @@ export class GLRenderBuffer extends UtilityBase<RenderBufferConfig> {
         this.depthbuffer
       )
     }
-
-    //this.gl.finish()
 
     return this
   }

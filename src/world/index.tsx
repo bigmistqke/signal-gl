@@ -1,27 +1,31 @@
-import { ReadonlyMat4, mat4 } from 'gl-matrix'
+import { ReadonlyMat4, mat4, vec3 } from 'gl-matrix'
 import {
   Component,
+  ComponentProps,
   ParentProps,
   createContext,
+  createMemo,
+  createRenderEffect,
   createSignal,
   mergeProps,
   splitProps,
   useContext,
 } from 'solid-js'
 import {
+  Canvas,
   Program,
-  Stack,
+  ShaderToken,
   attribute,
   glsl,
   uniform,
   useSignalGL,
-} from '../core/components'
+} from '../'
 
 type Vector3 = [number, number, number]
 type Pose = {
-  position?: Vector3
-  rotation?: Vector3
-  scale?: Vector3
+  position?: Vector3 | vec3
+  rotation?: Vector3 | vec3
+  scale?: Vector3 | vec3
 }
 
 const matrixFromPose = (matrix: mat4, pose: Pose) => {
@@ -42,40 +46,57 @@ export const modelView = (props: Pose) => {
   return uniform.mat4(() => matrixFromPose(mat4.identity(modelView), props))
 }
 
+type BaseCameraConfig = Pose & Partial<{ far: number; near: number }>
+type CameraConfig = BaseCameraConfig & Partial<{ fov: number }>
 /**
  * SCENE
  */
 const sceneContext = createContext<{
   projection: ReturnType<typeof uniform.mat4>
+  setCamera: (pose: CameraConfig) => void
 }>()
 const useScene = () => useContext(sceneContext)
-export const Scene: Component<ParentProps> = (props) => {
+export const Scene: Component<ComponentProps<typeof Canvas>> = (props) => {
   const [projection, setProjection] = createSignal(mat4.create(), {
     equals: false,
   })
-  const m = mat4.create()
+  const [camera, setCamera] = createSignal<CameraConfig>({
+    position: [0, 0, -10],
+    rotation: [0, 0.1, 0],
+    scale: [1, 1, 1],
+  })
+  const cameraPerspectiveScratch = mat4.create()
+
+  const projectedScene = createMemo(() =>
+    matrixFromPose(projection(), camera())
+  )
+
   return (
-    <Stack
-      onResize={({ canvas }) => {
-        setProjection(
-          mat4.perspective(
-            mat4.create(),
-            (45 * Math.PI) / 180,
-            canvas.clientWidth / canvas.clientHeight,
-            0.1,
-            100.0
+    <>
+      <Canvas
+        {...props}
+        onResize={({ canvas }) => {
+          setProjection(
+            mat4.perspective(
+              cameraPerspectiveScratch,
+              ((camera().fov || 45) * Math.PI) / 180,
+              canvas.clientWidth / canvas.clientHeight,
+              camera().near || 0.1,
+              camera().far || 10000.0
+            )
           )
-        )
-      }}
-    >
-      <sceneContext.Provider
-        value={{
-          projection: uniform.mat4(projection),
         }}
       >
-        {props.children}
-      </sceneContext.Provider>
-    </Stack>
+        <sceneContext.Provider
+          value={{
+            projection: uniform.mat4(projectedScene),
+            setCamera,
+          }}
+        >
+          {props.children}
+        </sceneContext.Provider>
+      </Canvas>
+    </>
   )
 }
 
@@ -110,41 +131,47 @@ export const Group: Component<ParentProps<Pose>> = (props) => {
  */
 
 type ShapeProps = Pose & {
+  fragment?: ShaderToken
+  vertex?: ShaderToken
   indices: number[]
-  colors: Float32Array
+  color: Vector3
+  opacity: number
   positions: Float32Array
 }
 
 export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
-  const scene = useScene()
-  if (!scene) throw 'gl not defined'
   const [pose] = splitProps(props, ['position', 'rotation', 'scale'])
   return (
     <Group {...pose}>
       {props.children}
-      <Program
-        // prettier-ignore
-        vertex={
+      {(() => {
+        const scene = useScene()
+        if (!scene) throw 'scene not defined'
+        return (
+          <Program
+            // prettier-ignore
+            vertex={
+          props.vertex ||
           glsl`#version 300 es
           precision mediump float;
-          out vec3 color_in;
           void main(void) {
-            color_in = ${attribute.vec3(props.colors)};
-            gl_Position = ${scene.projection} * ${modelView(props)} * vec4(${attribute.vec3(props.positions)}, 1.);
+            gl_Position = ${scene.projection} * vec4(${attribute.vec3(props.positions)}, 1.);
           }`}
-        // prettier-ignore
-        fragment={
+            // prettier-ignore
+            fragment={
+          props.fragment ||
           glsl`#version 300 es
           precision mediump float;
-          in vec3 color_in;
           out vec4 color_out;
           void main(void) {
-            color_out = vec4(color_in, 1.);
+            color_out = vec4(${uniform.vec3(() => props.color)}, ${uniform.float(() => props.opacity)});
           }`}
-        mode="TRIANGLES"
-        indices={props.indices}
-        cacheEnabled
-      />
+            mode="TRIANGLES"
+            indices={props.indices}
+            cacheEnabled
+          />
+        )
+      })()}
     </Group>
   )
 }
@@ -154,36 +181,21 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
  */
 
 export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
-  const [_, shapeProps] = splitProps(props, ['children'])
   // prettier-ignore
   const merged = mergeProps({
-    colors: new Float32Array([
-      // Front face
-      1, 0, 0,   1, 0, 0,   1, 0, 0,   1, 0, 0,
-      // Back face
-      1, 1, 0,   1, 1, 0,   1, 1, 0,   1, 1, 0,
-      // Top face
-      0, 1, 1,   0, 1, 1,   0, 1, 1,   0, 1, 1,
-      // Bottom face
-      0, 0, 1,   0, 0, 1,   0, 0, 1,   0, 0, 1,
-      // Right face
-      1, 0, 1,   1, 0, 1,   1, 0, 1,   1, 0, 1,
-      // Left face
-      0, 1, 0,   0, 1, 0,   0, 1, 0,   0, 1, 0,
-    ]),
     positions: new Float32Array([
       // Front face
-      -1, -1,  1,    1, -1,  1,    1,  1,  1,   -1,  1,  1,
+      -0.5, -0.5,  0.5,    0.5, -0.5,  0.5,    0.5,  0.5,  0.5,   -0.5,  0.5,  0.5,
       // Back face
-      -1, -1, -1,   -1,  1, -1,    1,  1, -1,    1, -1, -1,
+      -0.5, -0.5, -0.5,   -0.5,  0.5, -0.5,    0.5,  0.5, -0.5,    0.5, -0.5, -0.5,
       // Top face
-      -1,  1, -1,   -1,  1,  1,    1,  1,  1,    1,  1, -1,
+      -0.5,  0.5, -0.5,   -0.5,  0.5,  0.5,    0.5,  0.5,  0.5,    0.5,  0.5, -0.5,
       // Bottom face
-      -1, -1, -1,    1, -1, -1,    1, -1,  1,   -1, -1,  1,
+      -0.5, -0.5, -0.5,    0.5, -0.5, -0.5,    0.5, -0.5,  0.5,   -0.5, -0.5,  0.5,
       // Right face
-      1, -1, -1,    1,  1,  -1,    1,  1,  1,    1, -1,  1,
+      0.5, -0.5, -0.5,    0.5,  0.5,  -0.5,    0.5,  0.5,  0.5,    0.5, -0.5,  0.5,
       // Left face
-      -1, -1, -1,   -1, -1,  1,   -1,  1,  1,   -1,  1, -1,
+      -0.5, -0.5, -0.5,   -0.5, -0.5,  0.5,   -0.5,  0.5,  0.5,   -0.5,  0.5, -0.5,
     ]),
     indices:  [
       // Front face
@@ -199,15 +211,47 @@ export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
       // Left face
       20, 21, 22, 20, 22, 23,
     ],
+    color: [1,1,1] as Vector3,
+    opacity: 1
+  }, props)
+  return <Shape {...merged} />
+}
+
+export const Camera: Component<
+  Partial<
+    Pose & { active?: boolean; fov?: number; near?: number; far?: number }
+  >
+> = (props) => {
+  const scene = useScene()
+  if (!scene) throw 'scene is undefined'
+
+  const positionScratch = vec3.create()
+  const rotationScratch = vec3.create()
+  createRenderEffect(() => {
+    if (!props.active) return
+    scene.setCamera({
+      get position() {
+        if (!props.position) return undefined
+        return vec3.negate(positionScratch, props.position)
+      },
+      get rotation() {
+        if (!props.rotation) return undefined
+        return vec3.negate(rotationScratch, props.rotation)
+      },
+      get scale() {
+        return props.scale
+      },
+      get fov() {
+        return props.fov
+      },
+      get near() {
+        return props.near
+      },
+      get far() {
+        return props.far
+      },
+    })
   })
-  return (
-    <Shape
-      {...shapeProps}
-      colors={merged.colors}
-      positions={merged.positions}
-      indices={merged.indices}
-    >
-      {props.children}
-    </Shape>
-  )
+
+  return <Group {...props} />
 }
