@@ -1,5 +1,6 @@
 import {
   Component,
+  JSX,
   JSXElement,
   ParentProps,
   Setter,
@@ -112,7 +113,7 @@ type StackProps = {
 type CanvasProps = ComponentProps<'canvas'> & StackProps
 
 /** Root-element containing `<canvas/>` and `GLStack`. */
-export const Stack = (props: CanvasProps) => {
+export const Canvas = (props: CanvasProps) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
   const merged = mergeProps({ clear: true }, rest)
   const canvas = (<canvas {...rest} />) as HTMLCanvasElement
@@ -220,6 +221,7 @@ export const Program = (props: ProgramProps) => {
 export const RenderTexture: Component<
   ParentProps<StackProps> & {
     onTextureUpdate: (texture: GLRenderTexture) => void
+    passthrough?: boolean
   }
 > = (props) => {
   const merged = mergeProps({ clear: true }, props)
@@ -251,5 +253,6 @@ export const RenderTexture: Component<
     console.error(error)
   }
 
-  return <></>
+  return (() =>
+    props.passthrough ? props.children : <></>) as any as JSX.Element
 }
