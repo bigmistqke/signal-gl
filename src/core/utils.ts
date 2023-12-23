@@ -1,5 +1,3 @@
-import { BufferArray, DataType, Format, InternalFormat } from './types'
-
 /* MISC */
 
 export const objectsAreEqual = (
@@ -33,27 +31,6 @@ export function readableError(gl: WebGL2RenderingContext) {
       return 'Unknown WebGL Error: ' + error
   }
 }
-
-/* TYPEDARRAY TO TEXTURECONFIG */
-
-const textureConfigFromTypedArrayMap = new Map<
-  Uint8ArrayConstructor | Float32ArrayConstructor,
-  { format: Format; internalFormat: InternalFormat; dataType: DataType }
->()
-
-textureConfigFromTypedArrayMap.set(Uint8Array, {
-  format: 'RED',
-  internalFormat: 'R8',
-  dataType: 'UNSIGNED_BYTE',
-})
-textureConfigFromTypedArrayMap.set(Float32Array, {
-  format: 'RED',
-  internalFormat: 'R32F',
-  dataType: 'FLOAT',
-})
-
-export const getTextureConfigFromTypedArray = (buffer: BufferArray) =>
-  textureConfigFromTypedArrayMap.get(buffer.constructor as any)
 
 /*
   WEBGL BOILERPLATE
