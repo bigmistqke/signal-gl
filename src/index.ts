@@ -1,7 +1,6 @@
 export * from '@core/classes'
 export * from '@core/components'
 export * from '@core/computation'
-export * from '@core/template/bindings'
 export * from '@core/template/glsl'
 export * from '@core/template/tokens'
 export * from '@core/types'
