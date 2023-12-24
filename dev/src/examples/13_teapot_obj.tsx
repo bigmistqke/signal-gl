@@ -8,24 +8,19 @@ const App = () => {
   const [rotation, setRotation] = createSignal(0)
   setInterval(() => setRotation((r) => r + 0.01))
   return (
-    <Suspense>
-      <Shape
-        {...obj()!}
-        rotation={[0, rotation(), 0]}
-        color={[0, 0, 1]}
-        opacity={1}
-        position={[0, -2, -10]}
-      />
-    </Suspense>
+    <Scene>
+      <Camera active />
+      <Suspense>
+        <Shape
+          {...obj()!}
+          rotation={[0, rotation(), 0]}
+          color={[0, 0, 1]}
+          opacity={1}
+          position={[0, -2, -10]}
+        />
+      </Suspense>
+    </Scene>
   )
 }
 
-render(
-  () => (
-    <Scene>
-      <Camera position={[0, 0, 0]} active />
-      <App />
-    </Scene>
-  ),
-  document.getElementById('app')!
-)
+render(() => <App />, document.getElementById('app')!)

@@ -1,3 +1,4 @@
+export * from './loaders'
 import { ReadonlyMat4, mat4, vec3 } from 'gl-matrix'
 import {
   Component,
@@ -61,7 +62,7 @@ export const Scene: Component<ComponentProps<typeof Canvas>> = (props) => {
     equals: false,
   })
   const [camera, setCamera] = createSignal<CameraConfig>({
-    position: [0, 0, -10],
+    position: [0, 0, 0],
     rotation: [0, 0.1, 0],
     scale: [1, 1, 1],
   })
@@ -136,11 +137,12 @@ type ShapeProps = Pose & {
   indices: number[]
   color: Vector3
   opacity: number
-  positions: Float32Array
+  vertices: Float32Array
 }
 
 export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
   const [pose] = splitProps(props, ['position', 'rotation', 'scale'])
+  console.log('shape!')
   return (
     <Group {...pose}>
       {props.children}
@@ -154,8 +156,10 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
           props.vertex ||
           glsl`#version 300 es
           precision mediump float;
+          out vec4 position;
           void main(void) {
-            gl_Position = ${scene.projection} * vec4(${attribute.vec3(props.positions)}, 1.);
+            position = ${scene.projection} * vec4(${attribute.vec3(props.vertices)}, 1.);
+            gl_Position = position;
           }`}
             // prettier-ignore
             fragment={
@@ -225,32 +229,23 @@ export const Camera: Component<
   const scene = useScene()
   if (!scene) throw 'scene is undefined'
 
-  const positionScratch = vec3.create()
-  const rotationScratch = vec3.create()
+  const position = vec3.create()
+  const rotation = vec3.create()
+
+  const cameraProps = mergeProps(props, {
+    get position() {
+      if (!props.position) return undefined
+      return vec3.negate(position, props.position)
+    },
+    get rotation() {
+      if (!props.rotation) return undefined
+      return vec3.negate(rotation, props.rotation)
+    },
+  })
+
   createRenderEffect(() => {
     if (!props.active) return
-    scene.setCamera({
-      get position() {
-        if (!props.position) return undefined
-        return vec3.negate(positionScratch, props.position)
-      },
-      get rotation() {
-        if (!props.rotation) return undefined
-        return vec3.negate(rotationScratch, props.rotation)
-      },
-      get scale() {
-        return props.scale
-      },
-      get fov() {
-        return props.fov
-      },
-      get near() {
-        return props.near
-      },
-      get far() {
-        return props.far
-      },
-    })
+    scene.setCamera(cameraProps)
   })
 
   return <Group {...props} />
