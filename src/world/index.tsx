@@ -187,7 +187,7 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
 export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
   // prettier-ignore
   const merged = mergeProps({
-    positions: new Float32Array([
+    vertices: new Float32Array([
       // Front face
       -0.5, -0.5,  0.5,    0.5, -0.5,  0.5,    0.5,  0.5,  0.5,   -0.5,  0.5,  0.5,
       // Back face
