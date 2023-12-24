@@ -268,6 +268,7 @@ var Base = class {
       this.canvas.width = this.canvas.clientWidth;
       this.canvas.height = this.canvas.clientHeight;
       this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+      this.clear();
       this.render();
       onResize?.(this);
     });
@@ -409,8 +410,8 @@ var GLRenderTextureStack = class extends GLStack {
     this.texture = new GLRenderTexture(this.gl, config);
   }
   render() {
-    this.texture.activate();
     super.clear();
+    this.texture.activate();
     super.render();
     this.texture.deactivate();
     return this;
@@ -424,22 +425,23 @@ var UtilityBase = class {
     this.config = config || {};
   }
 };
-var GLRenderTexture = class extends UtilityBase {
-  renderBuffer;
+var GLTexture = class extends UtilityBase {
   texture;
   constructor(gl, config = {}) {
     super(gl, config);
-    this.renderBuffer = new GLRenderBuffer(gl, config);
     const texture = this.gl.createTexture();
     if (!texture)
-      throw "unable to render texture";
+      throw "unable to create texture";
     this.texture = texture;
   }
+};
+var GLRenderTexture = class extends GLTexture {
+  renderBuffer;
+  constructor(gl, config = {}) {
+    super(gl, config);
+    this.renderBuffer = new GLRenderBuffer(gl, config);
+  }
   activate() {
-    if (!this.gl) {
-      console.error("this.gl is undefined");
-      return;
-    }
     this.renderBuffer.activate();
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
     this.gl.texImage2D(
@@ -565,7 +567,7 @@ var createRenderLoop = (config) => {
     }
   });
 };
-var Stack = (props) => {
+var Canvas = (props) => {
   const [childrenProps, rest] = splitProps(props, ["children"]);
   const merged = mergeProps({
     clear: true
@@ -665,7 +667,7 @@ var RenderTexture = (props) => {
   } catch (error2) {
     console.error(error2);
   }
-  return [];
+  return () => props.passthrough ? props.children : [];
 };
 var DEBUG = false;
 var nameCacheMap = /* @__PURE__ */ new WeakMap();
@@ -808,4 +810,4 @@ var compileStrings = (strings, tokens) => {
   };
 };
 
-export { GLProgram, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, GLStack, Program, RenderTexture, Stack, attribute, buffer, compileStrings, filterGLPrograms, glsl, isGLProgram, uniform, useSignalGL };
+export { Canvas, GLProgram, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, GLStack, GLTexture, Program, RenderTexture, attribute, buffer, compileStrings, filterGLPrograms, glsl, isGLProgram, uniform, useSignalGL };

@@ -1,6 +1,5 @@
 import { mat2, mat3, mat4 } from 'gl-matrix';
-import * as solid_js from 'solid-js';
-import { Component, ParentProps, ComponentProps, Setter, Accessor as Accessor$1 } from 'solid-js';
+import { JSX, Component, ParentProps, ComponentProps, Setter, Accessor as Accessor$1 } from 'solid-js';
 
 type Accessor<T> = () => T;
 type ValueOf<T extends Record<string, any>> = T[keyof T];
@@ -42,7 +41,7 @@ type UniformProxy = {
     mat2: Variable<'uniform', 'mat2', TupleOf<number, 16> | BufferArray | mat2>;
     mat3: Variable<'uniform', 'mat3', TupleOf<number, 9> | BufferArray | mat3>;
     mat4: Variable<'uniform', 'mat4', TupleOf<number, 16> | BufferArray | mat4>;
-    sampler2D: Variable<'sampler2D', 'sampler2D', ArrayBufferView | GLRenderTexture, Sampler2DOptions>;
+    sampler2D: Variable<'sampler2D', 'sampler2D', ArrayBufferView | GLTexture, Sampler2DOptions>;
     isampler2D: Variable<'isampler2D', 'isampler2D', ArrayBufferView, Sampler2DOptions>;
     samplerCube: Variable<'samplerCube', 'samplerCube', ArrayBufferView, Sampler2DOptions>;
 };
@@ -217,12 +216,18 @@ type RenderTextureConfig = RenderBufferConfig & {
     format: Format;
     dataType: DataType;
 };
-declare class GLRenderTexture extends UtilityBase<RenderBufferConfig & {
+declare class GLTexture extends UtilityBase<RenderBufferConfig & {
     format: Format;
     dataType: DataType;
 }> {
-    renderBuffer: GLRenderBuffer;
     texture: WebGLTexture;
+    constructor(gl: WebGL2RenderingContext, config?: Partial<RenderBufferConfig & {
+        format: Format;
+        dataType: DataType;
+    }>);
+}
+declare class GLRenderTexture extends GLTexture {
+    renderBuffer: GLRenderBuffer;
     constructor(gl: WebGL2RenderingContext, config?: Partial<RenderBufferConfig & {
         format: Format;
         dataType: DataType;
@@ -261,7 +266,7 @@ type StackProps = {
 };
 type CanvasProps = ComponentProps<'canvas'> & StackProps;
 /** Root-element containing `<canvas/>` and `GLStack`. */
-declare const Stack: (props: CanvasProps) => solid_js.JSX.Element;
+declare const Canvas: (props: CanvasProps) => JSX.Element;
 interface ProgramPropsBase {
     fragment: ShaderToken;
     onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void;
@@ -286,10 +291,11 @@ interface ElementProgramProps extends ProgramPropsBase {
 }
 type ProgramProps = ArrayProgramProps | ElementProgramProps;
 /** JSX-wrapper around `GLProgram`. */
-declare const Program: (props: ProgramProps) => solid_js.JSX.Element;
+declare const Program: (props: ProgramProps) => JSX.Element;
 /** JSX-wrapper around `GLRenderTextureStack`. */
 declare const RenderTexture: Component<ParentProps<StackProps> & {
     onTextureUpdate: (texture: GLRenderTexture) => void;
+    passthrough?: boolean;
 }>;
 
 type ShouldNotUnion<T> = Check<T, [
@@ -348,4 +354,4 @@ declare const uniform: UniformProxy;
 declare const attribute: AttributeProxy;
 declare const buffer: (value: BufferArray | Accessor$1<BufferArray>, options: BufferOptions) => BufferToken;
 
-export { type Accessor, type AddToRenderQueue, type AttributeOptions, type AttributeParameters, type AttributeProxy, type AttributeReturnType, type AttributeToken, type BufferArray, type BufferOptions, type BufferToken, type Check, type Computation, type DataType, type Format, GLProgram, type GLProgramConfig, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, type GLSLError, GLStack, type InternalFormat, type IsUnion, type MatrixOf, Program, type ProgramInstance, type RenderMode, RenderTexture, type Sampler2DOptions, type Sampler2DToken, type ScopedVariableToken, type ShaderToken, Stack, type TemplateValue, type TextureOptions, type Token, type TupleOf, type UniformParameters, type UniformProxy, type UniformReturnType, type UniformSetter, type UniformToken, type ValueOf, type Vector2, type Vector3, type Vector4, attribute, buffer, compileStrings, filterGLPrograms, glsl, isGLProgram, uniform, useSignalGL };
+export { type Accessor, type AddToRenderQueue, type AttributeOptions, type AttributeParameters, type AttributeProxy, type AttributeReturnType, type AttributeToken, type BufferArray, type BufferOptions, type BufferToken, Canvas, type Check, type Computation, type DataType, type Format, GLProgram, type GLProgramConfig, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, type GLSLError, GLStack, GLTexture, type InternalFormat, type IsUnion, type MatrixOf, Program, type ProgramInstance, type RenderMode, RenderTexture, type Sampler2DOptions, type Sampler2DToken, type ScopedVariableToken, type ShaderToken, type TemplateValue, type TextureOptions, type Token, type TupleOf, type UniformParameters, type UniformProxy, type UniformReturnType, type UniformSetter, type UniformToken, type ValueOf, type Vector2, type Vector3, type Vector4, attribute, buffer, compileStrings, filterGLPrograms, glsl, isGLProgram, uniform, useSignalGL };
