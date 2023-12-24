@@ -15,17 +15,34 @@
   - [Hello World](#hello-world-playground)
   - [More Examples](./dev/src/examples/README.md)
 - [API](#api)
-  - [templating](#templating)
-    - [`glsl`](#glsl-tag-template-literal) _tag template literal to compose glsl_
-    - [`attribute`](#attribute-template-helper) _template-helper to include attribute into `glsl`-template_
-    - [`uniform`](#uniform-template-helper) _template-helper to include uniform into `glsl`-template_
-  - [hooks](#hooks)
-    - [`createProgram`](#createprogram-hook) _hook for managing `WebGLProgram`_
-    - [`createStack`](#createstack-hook) _hook for managing multiple `Programs`_
-    - [`createComputation`](#createcomputation-hook) _hook for gpu-computations_
-  - [components](#components)
-    - [`<Stack/>`](#gl-component) _JSX wrapper around `createStack`_
-    - [`<Program/>`](#program-component) _JSX wrapper around `createProgram`_
+  - [`signal-gl`](#signalgl) _low level abstraction around webgl_
+    - [templating](#templating)
+      - [`glsl`](#glsl-tag-template-literal) _tag template literal to compose glsl_
+      - [`attribute`](#attribute-template-helper) _template-helper to include attribute into `glsl`-template_
+      - [`uniform`](#uniform-template-helper) _template-helper to include uniform into `glsl`-template_
+    - [classes](#classes)
+      - [`GLProgram`](#glprogram-class) _class for managing `WebGLProgram`_
+      - [`GLStack`](#glstack-class) _class for managing multiple `Programs`_
+      - [`GLTexture`](#glrendertexture-class) _class for managing `WebGLTexture`_
+      - [`GLRenderBuffer`](#glrenderbuffer-class) _class for managing `WebGLFrameBuffer`_
+      - [`GLRenderTexture`](#glrendertexture-class) _class for managing `GLRenderBuffer` that renders into `GLTexture`_
+      - [`GLRenderTextureStack`](#glrendertexturestack-class) _class for managing `GLStack` that renders into `GLRenderTexture`_
+    - [hooks](#hooks)
+      - [`useSignalGL`](#usesignalgl-hook) _context-hook, only available inside `<Canvas/>`_
+      - [`createComputation`](#createcomputation-hook) _hook for gpu-computations_
+    - [components](#components)
+      - [`<Canvas/>`](#gl-component) _root-component of `signal-gl`-tree_
+      - [`<Program/>`](#program-component) _JSX representing `GLProgram`_
+      - [`<RenderTexture/>`](#rendertexture-component) _JSX representing `GLRenderTextureStack`_
+  - [`signal-gl/world`](#signalgl-world)  _game engine built on top of `signal-gl`_
+    - components
+      - [`<Scene/>`](#scene-component) _root-component of `signal-gl/world`-tree_
+      - [`<Group/>`](#group-component) _JSX to group and transform simultaneously its `signal-gl/world`-children_
+      - [`<Camera/>`](#camera-component) _JSX representing the scene's clip view_
+      - [`<Shape/>`](#shape-component) _`<Program/>` with default shaders_
+      - [`<Cube/>`](#cube-component) _`<Shape/>` with hard-coded cube vertices_
+    - hooks
+      - [`useScene`](#usescene-hook) _context-hook, only available inside `<Scene/>`_
 - [Syntax Highlighting](#syntax-highlighting) 
 - [Prior Art](#prior-art) 
 
@@ -344,12 +361,12 @@ type Sampler2DToken = {
 }
 ```
 
-## hooks
+## Classes
 
-### `createProgram` _hook_
+### `GLProgram` _class_
 
 > manages a `WebGLProgram` from a given vertex- and fragment-[`glsl`](#glsl-tag-template-literal)
-> to use program, add it to the `programs`-property in createStack's `StackConfig`
+> to use program, add it to the `programs`-property in GLStack's `StackConfig`
 
 #### Usage
 ```tsx
@@ -370,7 +387,7 @@ const vertex = glsl`#version 300 es
     gl_Position = vec4(a_coord, 0, 1) ;
   }`
 
-const program = createProgram({
+const program = new GLProgram({
   canvas,
   vertex: vertex(),
   fragment: fragment(),
@@ -412,23 +429,23 @@ type ProgramReturnType = {
 } 
 ```
 
-### `createStack` _hook_
+### `GLStack` _class_
 
 > manage the `webgl2`-context of a given `<canvas/>`-element
 
 #### Usage
 ```tsx
-import { createStack, read, autosize } from "@bigmistqke/signal-gl"
+import { GLStack } from "@bigmistqke/signal-gl"
 const canvas = <canvas/>
-const gl = createStack({canvas, programs: [programs]})
+const gl = new GLStack({canvas, programs: [programs]})
 if(!gl) return;
 
 // render programs to given canvas-element whenever any of its attributes/uniforms update
 createEffect(gl.render);
 // automatically update gl-dimensions when canvas updates
-autosize(gl)
+gl.autosize()
 // export the rendered result of the current program to a given TypedArray
-read(gl, { output: new Float32Array(...) }); 
+gl.read({ output: new Float32Array(...) }); 
 ```
 
 #### Signature
@@ -449,7 +466,7 @@ type StackConfig = {
   }
   onRender?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
   onInit?: (gl: WebGL2RenderingContext, program: WebGLProgram) => void
-  programs: ReturnType<typeof createProgram>[]
+  programs: ReturnType<typeof GLProgram>[]
 }
 ```
 
@@ -475,6 +492,8 @@ type`StackReturnType = {
   ) => Buffer
 } 
 ```
+
+### Hooks 
 
 ### `createComputation` _hook_
 
@@ -542,7 +561,7 @@ sensible defaults for `UInt8Array` and `Float32Array`
 
 - root `JSXElement`
 - represents a `canvas` and its `WebGL2RenderingContext`
-- wrapper around [`createStack`](#createstack-hook)
+- wrapper around [`GLStack`](#createstack-hook)
 
 #### Usage
 
