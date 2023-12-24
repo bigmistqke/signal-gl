@@ -25,12 +25,20 @@ type BaseConfig = {
 class Base {
   gl: WebGL2RenderingContext
   canvas: HTMLCanvasElement | OffscreenCanvas
-  constructor(config: BaseConfig) {
+  config: Required<Pick<BaseConfig, 'background'>> &
+    Omit<BaseConfig, 'background'>
+  constructor(_config: BaseConfig) {
+    const config = mergeProps(
+      {
+        background: [0.0, 0.0, 0.0, 1.0] as Vector4,
+      },
+      _config
+    )
+    this.config = config
     this.canvas = config.canvas
     const gl = config.canvas.getContext('webgl2')
     if (!gl) throw 'can not get webgl2 context'
     this.gl = gl
-    this.gl.clearColor(0.0, 0.0, 0.0, 1.0)
     this.gl.enable(this.gl.DEPTH_TEST)
     this.gl.depthFunc(this.gl.LEQUAL)
     this.gl.depthRange(0.2, 10)
@@ -40,6 +48,7 @@ class Base {
     return this
   }
   clear() {
+    this.gl.clearColor(...this.config.background)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
     this.gl.depthMask(true)
 

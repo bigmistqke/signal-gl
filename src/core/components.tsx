@@ -23,7 +23,7 @@ import {
   GLStack,
   filterGLPrograms,
 } from './classes'
-import type { RenderMode, ShaderToken } from './types'
+import type { RenderMode, ShaderToken, Vector4 } from './types'
 
 /* CONTEXT */
 
@@ -108,6 +108,7 @@ type StackProps = {
   clear?: boolean | ((gl: GLStack) => void)
   /* Enable/disable `rAF`-based animation or request fps. If disabled, render-loop will be `effect`-based. */
   animate?: boolean | number
+  background?: Vector4
 }
 
 type CanvasProps = ComponentProps<'canvas'> & StackProps
@@ -156,6 +157,7 @@ export const Canvas = (props: CanvasProps) => {
             try {
               const stack = new GLStack({
                 canvas,
+                background: props.background,
                 get programs() {
                   return programs()
                 },
