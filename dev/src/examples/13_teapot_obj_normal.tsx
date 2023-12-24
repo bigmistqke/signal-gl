@@ -12,11 +12,10 @@ const interweave = (buffer: BufferArray, schema: (keyof UniformProxy)[]) => {
 const App = () => {
   const obj = loadOBJ('./teapot.obj')
   const [rotation, setRotation] = createSignal(0)
-  setInterval(() => setRotation((r) => r + 0.005))
+  setInterval(() => setRotation((r) => r + 0.01))
   return (
     <Shape
       {...obj()!}
-      rotation={[0, rotation(), 0]}
       color={[0, 0, 1]}
       opacity={1}
       position={[0, -2, -10]}
@@ -28,6 +27,7 @@ const App = () => {
               vec3 dpdx = dFdx(position.xyz);
               vec3 dpdy = dFdy(position.xyz);
               vec3 normal = normalize(cross(dpdx, dpdy));
+              
               fragColor = vec4(normal, 1.0);
           }
         `}

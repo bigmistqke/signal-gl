@@ -132,6 +132,7 @@ export const Group: Component<ParentProps<Pose>> = (props) => {
  */
 
 type ShapeProps = Pose & {
+  /** in vec4 position */
   fragment?: ShaderToken
   vertex?: ShaderToken
   indices: number[]
@@ -142,7 +143,6 @@ type ShapeProps = Pose & {
 
 export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
   const [pose] = splitProps(props, ['position', 'rotation', 'scale'])
-  console.log('shape!')
   return (
     <Group {...pose}>
       {props.children}
