@@ -11,7 +11,8 @@
     "package": "tsup && npm publish --access public"
   },
   "dependencies": {
-    "zeptoid": "^1.0.1"
+    "zeptoid": "^1.0.1",
+    "gl-matrix": "^3.4.3"
   },
   "peerDependencies": {
     "solid-js": "*"
@@ -22,7 +23,6 @@
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/node": "^20.10.0",
     "colord": "^2.9.3",
-    "gl-matrix": "^3.4.3",
     "names": "link:colord/plugins/names",
     "tsup": "^8.0.1",
     "tsup-preset-solid": "^2.1.0",
