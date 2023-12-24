@@ -14,7 +14,7 @@ import {
 } from './types'
 
 type BaseConfig = {
-  canvas: HTMLCanvasElement | OffscreenCanvas
+  canvas: HTMLCanvasElement
   background?: Vector4
   cacheEnabled?: boolean
   first?: number
@@ -26,7 +26,7 @@ type BaseConfig = {
 
 class Base {
   gl: WebGL2RenderingContext
-  canvas: HTMLCanvasElement | OffscreenCanvas
+  canvas: HTMLCanvasElement
   config: Required<Pick<BaseConfig, 'background'>> &
     Omit<BaseConfig, 'background'>
   constructor(_config: BaseConfig) {
