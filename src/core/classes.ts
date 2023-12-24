@@ -1,4 +1,5 @@
 import { createSignal, mergeProps } from 'solid-js'
+import { castToArray, createWebGLProgram } from './internalUtils'
 import { bindBufferToken } from './template/bindings'
 import { buffer } from './template/tokens'
 import {
@@ -9,11 +10,12 @@ import {
   RenderMode,
   ShaderToken,
   TextureOptions,
+  Vector4,
 } from './types'
-import { castToArray, createWebGLProgram } from './utils'
 
 type BaseConfig = {
   canvas: HTMLCanvasElement | OffscreenCanvas
+  background?: Vector4
   cacheEnabled?: boolean
   first?: number
   /** default TRIANGLES */
@@ -51,7 +53,8 @@ class Base {
     this.gl.clearColor(...this.config.background)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
     this.gl.depthMask(true)
-
+    this.gl.enable(this.gl.BLEND)
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
     return this
   }
   autosize(onResize?: (token: Base) => void) {

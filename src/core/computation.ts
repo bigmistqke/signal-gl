@@ -3,6 +3,7 @@ import { glsl } from './template/glsl'
 import { attribute, uniform } from './template/tokens'
 
 import { GLProgram, GLStack } from './classes'
+import { getTextureConfigFromTypedArray } from './internalUtils'
 import {
   BufferArray,
   DataType,
@@ -11,7 +12,6 @@ import {
   ShaderToken,
   UniformProxy,
 } from './types'
-import { getTextureConfigFromTypedArray } from './utils'
 
 /* 
   CREATE_COMPUTATION-HOOK 
