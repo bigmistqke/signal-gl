@@ -1,8 +1,88 @@
-import { mergeProps, createContext, createSignal, useContext, splitProps, children, createMemo, onMount, createRenderEffect, createEffect, untrack } from 'solid-js';
-import zeptoid from 'zeptoid';
-import { spread, createComponent, template } from 'solid-js/web';
+// src/world/loaders.tsx
+import { createMemo, createResource } from "solid-js";
+var loadOBJ = (url) => {
+  const [resource] = createResource(() => fetch(url).then((v) => v.text()));
+  const obj = createMemo(() => {
+    const data = resource();
+    if (!data)
+      return void 0;
+    const result = {
+      vertices: [],
+      indices: []
+    };
+    data.split("\n").forEach((line) => {
+      const [prefix, ..._data] = line.split(" ");
+      const data2 = _data.map((v) => +v);
+      switch (prefix) {
+        case "v":
+          return result.vertices.push(...data2);
+        case "f":
+          return result.indices.push(...data2.map((v) => v - 1));
+      }
+    });
+    return {
+      vertices: new Float32Array(result.vertices),
+      indices: result.indices
+    };
+  });
+  return obj;
+};
+
+// src/world/index.tsx
+import { mat4, vec3 } from "gl-matrix";
+import {
+  createContext as createContext2,
+  createMemo as createMemo4,
+  createRenderEffect as createRenderEffect2,
+  createSignal as createSignal2,
+  mergeProps as mergeProps6,
+  splitProps as splitProps2,
+  useContext as useContext2
+} from "solid-js";
 
 // src/core/classes.ts
+import { createSignal, mergeProps as mergeProps3 } from "solid-js";
+
+// src/core/internalUtils.ts
+var castToArray = (value) => typeof value === "object" && Array.isArray(value) ? value : [value];
+function createWebGLProgram(gl, vertex, fragment) {
+  const program = gl.createProgram();
+  var vertexShader = createWebGLShader(gl, vertex, "vertex");
+  var fragmentShader = createWebGLShader(gl, fragment, "fragment");
+  if (!program || !vertexShader || !fragmentShader)
+    return null;
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.deleteShader(vertexShader);
+  gl.deleteShader(fragmentShader);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error("error while creating program", gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+    return null;
+  }
+  return program;
+}
+function createWebGLShader(gl, src, type) {
+  const shader = gl.createShader(
+    type === "fragment" ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER
+  );
+  if (!shader) {
+    console.error(type, `error while creating shader`);
+    return null;
+  }
+  gl.shaderSource(shader, src);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(type, gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+
+// src/core/template/bindings.ts
+import { createRenderEffect, mergeProps, untrack } from "solid-js";
 var bindUniformToken = ({
   token,
   gl,
@@ -110,6 +190,10 @@ var bindSampler2DToken = ({
     requestRender();
   });
 };
+
+// src/core/template/tokens.ts
+import { mergeProps as mergeProps2 } from "solid-js";
+import zeptoid from "zeptoid";
 var dataTypeToFunctionName = (dataType) => {
   switch (dataType) {
     case "float":
@@ -118,7 +202,8 @@ var dataTypeToFunctionName = (dataType) => {
     case "bool":
       return "uniform1i";
     default:
-      if (dataType.includes("mat")) ;
+      if (dataType.includes("mat")) {
+      }
       const count = dataType[dataType.length - 1];
       if (dataType.includes("mat"))
         return `uniformMatrix${count}fv`;
@@ -139,7 +224,7 @@ var uniform = new Proxy({}, {
           get value() {
             return typeof value === "function" ? value() : value;
           },
-          options: mergeProps(
+          options: mergeProps2(
             {
               border: 0,
               dataType: "UNSIGNED_BYTE",
@@ -173,7 +258,7 @@ var uniform = new Proxy({}, {
 var attribute = new Proxy({}, {
   get(target, dataType) {
     return (...[value, _options]) => {
-      const options = mergeProps({ stride: 0, offset: 0 }, _options);
+      const options = mergeProps2({ stride: 0, offset: 0 }, _options);
       const size = typeof dataType === "string" ? +dataType[dataType.length - 1] : void 0;
       return {
         buffer: buffer(value, { target: "ARRAY_BUFFER" }),
@@ -195,55 +280,24 @@ var buffer = (value, options) => ({
   options
 });
 
-// src/core/utils.ts
-var castToArray = (value) => typeof value === "object" && Array.isArray(value) ? value : [value];
-function createWebGLProgram(gl, vertex, fragment) {
-  const program = gl.createProgram();
-  var vertexShader = createWebGLShader(gl, vertex, "vertex");
-  var fragmentShader = createWebGLShader(gl, fragment, "fragment");
-  if (!program || !vertexShader || !fragmentShader)
-    return null;
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.deleteShader(vertexShader);
-  gl.deleteShader(fragmentShader);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error("error while creating program", gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-    return null;
-  }
-  return program;
-}
-function createWebGLShader(gl, src, type) {
-  const shader = gl.createShader(
-    type === "fragment" ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER
-  );
-  if (!shader) {
-    console.error(type, `error while creating shader`);
-    return null;
-  }
-  gl.shaderSource(shader, src);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(type, gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
 // src/core/classes.ts
 var Base = class {
   gl;
   canvas;
-  constructor(config) {
+  config;
+  constructor(_config) {
+    const config = mergeProps3(
+      {
+        background: [0, 0, 0, 1]
+      },
+      _config
+    );
+    this.config = config;
     this.canvas = config.canvas;
     const gl = config.canvas.getContext("webgl2");
     if (!gl)
       throw "can not get webgl2 context";
     this.gl = gl;
-    this.gl.clearColor(0, 0, 0, 1);
     this.gl.enable(this.gl.DEPTH_TEST);
     this.gl.depthFunc(this.gl.LEQUAL);
     this.gl.depthRange(0.2, 10);
@@ -253,8 +307,11 @@ var Base = class {
     return this;
   }
   clear() {
+    this.gl.clearColor(...this.config.background);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     this.gl.depthMask(true);
+    this.gl.enable(this.gl.BLEND);
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
     return this;
   }
   autosize(onResize) {
@@ -301,7 +358,7 @@ var GLProgram = class extends Base {
   program;
   constructor(_config) {
     super(_config);
-    const config = mergeProps(
+    const config = mergeProps3(
       {
         mode: "TRIANGLES",
         cacheEnabled: false,
@@ -334,7 +391,7 @@ var GLProgram = class extends Base {
         }
       );
       bindBufferToken(
-        mergeProps(this, {
+        mergeProps3(this, {
           token
         })
       );
@@ -403,20 +460,6 @@ var GLStack = class extends Base {
     return this;
   }
 };
-var GLRenderTextureStack = class extends GLStack {
-  texture;
-  constructor(config) {
-    super(config);
-    this.texture = new GLRenderTexture(this.gl, config);
-  }
-  render() {
-    super.clear();
-    this.texture.activate();
-    super.render();
-    this.texture.deactivate();
-    return this;
-  }
-};
 var UtilityBase = class {
   gl;
   config;
@@ -480,7 +523,7 @@ var GLRenderBuffer = class extends UtilityBase {
     const depthbuffer = gl.createRenderbuffer();
     if (!framebuffer || !renderbuffer || !depthbuffer)
       throw "could not create framebuffer or renderbuffer";
-    this.config = mergeProps({ color: true, depth: true }, config);
+    this.config = mergeProps3({ color: true, depth: true }, config);
     this.framebuffer = framebuffer;
     this.colorbuffer = renderbuffer;
     this.depthbuffer = depthbuffer;
@@ -524,7 +567,18 @@ var GLRenderBuffer = class extends UtilityBase {
     this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
   }
 };
-var _tmpl$ = /* @__PURE__ */ template(`<canvas>`);
+
+// src/core/components.tsx
+import {
+  children,
+  createContext,
+  createEffect,
+  createMemo as createMemo2,
+  mergeProps as mergeProps4,
+  onMount,
+  splitProps,
+  useContext
+} from "solid-js";
 var internalContext = createContext();
 var useInternal = () => useContext(internalContext);
 var signalGLContext = createContext();
@@ -569,106 +623,71 @@ var createRenderLoop = (config) => {
 };
 var Canvas = (props) => {
   const [childrenProps, rest] = splitProps(props, ["children"]);
-  const merged = mergeProps({
-    clear: true
-  }, rest);
-  const canvas = (() => {
-    const _el$ = _tmpl$();
-    spread(_el$, rest, false, false);
-    return _el$;
-  })();
+  const merged = mergeProps4({ clear: true }, rest);
+  const canvas = <canvas {...rest} />;
   const gl = canvas.getContext("webgl2");
   const events = {
     onResize: /* @__PURE__ */ new Set(),
     onRender: /* @__PURE__ */ new Set()
   };
-  return createComponent(internalContext.Provider, {
-    value: {
+  return <internalContext.Provider
+    value={{
       canvas,
       events,
       gl,
       get onProgramCreate() {
         return props.onProgramCreate;
       }
-    },
-    get children() {
-      return createComponent(signalGLContext.Provider, {
-        value: {
+    }}
+  ><signalGLContext.Provider
+    value={{
+      canvas,
+      gl,
+      onRender: (callback) => {
+        events.onRender.add(callback);
+        return () => events.onRender.delete(callback);
+      },
+      onResize: (callback) => {
+        events.onResize.add(callback);
+        return () => events.onResize.delete(callback);
+      }
+    }}
+  >{(() => {
+    const childs = children(() => childrenProps.children);
+    const programs = createMemo2(() => filterGLPrograms(childs()));
+    onMount(() => {
+      try {
+        const stack = new GLStack({
           canvas,
-          gl,
-          onRender: (callback) => {
-            events.onRender.add(callback);
-            return () => events.onRender.delete(callback);
-          },
-          onResize: (callback) => {
-            events.onResize.add(callback);
-            return () => events.onResize.delete(callback);
+          background: props.background,
+          get programs() {
+            return programs();
           }
-        },
-        get children() {
-          return (() => {
-            const childs = children(() => childrenProps.children);
-            const programs = createMemo(() => filterGLPrograms(childs()));
-            onMount(() => {
-              try {
-                const stack = new GLStack({
-                  canvas,
-                  get programs() {
-                    return programs();
-                  }
-                });
-                createRenderLoop(mergeProps(merged, {
-                  stack
-                }));
-              } catch (error2) {
-                console.error(error2);
-              }
-            });
-            return canvas;
-          })();
-        }
-      });
-    }
-  });
+        });
+        createRenderLoop(mergeProps4(merged, { stack }));
+      } catch (error2) {
+        console.error(error2);
+      }
+    });
+    return canvas;
+  })()}</signalGLContext.Provider></internalContext.Provider>;
 };
 var Program = (props) => {
   const context = useInternal();
   if (!context)
     throw "no context";
-  const config = mergeProps({
-    canvas: context.canvas
-  }, props);
+  const config = mergeProps4(
+    {
+      canvas: context.canvas
+    },
+    props
+  );
   return () => new GLProgram(config);
 };
-var RenderTexture = (props) => {
-  const merged = mergeProps({
-    clear: true
-  }, props);
-  const internal = useInternal();
-  if (!internal)
-    throw "internal context undefined";
-  const childs = children(() => props.children);
-  try {
-    const stack = new GLRenderTextureStack({
-      canvas: internal.canvas,
-      get programs() {
-        return filterGLPrograms(childs());
-      },
-      width: internal.canvas.width,
-      height: internal.canvas.width
-    });
-    createRenderLoop(mergeProps(merged, {
-      stack,
-      onRender: () => {
-        props.onTextureUpdate(stack.texture);
-        props.onRender?.();
-      }
-    }));
-  } catch (error2) {
-    console.error(error2);
-  }
-  return () => props.passthrough ? props.children : [];
-};
+
+// src/core/template/glsl.ts
+import { createMemo as createMemo3, mergeProps as mergeProps5 } from "solid-js";
+import zeptoid2 from "zeptoid";
 var DEBUG = false;
 var nameCacheMap = /* @__PURE__ */ new WeakMap();
 var glsl = function(template, ...holes) {
@@ -677,7 +696,7 @@ var glsl = function(template, ...holes) {
     nameCacheMap.set(template, []);
   const nameCache = nameCacheMap.get(template);
   const scopedNames = /* @__PURE__ */ new Map();
-  const tokens = createMemo(
+  const tokens = createMemo3(
     () => holes.map((hole, index) => {
       if (typeof hole === "function") {
         return hole();
@@ -687,7 +706,7 @@ var glsl = function(template, ...holes) {
           // check for cache
           hasNameCache && nameCache[index] || // check for scoped names
           scopedNames.get(hole) || // create new name
-          `${hole}_${zeptoid()}`
+          `${hole}_${zeptoid2()}`
         );
         if (!scopedNames.has(hole))
           scopedNames.set(hole, name2);
@@ -709,7 +728,7 @@ var glsl = function(template, ...holes) {
           index
         );
       }
-      return mergeProps(hole, { name });
+      return mergeProps5(hole, { name });
     }).filter((hole) => hole !== void 0)
   );
   const bind = ({
@@ -752,7 +771,7 @@ var glsl = function(template, ...holes) {
     bind,
     tokenType: "shader",
     template,
-    name: "s_" + zeptoid()
+    name: "s_" + zeptoid2()
   };
 };
 var tokenToString = (token) => {
@@ -810,4 +829,271 @@ var compileStrings = (strings, tokens) => {
   };
 };
 
-export { Canvas, GLProgram, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, GLStack, GLTexture, Program, RenderTexture, attribute, buffer, compileStrings, filterGLPrograms, glsl, isGLProgram, uniform, useSignalGL };
+// src/core/types.ts
+var error = Symbol();
+
+// src/world/index.tsx
+var matrixFromPose = (matrix, pose) => {
+  if (pose.position)
+    mat4.translate(matrix, matrix, pose.position);
+  if (pose.rotation) {
+    mat4.rotate(matrix, matrix, pose.rotation[0], [1, 0, 0]);
+    mat4.rotate(matrix, matrix, pose.rotation[1], [0, 1, 0]);
+    mat4.rotate(matrix, matrix, pose.rotation[2], [0, 0, 1]);
+  }
+  if (pose.scale)
+    mat4.scale(matrix, matrix, pose.scale);
+  return matrix;
+};
+var modelView = (props) => {
+  const gl = useSignalGL();
+  if (!gl)
+    throw "gl not defined";
+  let modelView2 = mat4.create();
+  return uniform.mat4(() => matrixFromPose(mat4.identity(modelView2), props));
+};
+var sceneContext = createContext2();
+var useScene = () => useContext2(sceneContext);
+var Scene = (props) => {
+  const [projection, setProjection] = createSignal2(mat4.create(), {
+    equals: false
+  });
+  const [camera, setCamera] = createSignal2({
+    position: [0, 0, 0],
+    rotation: [0, 0.1, 0],
+    scale: [1, 1, 1]
+  });
+  const cameraPerspectiveScratch = mat4.create();
+  const projectedScene = createMemo4(
+    () => matrixFromPose(projection(), camera())
+  );
+  return <><Canvas
+    {...props}
+    onResize={({ canvas }) => {
+      setProjection(
+        mat4.perspective(
+          cameraPerspectiveScratch,
+          (camera().fov || 45) * Math.PI / 180,
+          canvas.clientWidth / canvas.clientHeight,
+          camera().near || 0.1,
+          camera().far || 1e4
+        )
+      );
+    }}
+  ><sceneContext.Provider
+    value={{
+      projection: uniform.mat4(projectedScene),
+      setCamera
+    }}
+  >{props.children}</sceneContext.Provider></Canvas></>;
+};
+var Group = (props) => {
+  const scene = useScene();
+  if (!scene)
+    throw "scene was not defined";
+  const projection = uniform.mat4(
+    () => matrixFromPose(mat4.clone(scene.projection.value), props)
+  );
+  return <sceneContext.Provider
+    value={{
+      ...scene,
+      get projection() {
+        return projection;
+      }
+    }}
+  >{props.children}</sceneContext.Provider>;
+};
+var Shape = (props) => {
+  const [pose] = splitProps2(props, ["position", "rotation", "scale"]);
+  return <Group {...pose}>
+    {props.children}
+    {(() => {
+      const scene = useScene();
+      if (!scene)
+        throw "scene not defined";
+      return <Program
+        vertex={props.vertex || glsl`#version 300 es
+          precision mediump float;
+          out vec4 position;
+          void main(void) {
+            position = ${scene.projection} * vec4(${attribute.vec3(props.vertices)}, 1.);
+            gl_Position = position;
+          }`}
+        fragment={props.fragment || glsl`#version 300 es
+          precision mediump float;
+          out vec4 color_out;
+          void main(void) {
+            color_out = vec4(${uniform.vec3(() => props.color)}, ${uniform.float(() => props.opacity)});
+          }`}
+        mode="TRIANGLES"
+        indices={props.indices}
+        cacheEnabled
+      />;
+    })()}
+  </Group>;
+};
+var Cube = (props) => {
+  const merged = mergeProps6({
+    vertices: new Float32Array([
+      // Front face
+      -0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      // Back face
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      // Top face
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
+      // Bottom face
+      -0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      // Right face
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      // Left face
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      -0.5
+    ]),
+    indices: [
+      // Front face
+      0,
+      1,
+      2,
+      0,
+      2,
+      3,
+      // Back face
+      4,
+      5,
+      6,
+      4,
+      6,
+      7,
+      // Top face
+      8,
+      9,
+      10,
+      8,
+      10,
+      11,
+      // Bottom face
+      12,
+      13,
+      14,
+      12,
+      14,
+      15,
+      // Right face
+      16,
+      17,
+      18,
+      16,
+      18,
+      19,
+      // Left face
+      20,
+      21,
+      22,
+      20,
+      22,
+      23
+    ],
+    color: [1, 1, 1],
+    opacity: 1
+  }, props);
+  return <Shape {...merged} />;
+};
+var Camera = (props) => {
+  const scene = useScene();
+  if (!scene)
+    throw "scene is undefined";
+  const position = vec3.create();
+  const rotation = vec3.create();
+  const cameraProps = mergeProps6(props, {
+    get position() {
+      if (!props.position)
+        return void 0;
+      return vec3.negate(position, props.position);
+    },
+    get rotation() {
+      if (!props.rotation)
+        return void 0;
+      return vec3.negate(rotation, props.rotation);
+    }
+  });
+  createRenderEffect2(() => {
+    if (!props.active)
+      return;
+    scene.setCamera(cameraProps);
+  });
+  return <Group {...props} />;
+};
+export {
+  Camera,
+  Cube,
+  Group,
+  Scene,
+  Shape,
+  loadOBJ,
+  modelView
+};

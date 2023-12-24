@@ -11,6 +11,11 @@ const preset_options: preset.PresetOptions = {
       // will generate a separate development entry
       dev_entry: true,
     },
+    {
+      entry: './src/world/index.tsx',
+      dev_entry: true,
+      name: 'world',
+    },
   ],
   // Set to `true` to remove all `console.*` calls and `debugger` statements in prod builds
   // drop_console: true,

@@ -32,22 +32,46 @@
     "vite-plugin-babel": "^1.1.3",
     "vite-plugin-solid": "^2.7.0"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
+  "main": "./dist/index/index.js",
+  "module": "./dist/index/index.js",
   "type": "module",
-  "types": "./dist/index.d.ts",
-  "typesVersions": {},
+  "types": "./dist/index/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "world": [
+        "./dist/world/index.d.ts"
+      ]
+    }
+  },
   "browser": {},
   "exports": {
-    "development": {
+    ".": {
+      "development": {
+        "import": {
+          "types": "./dist/index/index.d.ts",
+          "default": "./dist/index/dev.js"
+        }
+      },
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/dev.js"
+        "types": "./dist/index/index.d.ts",
+        "default": "./dist/index/index.js"
       }
     },
-    "import": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./world": {
+      "solid": {
+        "development": "./dist/world/dev.jsx",
+        "import": "./dist/world/index.jsx"
+      },
+      "development": {
+        "import": {
+          "types": "./dist/world/index.d.ts",
+          "default": "./dist/world/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/world/index.d.ts",
+        "default": "./dist/world/index.js"
+      }
     }
   },
   "repository": {
