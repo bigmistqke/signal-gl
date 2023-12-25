@@ -1,15 +1,13 @@
 export * from './loaders'
-import { ReadonlyMat4, mat4, vec3 } from 'gl-matrix'
+import { mat4, vec3 } from 'gl-matrix'
 import {
   Component,
   ComponentProps,
   ParentProps,
   createContext,
-  createMemo,
-  createRenderEffect,
+  createEffect,
   createSignal,
   mergeProps,
-  splitProps,
   useContext,
 } from 'solid-js'
 import {
@@ -23,10 +21,11 @@ import {
 } from '../'
 
 type Vector3 = [number, number, number]
-type Pose = {
+export type Pose = {
   position?: Vector3 | vec3
   rotation?: Vector3 | vec3
   scale?: Vector3 | vec3
+  matrix?: mat4
 }
 
 const matrixFromPose = (matrix: mat4, pose: Pose) => {
@@ -52,50 +51,66 @@ type CameraConfig = BaseCameraConfig & Partial<{ fov: number }>
 /**
  * SCENE
  */
-const sceneContext = createContext<{
-  projection: ReturnType<typeof uniform.mat4>
-  setCamera: (pose: CameraConfig) => void
-}>()
-const useScene = () => useContext(sceneContext)
+const sceneContext = createContext<
+  {
+    projection: {
+      uniform: ReturnType<typeof uniform.mat4>
+      matrix: mat4
+    }
+    view: {
+      uniform: ReturnType<typeof uniform.mat4>
+      matrix: mat4
+    }
+    model: {
+      uniform: ReturnType<typeof uniform.mat4>
+      matrix: mat4
+    }
+    setView: (view: mat4) => void
+    setProjection: (view: mat4) => void
+  } & ReturnType<typeof useSignalGL>
+>()
+export const useScene = () => useContext(sceneContext)
 export const Scene: Component<ComponentProps<typeof Canvas>> = (props) => {
-  const [projection, setProjection] = createSignal(mat4.create(), {
+  const [projection, setProjection] = createSignal<mat4>(mat4.create(), {
     equals: false,
   })
-  const [camera, setCamera] = createSignal<CameraConfig>({
-    position: [0, 0, 0],
-    rotation: [0, 0.1, 0],
-    scale: [1, 1, 1],
-  })
-  const cameraPerspectiveScratch = mat4.create()
-
-  const projectedScene = createMemo(() =>
-    matrixFromPose(projection(), camera())
-  )
+  const [view, setView] = createSignal<mat4>(mat4.create(), { equals: false })
+  const model = mat4.create()
 
   return (
     <>
-      <Canvas
-        {...props}
-        onResize={({ canvas }) => {
-          setProjection(
-            mat4.perspective(
-              cameraPerspectiveScratch,
-              ((camera().fov || 45) * Math.PI) / 180,
-              canvas.clientWidth / canvas.clientHeight,
-              camera().near || 0.1,
-              camera().far || 10000.0
-            )
+      <Canvas {...props}>
+        {(() => {
+          const signalgl = useSignalGL()
+          if (!signalgl) throw `signalgl is undefined`
+
+          return (
+            <sceneContext.Provider
+              value={mergeProps(signalgl, {
+                projection: {
+                  uniform: uniform.mat4(projection),
+                  get matrix() {
+                    return projection()
+                  },
+                },
+                view: {
+                  uniform: uniform.mat4(view),
+                  get matrix() {
+                    return view()
+                  },
+                },
+                model: {
+                  uniform: uniform.mat4(model),
+                  matrix: model,
+                },
+                setView,
+                setProjection,
+              })}
+            >
+              {props.children}
+            </sceneContext.Provider>
           )
-        }}
-      >
-        <sceneContext.Provider
-          value={{
-            projection: uniform.mat4(projectedScene),
-            setCamera,
-          }}
-        >
-          {props.children}
-        </sceneContext.Provider>
+        })()}
       </Canvas>
     </>
   )
@@ -109,18 +124,21 @@ export const Group: Component<ParentProps<Pose>> = (props) => {
   const scene = useScene()
   if (!scene) throw 'scene was not defined'
 
-  const projection = uniform.mat4(() =>
-    matrixFromPose(mat4.clone(scene.projection.value as ReadonlyMat4), props)
-  )
+  const matrix = () =>
+    props.matrix
+      ? props.matrix
+      : matrixFromPose(mat4.clone(scene.model.matrix), props)
 
   return (
     <sceneContext.Provider
-      value={{
-        ...scene,
-        get projection() {
-          return projection
+      value={mergeProps(scene, {
+        model: {
+          uniform: uniform.mat4(matrix),
+          get matrix() {
+            return matrix()
+          },
         },
-      }}
+      })}
     >
       {props.children}
     </sceneContext.Provider>
@@ -142,13 +160,13 @@ type ShapeProps = Pose & {
 }
 
 export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
-  const [pose] = splitProps(props, ['position', 'rotation', 'scale'])
   return (
-    <Group {...pose}>
+    <Group {...props}>
       {props.children}
       {(() => {
         const scene = useScene()
         if (!scene) throw 'scene not defined'
+
         return (
           <Program
             // prettier-ignore
@@ -156,10 +174,14 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
           props.vertex ||
           glsl`#version 300 es
           precision mediump float;
-          out vec4 position;
+          out vec4 model;
+          out vec4 view;
+          out vec4 clip;
           void main(void) {
-            position = ${scene.projection} * vec4(${attribute.vec3(props.vertices)}, 1.);
-            gl_Position = position;
+            model = ${scene.model.uniform} * vec4(${attribute.vec3(props.vertices)}, 1.);
+            view = ${scene.view.uniform} * model;
+            clip = ${scene.projection.uniform} * view;
+            gl_Position = clip;
           }`}
             // prettier-ignore
             fragment={
@@ -229,23 +251,37 @@ export const Camera: Component<
   const scene = useScene()
   if (!scene) throw 'scene is undefined'
 
-  const position = vec3.create()
-  const rotation = vec3.create()
+  const projection = mat4.create()
+  const view = mat4.create()
+  const perspective = mergeProps(
+    {
+      fov: 45,
+      near: 0.1,
+      far: 10000,
+    },
+    props
+  )
 
-  const cameraProps = mergeProps(props, {
-    get position() {
-      if (!props.position) return undefined
-      return vec3.negate(position, props.position)
-    },
-    get rotation() {
-      if (!props.rotation) return undefined
-      return vec3.negate(rotation, props.rotation)
-    },
+  createEffect(() => {
+    if (!props.active) return
+    scene.setProjection(
+      mat4.perspective(
+        projection,
+        (perspective.fov * Math.PI) / 180,
+        scene.canvas.clientWidth / scene.canvas.clientHeight,
+        perspective.near,
+        perspective.far
+      )
+    )
   })
 
-  createRenderEffect(() => {
+  createEffect(() => {
     if (!props.active) return
-    scene.setCamera(cameraProps)
+    mat4.identity(view)
+    mat4.multiply(view, scene.model.matrix, matrixFromPose(view, props))
+    if (props.matrix) mat4.multiply(view, view, props.matrix)
+    mat4.invert(view, view)
+    scene.setView(view)
   })
 
   return <Group {...props} />
