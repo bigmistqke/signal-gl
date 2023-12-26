@@ -1,10 +1,10 @@
 import { mat4, quat, vec3 } from 'gl-matrix'
 import {
-  createEffect,
+  batch,
+  createMemo,
   createSignal,
   mergeProps,
   onCleanup,
-  untrack,
 } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { Vector3 } from '..'
@@ -110,59 +110,17 @@ export const fly = () => {
   })
   const [keys, setKeys] = createStore<Record<string, boolean>>({})
 
+  let keysPressed = createMemo(() => Object.values(keys).find((v) => v))
+  let last: number | undefined
   {
+    // POSITION
     const speed = 0.05
-    let last: number | undefined
-    let keysPressed = false
     const front = vec3.create()
     const right = vec3.create()
     const up = vec3.create()
     const moveDirection = vec3.create()
 
-    const keyboardLoop = (now: number) => {
-      if (last) {
-        const delta = now - last
-        setPosition((position) => {
-          vec3.set(front, 0, 0, -1)
-          vec3.transformQuat(front, front, rotation())
-          vec3.set(right, 1, 0, 0)
-          vec3.transformQuat(right, right, rotation())
-          vec3.set(up, -1, 0, 0)
-          vec3.transformQuat(up, up, rotation())
-
-          vec3.set(moveDirection, 0, 0, 0)
-          if (keys.KeyW) vec3.add(moveDirection, moveDirection, front)
-          if (keys.KeyS) vec3.subtract(moveDirection, moveDirection, front)
-          if (keys.KeyA) vec3.subtract(moveDirection, moveDirection, right)
-          if (keys.KeyD) vec3.add(moveDirection, moveDirection, right)
-
-          vec3.normalize(moveDirection, moveDirection)
-          vec3.scale(moveDirection, moveDirection, (speed * delta) / 10)
-
-          vec3.add(position, position, moveDirection)
-          return position
-        })
-      }
-      if (keysPressed) {
-        last = now
-        requestAnimationFrame(keyboardLoop)
-      } else {
-        last = undefined
-      }
-    }
-    createEffect(() => {
-      if (Object.values(keys).find((v) => v)) {
-        if (!keysPressed) {
-          keysPressed = true
-          untrack(() => requestAnimationFrame(keyboardLoop))
-        }
-      } else {
-        keysPressed = false
-      }
-    })
-  }
-
-  {
+    // ROTATION
     const direction = {
       x: 0,
       y: 0,
@@ -173,21 +131,51 @@ export const fly = () => {
     const xAxis: Vector3 = [1, 0, 0]
     const yAxis: Vector3 = [0, 1, 0]
     const sensitivity = 0.05
-    const loop = () => {
-      setRotation((rotation) => {
-        quat.identity(pitch)
-        quat.setAxisAngle(pitch, xAxis, -direction.y * sensitivity)
-        quat.identity(yaw)
-        quat.setAxisAngle(yaw, yAxis, -direction.x * sensitivity)
-        quat.identity(temp)
-        quat.multiply(temp, yaw, temp)
-        quat.multiply(temp, temp, pitch)
-        quat.normalize(temp, temp)
-        return quat.multiply(rotation, rotation, temp)
+    const loop = (now: number) => {
+      batch(() => {
+        if (keysPressed()) {
+          if (last) {
+            const delta = now - last
+            setPosition((position) => {
+              vec3.set(front, 0, 0, -1)
+              vec3.transformQuat(front, front, rotation())
+              vec3.set(right, 1, 0, 0)
+              vec3.transformQuat(right, right, rotation())
+              vec3.set(up, -1, 0, 0)
+              vec3.transformQuat(up, up, rotation())
+
+              vec3.set(moveDirection, 0, 0, 0)
+              if (keys.KeyW) vec3.add(moveDirection, moveDirection, front)
+              if (keys.KeyS) vec3.subtract(moveDirection, moveDirection, front)
+              if (keys.KeyA) vec3.subtract(moveDirection, moveDirection, right)
+              if (keys.KeyD) vec3.add(moveDirection, moveDirection, right)
+
+              vec3.normalize(moveDirection, moveDirection)
+              vec3.scale(moveDirection, moveDirection, (speed * delta) / 10)
+
+              vec3.add(position, position, moveDirection)
+              return position
+            })
+          }
+          last = now
+        } else {
+          last = undefined
+        }
+        setRotation((rotation) => {
+          quat.identity(pitch)
+          quat.setAxisAngle(pitch, xAxis, -direction.y * sensitivity)
+          quat.identity(yaw)
+          quat.setAxisAngle(yaw, yAxis, -direction.x * sensitivity)
+          quat.identity(temp)
+          quat.multiply(temp, yaw, temp)
+          quat.multiply(temp, temp, pitch)
+          quat.normalize(temp, temp)
+          return quat.multiply(rotation, rotation, temp)
+        })
       })
       requestAnimationFrame(loop)
     }
-    loop()
+    requestAnimationFrame(loop)
 
     document.addEventListener('mousemove', (event: MouseEvent) => {
       direction.x = event.clientX / scene!.canvas.width - 0.5
