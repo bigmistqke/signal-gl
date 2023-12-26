@@ -63,15 +63,17 @@ const createRenderLoop = (
   })
 
   const render = () => {
+    console.log('render')
     /* if (config.clear) {
       if (typeof config.clear === 'function') config.clear(config.stack)
       else config.stack.clear()
     } */
 
+    config.onBeforeRender?.()
     config.stack.clear()
-    config.onRender?.()
     context.events.onRender.forEach((fn) => fn())
     config.stack.render()
+    config.onAfterRender?.()
   }
 
   let past: number | undefined
@@ -101,7 +103,8 @@ const createRenderLoop = (
 /* CANVAS */
 
 type StackProps = {
-  onRender?: () => void
+  onBeforeRender?: () => void
+  onAfterRender?: () => void
   onResize?: (token: GLStack) => void
   onProgramCreate?: () => void
   /* Enable/disable clear-function or provide a custom one. */
