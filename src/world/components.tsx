@@ -5,6 +5,7 @@ import {
   ParentProps,
   createContext,
   createEffect,
+  createMemo,
   createSignal,
   mergeProps,
   useContext,
@@ -110,10 +111,11 @@ export const Group: Component<ParentProps<Pose>> = (props) => {
   const scene = useScene()
   if (!scene) throw 'scene was not defined'
 
-  const matrix = () =>
+  const matrix = createMemo(() =>
     props.matrix
       ? props.matrix
       : matrixFromPose(mat4.clone(scene.model.matrix), props)
+  )
 
   return (
     <sceneContext.Provider
