@@ -218,6 +218,8 @@ export const isGLProgram = (value: any): value is GLProgram =>
 /** Filters `any` for `ProgramTokens`. Returns `ProgramToken[]` */
 export const filterGLPrograms = (value: any) =>
   castToArray(value).filter(isGLProgram)
+export const filterNonGLPrograms = (value: any) =>
+  castToArray(value).filter((v) => !isGLProgram(v))
 
 /* Manages program-cache of `createProgram` */
 const programCache: WeakMap<

@@ -130,7 +130,7 @@ export const fly = () => {
     const yaw = quat.create()
     const xAxis: Vector3 = [1, 0, 0]
     const yAxis: Vector3 = [0, 1, 0]
-    const sensitivity = 0.05
+    const sensitivity = 0.0125
     const loop = (now: number) => {
       batch(() => {
         if (keysPressed()) {

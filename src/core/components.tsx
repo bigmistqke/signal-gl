@@ -23,6 +23,7 @@ import {
   GLRenderTextureStack,
   GLStack,
   filterGLPrograms,
+  filterNonGLPrograms,
 } from './classes'
 import type { RenderMode, ShaderToken, Vector4 } from './types'
 
@@ -161,6 +162,7 @@ export const Canvas = (props: CanvasProps) => {
         {(() => {
           const childs = children(() => childrenProps.children)
           const programs = createMemo(() => filterGLPrograms(childs()))
+          const other = createMemo(() => filterNonGLPrograms(childs()))
           onMount(() => {
             try {
               const stack = new GLStack({
@@ -176,8 +178,9 @@ export const Canvas = (props: CanvasProps) => {
             }
           })
 
-          return canvas
+          return <>{other()}</>
         })()}
+        {canvas}
       </signalGLContext.Provider>
     </internalContext.Provider>
   )

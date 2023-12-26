@@ -8,6 +8,7 @@ import {
   createMemo,
   createSignal,
   mergeProps,
+  onCleanup,
   useContext,
 } from 'solid-js'
 import { Pose } from '.'
@@ -269,9 +270,9 @@ export const Camera: Component<
   }
   createEffect(() => {
     if (!props.active) return
-    window.removeEventListener('resize', updatePerspective)
     window.addEventListener('resize', updatePerspective)
     updatePerspective()
+    onCleanup(() => window.removeEventListener('resize', updatePerspective))
   })
 
   createEffect(() => {

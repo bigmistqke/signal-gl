@@ -77,7 +77,6 @@ const App = () => {
 
     let hit = false
 
-    // Iterate over the box colliders in the scene and check for intersection
     for (const collider of colliders) {
       if (
         rayIntersectsBox(
@@ -87,7 +86,6 @@ const App = () => {
           collider.max
         )
       ) {
-        // TODO: Handle the picked box collider
         console.log('Box collider picked:', collider)
         hit = true
       }
@@ -102,7 +100,7 @@ const App = () => {
     },
   ]
 
-  scene.onRender(() => pickObject())
+  scene.onRender(pickObject)
 
   return (
     <>
