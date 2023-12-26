@@ -1,4 +1,4 @@
-import { mat4 } from 'gl-matrix'
+import { mat4, vec3 } from 'gl-matrix'
 import {
   Component,
   ComponentProps,
@@ -15,6 +15,7 @@ import { Pose } from '.'
 import {
   Canvas,
   Program,
+  RenderMode,
   ShaderToken,
   Vector3,
   attribute,
@@ -34,25 +35,27 @@ const matrixFromPose = (matrix: mat4, pose: Pose) => {
   return matrix
 }
 
-type BaseCameraConfig = Pose & Partial<{ far: number; near: number }>
-type CameraConfig = BaseCameraConfig & Partial<{ fov: number }>
+export type Spaces = {
+  projection: {
+    uniform: ReturnType<typeof uniform.mat4>
+    matrix: mat4
+    invertedMatrix: mat4
+  }
+  view: {
+    uniform: ReturnType<typeof uniform.mat4>
+    matrix: mat4
+    invertedMatrix: mat4
+  }
+  model: {
+    uniform: ReturnType<typeof uniform.mat4>
+    matrix: mat4
+  }
+}
 /**
  * SCENE
  */
 const sceneContext = createContext<
-  {
-    projection: {
-      uniform: ReturnType<typeof uniform.mat4>
-      matrix: mat4
-    }
-    view: {
-      uniform: ReturnType<typeof uniform.mat4>
-      matrix: mat4
-    }
-    model: {
-      uniform: ReturnType<typeof uniform.mat4>
-      matrix: mat4
-    }
+  Spaces & {
     setView: (view: mat4) => void
     setProjection: (view: mat4) => void
   } & ReturnType<typeof useSignalGL>
@@ -64,6 +67,9 @@ export const Scene: Component<ComponentProps<typeof Canvas>> = (props) => {
   })
   const [view, setView] = createSignal<mat4>(mat4.create(), { equals: false })
   const model = mat4.create()
+
+  const _invertedProjection = mat4.create()
+  const _invertedView = mat4.create()
 
   return (
     <>
@@ -80,11 +86,17 @@ export const Scene: Component<ComponentProps<typeof Canvas>> = (props) => {
                   get matrix() {
                     return projection()
                   },
+                  get invertedMatrix() {
+                    return mat4.invert(_invertedProjection, projection())
+                  },
                 },
                 view: {
                   uniform: uniform.mat4(view),
                   get matrix() {
                     return view()
+                  },
+                  get invertedMatrix() {
+                    return mat4.invert(_invertedView, view())
                   },
                 },
                 model: {
@@ -143,9 +155,10 @@ type ShapeProps = Pose & {
   fragment?: ShaderToken
   vertex?: ShaderToken
   indices: number[]
-  color?: Vector3
+  color?: Vector3 | vec3
   opacity: number
   vertices: Float32Array
+  mode: RenderMode
 }
 
 export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
@@ -181,7 +194,7 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
           void main(void) {
             color_out = vec4(${uniform.vec3(() => props.color || [0,0,0] as Vector3)}, ${uniform.float(() => props.opacity)});
           }`}
-            mode="TRIANGLES"
+            mode={props.mode || 'TRIANGLES'}
             indices={props.indices}
             cacheEnabled
           />
@@ -227,7 +240,8 @@ export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
       20, 21, 22, 20, 22, 23,
     ],
     color: [1,1,1] as Vector3,
-    opacity: 1
+    opacity: 1,
+    mode: "TRIANGLES" as RenderMode
   }, props)
   return <Shape {...merged} />
 }

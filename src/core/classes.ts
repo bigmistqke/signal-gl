@@ -27,8 +27,7 @@ type BaseConfig = {
 class Base {
   gl: WebGL2RenderingContext
   canvas: HTMLCanvasElement
-  config: Required<Pick<BaseConfig, 'background'>> &
-    Omit<BaseConfig, 'background'>
+  config: BaseConfig
   constructor(_config: BaseConfig) {
     const config = mergeProps(
       {
@@ -50,7 +49,7 @@ class Base {
     return this
   }
   clear() {
-    this.gl.clearColor(...this.config.background)
+    this.gl.clearColor(...this.config.background!)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
     this.gl.depthMask(true)
     this.gl.enable(this.gl.BLEND)

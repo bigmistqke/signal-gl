@@ -50,11 +50,10 @@ export const useSignalGL = () => useContext(signalGLContext)
 
 /* UTILS */
 
-const createRenderLoop = (
-  config: CanvasProps & {
-    stack: GLStack
-  }
-) => {
+type CreateRenderLoopConfig = CanvasProps & {
+  stack: GLStack
+}
+const createRenderLoop = (config: CreateRenderLoopConfig) => {
   const context = useInternal()
 
   if (!context) return
@@ -65,9 +64,6 @@ const createRenderLoop = (
   })
   let last = performance.now()
   const render = () => {
-    /* const now = performance.now()
-    console.log(1000 / (now - last))
-    last = now */
     config.onBeforeRender?.()
     if (config.clear) {
       if (typeof config.clear === 'function') config.clear(config.stack)
@@ -125,7 +121,10 @@ type CanvasProps = ComponentProps<'canvas'> & StackProps
 /** Root-element containing `<canvas/>` and `GLStack`. */
 export const Canvas = (props: CanvasProps) => {
   const [childrenProps, rest] = splitProps(props, ['children'])
-  const merged = mergeProps({ clear: true }, rest)
+  const merged = mergeProps(
+    { clear: true, background: [0, 0, 0, 1] as Vector4 },
+    rest
+  )
   const canvas = (<canvas {...rest} />) as HTMLCanvasElement
   const gl = canvas.getContext('webgl2')!
 
@@ -167,7 +166,7 @@ export const Canvas = (props: CanvasProps) => {
             try {
               const stack = new GLStack({
                 canvas,
-                background: props.background,
+                background: merged.background,
                 get programs() {
                   return programs()
                 },
@@ -253,14 +252,12 @@ export const RenderTexture: Component<
       width: internal.canvas.width,
       height: internal.canvas.width,
     })
+
     createRenderLoop(
       mergeProps(merged, {
         stack,
-        onRender: () => {
-          props.onTextureUpdate(stack.texture)
-          props.onRender?.()
-        },
-      })
+        onAfterRender: () => props.onTextureUpdate(stack.texture),
+      } satisfies CreateRenderLoopConfig)
     )
   } catch (error) {
     console.error(error)

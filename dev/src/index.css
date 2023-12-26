@@ -9,3 +9,16 @@ canvas {
   width: 100vw;
   height: 100vh;
 }
+
+#crosshair {
+  pointer-events: none;
+  position: fixed;
+  left: 50vw;
+  top: 50vh;
+  transform: translate(-50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: blue;
+  z-index: 10;
+}
