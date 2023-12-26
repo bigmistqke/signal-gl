@@ -179,7 +179,7 @@ export class GLProgram extends Base {
   private setRenderRequest = this.renderRequestSignal[1]
 
   requestRender = () => {
-    this.setRenderRequest((number) => (number + 1) % Number.MAX_SAFE_INTEGER)
+    this.setRenderRequest((number) => (number + 1) % 100_000_000)
   }
 
   render = () => {
@@ -187,7 +187,10 @@ export class GLProgram extends Base {
     this.gl.useProgram(this.program)
 
     /* iterate through all uniforms/attributes and update them. */
-    this.renderQueue.forEach((update) => update())
+    const values = this.renderQueue.values()
+    for (const update of values) {
+      update()
+    }
     this.config.onRender?.(this.gl, this.program)
 
     if ('indices' in this.config && this.config.indices) {
@@ -257,7 +260,10 @@ export class GLStack extends Base {
     this.config = config
   }
   render() {
-    this.programs.forEach((program) => program.render())
+    const programs = this.programs
+    for (const program of programs) {
+      program.render()
+    }
     return this
   }
 }

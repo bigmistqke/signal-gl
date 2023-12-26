@@ -60,7 +60,9 @@ const createRenderLoop = (config: CreateRenderLoopConfig) => {
 
   config.stack.autosize(() => {
     config.onResize?.(config.stack)
-    context.events.onResize.forEach((fn) => fn())
+    for (const event of context.events.onResize) {
+      event()
+    }
   })
   let last = performance.now()
   const render = () => {
@@ -69,7 +71,9 @@ const createRenderLoop = (config: CreateRenderLoopConfig) => {
       if (typeof config.clear === 'function') config.clear(config.stack)
       else config.stack.clear()
     }
-    context.events.onRender.forEach((fn) => fn())
+    for (const event of context.events.onResize) {
+      event()
+    }
     config.stack.render()
     config.onAfterRender?.()
   }

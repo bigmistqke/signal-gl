@@ -167,15 +167,15 @@ export const AxisAlignedBoxCollider: ParentComponent<
 
   const tMin: Vector3 = [0, 0, 0]
   const tMax: Vector3 = [0, 0, 0]
+  let boxMin: Vector3 = [0, 0, 0]
+  let boxMax: Vector3 = [0, 0, 0]
 
   const unsubscribe = colliders.addCollider({
     intersects: (position, direction) => {
-      const boxMin = (merged.position as Vector3).map(
-        (v, i) => v - 0.5 * merged.scale[i]!
-      ) as Vector3
-      const boxMax = (merged.position as Vector3).map(
-        (v, i) => v + 0.5 * merged.scale[i]!
-      ) as Vector3
+      for (let i = 0; i < 3; i++) {
+        boxMin[i] = merged.position[i]! - 0.5 * merged.scale[i]!
+        boxMax[i] = merged.position[i]! + 0.5 * merged.scale[i]!
+      }
 
       const origin = mat4.getTranslation(vec3.create(), scene.model.matrix)
 
