@@ -5,6 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@solid-primitives/scheduled':
+    specifier: ^1.4.1
+    version: 1.4.1(solid-js@1.7.12)
+  gl-matrix:
+    specifier: ^3.4.3
+    version: 3.4.3
   solid-js:
     specifier: '*'
     version: 1.7.12
@@ -28,9 +34,6 @@ devDependencies:
   colord:
     specifier: ^2.9.3
     version: 2.9.3
-  gl-matrix:
-    specifier: ^3.4.3
-    version: 3.4.3
   names:
     specifier: link:colord/plugins/names
     version: link:colord/plugins/names
@@ -1937,6 +1940,14 @@ packages:
     dev: true
     optional: true
 
+  /@solid-primitives/scheduled@1.4.1(solid-js@1.7.12):
+    resolution: {integrity: sha512-OLcNXwYpX7HUOEqNPcmR31dkyI1E2imkMDBRlqsGT0ZhJV1L2g0TEREpo4nm/kUhh8LVQzkfnxS+GONx9kh90A==}
+    peerDependencies:
+      solid-js: ^1.6.12
+    dependencies:
+      solid-js: 1.7.12
+    dev: false
+
   /@total-typescript/ts-reset@0.5.1:
     resolution: {integrity: sha512-AqlrT8YA1o7Ff5wPfMOL0pvL+1X+sw60NN6CcOCqs658emD6RfiXhF7Gu9QcfKBH7ELY2nInLhKSCWVoNL70MQ==}
     dev: true
@@ -2368,7 +2379,7 @@ packages:
 
   /gl-matrix@3.4.3:
     resolution: {integrity: sha512-wcCp8vu8FT22BnvKVPjXa/ICBWRq/zjFfdofZy1WSpQZpphblv12/bOQLBC1rMM7SGOFS9ltVmKOHil5+Ml7gA==}
-    dev: true
+    dev: false
 
   /glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}

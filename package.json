@@ -11,8 +11,9 @@
     "package": "tsup && npm publish --access public"
   },
   "dependencies": {
-    "zeptoid": "^1.0.1",
-    "gl-matrix": "^3.4.3"
+    "@solid-primitives/scheduled": "^1.4.1",
+    "gl-matrix": "^3.4.3",
+    "zeptoid": "^1.0.1"
   },
   "peerDependencies": {
     "solid-js": "*"

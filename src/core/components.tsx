@@ -1,3 +1,4 @@
+import { createScheduled, throttle } from '@solid-primitives/scheduled'
 import {
   Component,
   JSX,
@@ -61,20 +62,22 @@ const createRenderLoop = (
     config.onResize?.(config.stack)
     context.events.onResize.forEach((fn) => fn())
   })
-
+  let last = performance.now()
   const render = () => {
-    console.log('render')
-    /* if (config.clear) {
+    /* const now = performance.now()
+    console.log(1000 / (now - last))
+    last = now */
+    config.onBeforeRender?.()
+    if (config.clear) {
       if (typeof config.clear === 'function') config.clear(config.stack)
       else config.stack.clear()
-    } */
-
-    config.onBeforeRender?.()
-    config.stack.clear()
+    }
     context.events.onRender.forEach((fn) => fn())
     config.stack.render()
     config.onAfterRender?.()
   }
+
+  const scheduled = createScheduled((fn) => throttle(fn, 1000 / 120))
 
   let past: number | undefined
   const animate = () => {
@@ -94,7 +97,9 @@ const createRenderLoop = (
     if (config.animate) {
       setTimeout(animate)
     } else {
-      createEffect(render)
+      createEffect(() => {
+        if (scheduled()) render()
+      })
       past = undefined
     }
   })
