@@ -26,7 +26,7 @@ const HitBox = (props: Pose) => {
   const [hit, setHit] = createSignal(false)
   const color: Vector3 = [Math.random(), Math.random(), Math.random()]
   return (
-    <AxisAlignedBoxCollider {...props} onEvent={({ value }) => setHit(value)}>
+    <AxisAlignedBoxCollider {...props} onEvent={({ hit }) => setHit(hit)}>
       <Cube color={hit() ? [1, 1, 1] : color} />
     </AxisAlignedBoxCollider>
   )

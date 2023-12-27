@@ -40,12 +40,13 @@ const internalContext = createContext<{
 }>()
 const useInternal = () => useContext(internalContext)
 
-const signalGLContext = createContext<{
+export type SignalGLContext = {
   canvas: HTMLCanvasElement
   gl: WebGL2RenderingContext
   onRender: (callback: () => void) => () => void
   onResize: (callback: () => void) => () => void
-}>()
+}
+const signalGLContext = createContext<SignalGLContext>()
 export const useSignalGL = () => useContext(signalGLContext)
 
 /* UTILS */

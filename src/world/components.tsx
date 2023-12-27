@@ -17,6 +17,7 @@ import {
   Program,
   RenderMode,
   ShaderToken,
+  SignalGLContext,
   Vector3,
   attribute,
   glsl,
@@ -55,10 +56,11 @@ export type Spaces = {
  * SCENE
  */
 const sceneContext = createContext<
-  Spaces & {
-    setView: (view: mat4) => void
-    setProjection: (view: mat4) => void
-  } & ReturnType<typeof useSignalGL>
+  Spaces &
+    SignalGLContext & {
+      setView: (view: mat4) => void
+      setProjection: (view: mat4) => void
+    }
 >()
 export const useScene = () => useContext(sceneContext)
 export const Scene: Component<ComponentProps<typeof Canvas>> = (props) => {
@@ -246,17 +248,16 @@ export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
   return <Shape {...merged} />
 }
 
-export const Camera: Component<
-  Partial<
-    Pose & {
-      active?: boolean
-      fov?: number
-      near?: number
-      far?: number
-      realMatrix?: mat4
-    }
-  >
-> = (props) => {
+export type CameraProps = Partial<
+  Pose & {
+    active: boolean
+    fov: number
+    near: number
+    far: number
+    realMatrix: mat4
+  }
+>
+export const Camera: Component<CameraProps> = (props) => {
   const scene = useScene()
   if (!scene) throw 'scene is undefined'
 

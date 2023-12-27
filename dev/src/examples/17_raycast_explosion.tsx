@@ -63,7 +63,7 @@ const HitBox = (props: Pose) => {
   return (
     <Group {...props}>
       <Show when={!hit()} fallback={<Explosion color={color} />}>
-        <AxisAlignedBoxCollider onEvent={({ value }) => setHit(value)}>
+        <AxisAlignedBoxCollider onEvent={({ hit }) => setHit(hit)}>
           <Cube color={hit() ? [1, 1, 1] : color} />
         </AxisAlignedBoxCollider>
       </Show>
