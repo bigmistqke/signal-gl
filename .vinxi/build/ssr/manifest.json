@@ -1,0 +1,452 @@
+{
+  "_XEQHI3TD-da61e201.js": {
+    "file": "assets/XEQHI3TD-da61e201.js",
+    "imports": [
+      "_get-6158dfbd.js"
+    ]
+  },
+  "_get-6158dfbd.js": {
+    "file": "assets/get-6158dfbd.js"
+  },
+  "_index-ac642af0.js": {
+    "file": "assets/index-ac642af0.js",
+    "imports": [
+      "_get-6158dfbd.js"
+    ]
+  },
+  "_routing-c0f8b6f3.js": {
+    "file": "assets/routing-c0f8b6f3.js"
+  },
+  "src/routes/examples.css": {
+    "file": "assets/examples-b9c86015.css",
+    "src": "src/routes/examples.css"
+  },
+  "src/routes/examples.tsx?pick=default&pick=$css": {
+    "css": [
+      "assets/examples-b9c86015.css"
+    ],
+    "dynamicImports": [
+      "src/routes/examples/00_hello_world.tsx",
+      "src/routes/examples/01_scope_and_modules.tsx",
+      "src/routes/examples/02_multiple_shaders.tsx",
+      "src/routes/examples/03_caching_shaders.tsx",
+      "src/routes/examples/04_vanilla.tsx",
+      "src/routes/examples/05_shared_uniforms.tsx",
+      "src/routes/examples/06_game_of_life.tsx",
+      "src/routes/examples/08_cube.tsx",
+      "src/routes/examples/09_cube_with_indices.tsx",
+      "src/routes/examples/10_classes.tsx",
+      "src/routes/examples/11_render_texture.tsx",
+      "src/routes/examples/12_tetris.tsx",
+      "src/routes/examples/13_teapot_obj.tsx",
+      "src/routes/examples/14_controls_orbit.tsx",
+      "src/routes/examples/15_controls_fly.tsx",
+      "src/routes/examples/16_raycast.tsx",
+      "src/routes/examples/17_raycast_explosion.tsx",
+      "src/routes/examples/index.tsx"
+    ],
+    "file": "examples.js",
+    "imports": [
+      "_routing-c0f8b6f3.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/00_hello_world.tsx": {
+    "file": "assets/00_hello_world-b9125ba3.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/00_hello_world.tsx"
+  },
+  "src/routes/examples/00_hello_world.tsx?pick=default&pick=$css": {
+    "file": "00_hello_world.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/00_hello_world.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/01_scope_and_modules.tsx": {
+    "file": "assets/01_scope_and_modules-c7520ae1.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/01_scope_and_modules.tsx"
+  },
+  "src/routes/examples/01_scope_and_modules.tsx?pick=default&pick=$css": {
+    "file": "01_scope_and_modules.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/01_scope_and_modules.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/02_multiple_shaders.tsx": {
+    "file": "assets/02_multiple_shaders-14281337.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/02_multiple_shaders.tsx"
+  },
+  "src/routes/examples/02_multiple_shaders.tsx?pick=default&pick=$css": {
+    "file": "02_multiple_shaders.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/02_multiple_shaders.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/03_caching_shaders.tsx": {
+    "file": "assets/03_caching_shaders-f9fe47a5.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/03_caching_shaders.tsx"
+  },
+  "src/routes/examples/03_caching_shaders.tsx?pick=default&pick=$css": {
+    "file": "03_caching_shaders.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/03_caching_shaders.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/04_vanilla.tsx": {
+    "file": "assets/04_vanilla-515e9c92.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/04_vanilla.tsx"
+  },
+  "src/routes/examples/04_vanilla.tsx?pick=default&pick=$css": {
+    "file": "04_vanilla.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/04_vanilla.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/05_shared_uniforms.tsx": {
+    "file": "assets/05_shared_uniforms-1f08b893.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/05_shared_uniforms.tsx"
+  },
+  "src/routes/examples/05_shared_uniforms.tsx?pick=default&pick=$css": {
+    "file": "05_shared_uniforms.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/05_shared_uniforms.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/06_game_of_life.tsx": {
+    "file": "assets/06_game_of_life-1aa3b827.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/06_game_of_life.tsx"
+  },
+  "src/routes/examples/06_game_of_life.tsx?pick=default&pick=$css": {
+    "file": "06_game_of_life.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/06_game_of_life.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/08_cube.tsx": {
+    "file": "assets/08_cube-51881a7c.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/08_cube.tsx"
+  },
+  "src/routes/examples/08_cube.tsx?pick=default&pick=$css": {
+    "file": "08_cube.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/08_cube.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/09_cube_with_indices.tsx": {
+    "file": "assets/09_cube_with_indices-014292e3.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/09_cube_with_indices.tsx"
+  },
+  "src/routes/examples/09_cube_with_indices.tsx?pick=default&pick=$css": {
+    "file": "09_cube_with_indices.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/09_cube_with_indices.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/10_classes.tsx": {
+    "file": "assets/10_classes-4966f7d0.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/10_classes.tsx"
+  },
+  "src/routes/examples/10_classes.tsx?pick=default&pick=$css": {
+    "file": "10_classes.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/10_classes.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/11_render_texture.tsx": {
+    "file": "assets/11_render_texture-b3ee4858.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/11_render_texture.tsx"
+  },
+  "src/routes/examples/11_render_texture.tsx?pick=default&pick=$css": {
+    "file": "11_render_texture.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/11_render_texture.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/12_tetris.tsx": {
+    "file": "assets/12_tetris-b7c98996.js",
+    "imports": [
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/12_tetris.tsx"
+  },
+  "src/routes/examples/12_tetris.tsx?pick=default&pick=$css": {
+    "file": "12_tetris.js",
+    "imports": [
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/12_tetris.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/13_teapot_obj.tsx": {
+    "file": "assets/13_teapot_obj-77b99518.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/13_teapot_obj.tsx"
+  },
+  "src/routes/examples/13_teapot_obj.tsx?pick=default&pick=$css": {
+    "file": "13_teapot_obj.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/13_teapot_obj.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/14_controls_orbit.tsx": {
+    "file": "assets/14_controls_orbit-4d994048.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/14_controls_orbit.tsx"
+  },
+  "src/routes/examples/14_controls_orbit.tsx?pick=default&pick=$css": {
+    "file": "14_controls_orbit.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/14_controls_orbit.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/15_controls_fly.tsx": {
+    "file": "assets/15_controls_fly-a52285cb.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/15_controls_fly.tsx"
+  },
+  "src/routes/examples/15_controls_fly.tsx?pick=default&pick=$css": {
+    "file": "15_controls_fly.js",
+    "imports": [
+      "_XEQHI3TD-da61e201.js",
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/15_controls_fly.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/16_raycast.tsx": {
+    "file": "assets/16_raycast-29566a89.js",
+    "imports": [
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/16_raycast.tsx"
+  },
+  "src/routes/examples/16_raycast.tsx?pick=default&pick=$css": {
+    "file": "16_raycast.js",
+    "imports": [
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/16_raycast.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/17_raycast_explosion.tsx": {
+    "file": "assets/17_raycast_explosion-d7481fb0.js",
+    "imports": [
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/17_raycast_explosion.tsx"
+  },
+  "src/routes/examples/17_raycast_explosion.tsx?pick=default&pick=$css": {
+    "file": "17_raycast_explosion.js",
+    "imports": [
+      "_index-ac642af0.js",
+      "_get-6158dfbd.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/17_raycast_explosion.tsx?pick=default&pick=$css"
+  },
+  "src/routes/examples/index.tsx": {
+    "file": "assets/index-4a36294d.js",
+    "isDynamicEntry": true,
+    "src": "src/routes/examples/index.tsx"
+  },
+  "src/routes/examples/index.tsx?pick=default&pick=$css": {
+    "file": "index2.js",
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/examples/index.tsx?pick=default&pick=$css"
+  },
+  "src/routes/index.tsx?pick=default&pick=$css": {
+    "file": "index.js",
+    "imports": [
+      "_routing-c0f8b6f3.js"
+    ],
+    "isDynamicEntry": true,
+    "isEntry": true,
+    "src": "src/routes/index.tsx?pick=default&pick=$css"
+  },
+  "virtual:#vinxi/handler/ssr": {
+    "dynamicImports": [
+      "src/routes/examples.tsx?pick=default&pick=$css",
+      "src/routes/examples.tsx?pick=default&pick=$css",
+      "src/routes/index.tsx?pick=default&pick=$css",
+      "src/routes/index.tsx?pick=default&pick=$css",
+      "src/routes/examples/00_hello_world.tsx?pick=default&pick=$css",
+      "src/routes/examples/00_hello_world.tsx?pick=default&pick=$css",
+      "src/routes/examples/01_scope_and_modules.tsx?pick=default&pick=$css",
+      "src/routes/examples/01_scope_and_modules.tsx?pick=default&pick=$css",
+      "src/routes/examples/02_multiple_shaders.tsx?pick=default&pick=$css",
+      "src/routes/examples/02_multiple_shaders.tsx?pick=default&pick=$css",
+      "src/routes/examples/03_caching_shaders.tsx?pick=default&pick=$css",
+      "src/routes/examples/03_caching_shaders.tsx?pick=default&pick=$css",
+      "src/routes/examples/04_vanilla.tsx?pick=default&pick=$css",
+      "src/routes/examples/04_vanilla.tsx?pick=default&pick=$css",
+      "src/routes/examples/05_shared_uniforms.tsx?pick=default&pick=$css",
+      "src/routes/examples/05_shared_uniforms.tsx?pick=default&pick=$css",
+      "src/routes/examples/06_game_of_life.tsx?pick=default&pick=$css",
+      "src/routes/examples/06_game_of_life.tsx?pick=default&pick=$css",
+      "src/routes/examples/08_cube.tsx?pick=default&pick=$css",
+      "src/routes/examples/08_cube.tsx?pick=default&pick=$css",
+      "src/routes/examples/09_cube_with_indices.tsx?pick=default&pick=$css",
+      "src/routes/examples/09_cube_with_indices.tsx?pick=default&pick=$css",
+      "src/routes/examples/10_classes.tsx?pick=default&pick=$css",
+      "src/routes/examples/10_classes.tsx?pick=default&pick=$css",
+      "src/routes/examples/11_render_texture.tsx?pick=default&pick=$css",
+      "src/routes/examples/11_render_texture.tsx?pick=default&pick=$css",
+      "src/routes/examples/12_tetris.tsx?pick=default&pick=$css",
+      "src/routes/examples/12_tetris.tsx?pick=default&pick=$css",
+      "src/routes/examples/13_teapot_obj.tsx?pick=default&pick=$css",
+      "src/routes/examples/13_teapot_obj.tsx?pick=default&pick=$css",
+      "src/routes/examples/14_controls_orbit.tsx?pick=default&pick=$css",
+      "src/routes/examples/14_controls_orbit.tsx?pick=default&pick=$css",
+      "src/routes/examples/15_controls_fly.tsx?pick=default&pick=$css",
+      "src/routes/examples/15_controls_fly.tsx?pick=default&pick=$css",
+      "src/routes/examples/16_raycast.tsx?pick=default&pick=$css",
+      "src/routes/examples/16_raycast.tsx?pick=default&pick=$css",
+      "src/routes/examples/17_raycast_explosion.tsx?pick=default&pick=$css",
+      "src/routes/examples/17_raycast_explosion.tsx?pick=default&pick=$css",
+      "src/routes/examples/index.tsx?pick=default&pick=$css",
+      "src/routes/examples/index.tsx?pick=default&pick=$css"
+    ],
+    "file": "ssr.js",
+    "isEntry": true,
+    "src": "virtual:#vinxi/handler/ssr"
+  }
+}
