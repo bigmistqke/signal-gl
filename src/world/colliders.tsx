@@ -17,7 +17,7 @@ import { Vector3 } from './types'
 import { directionFromCursor } from './utils'
 
 type Collider = {
-  onEvent?: (event: { type: string; value: boolean }) => void
+  onEvent?: (event: { type: string; hit: boolean }) => void
   intersects: (position: Vector3 | vec3, direction: Vector3 | vec3) => boolean
 }
 
@@ -76,10 +76,10 @@ export const createRaycaster = () => {
 
     for (const collider of colliders) {
       if (collider.intersects(origin, direction)) {
-        collider.onEvent?.({ type: 'raycast', value: true })
+        collider.onEvent?.({ type: 'raycast', hit: true })
         hit = true
       } else {
-        collider.onEvent?.({ type: 'raycast', value: false })
+        collider.onEvent?.({ type: 'raycast', hit: false })
       }
     }
   }
