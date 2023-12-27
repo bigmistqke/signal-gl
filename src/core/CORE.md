@@ -1,4 +1,4 @@
-# `signal-gl`
+# 🚦 signal-gl
 
 - Low-level abstraction around webgl
 - Minimizing the gap between glsl and js

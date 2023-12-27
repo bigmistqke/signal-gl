@@ -1,4 +1,4 @@
-# `signal-gl/world`
+# 🌐 signal-gl/world
 
 Game engine built on top of [`signal-gl`](../core/CORE.md)
 
