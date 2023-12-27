@@ -1,6 +1,7 @@
 import { mergeProps, createContext, createSignal, useContext, splitProps, children, createMemo, onMount, createRenderEffect, createEffect, untrack } from 'solid-js';
 import zeptoid from 'zeptoid';
-import { spread, createComponent, template } from 'solid-js/web';
+import { spread, createComponent, memo, template } from 'solid-js/web';
+import { createScheduled, throttle } from '@solid-primitives/scheduled';
 
 // src/core/classes.ts
 
@@ -357,12 +358,15 @@ var GLProgram = class extends Base {
   getRenderRequest = this.renderRequestSignal[0];
   setRenderRequest = this.renderRequestSignal[1];
   requestRender = () => {
-    this.setRenderRequest((number) => (number + 1) % Number.MAX_SAFE_INTEGER);
+    this.setRenderRequest((number) => (number + 1) % 1e8);
   };
   render = () => {
     this.getRenderRequest();
     this.gl.useProgram(this.program);
-    this.renderQueue.forEach((update) => update());
+    const values = this.renderQueue.values();
+    for (const update of values) {
+      update();
+    }
     this.config.onRender?.(this.gl, this.program);
     if ("indices" in this.config && this.config.indices) {
       this.gl.drawElements(
@@ -385,6 +389,7 @@ var GLProgram = class extends Base {
 };
 var isGLProgram = (value) => value instanceof GLProgram;
 var filterGLPrograms = (value) => castToArray(value).filter(isGLProgram);
+var filterNonGLPrograms = (value) => castToArray(value).filter((v) => !isGLProgram(v));
 var programCache = /* @__PURE__ */ new WeakMap();
 var getProgramCache = (config) => programCache.get(config.vertex.template)?.get(config.fragment.template);
 var setProgramCache = ({
@@ -409,7 +414,10 @@ var GLStack = class extends Base {
     this.config = config;
   }
   render() {
-    this.programs.forEach((program) => program.render());
+    const programs = this.programs;
+    for (const program of programs) {
+      program.render();
+    }
     return this;
   }
 };
@@ -545,14 +553,26 @@ var createRenderLoop = (config) => {
     return;
   config.stack.autosize(() => {
     config.onResize?.(config.stack);
-    context.events.onResize.forEach((fn) => fn());
+    for (const event of context.events.onResize) {
+      event();
+    }
   });
+  performance.now();
   const render = () => {
-    config.stack.clear();
-    config.onRender?.();
-    context.events.onRender.forEach((fn) => fn());
+    config.onBeforeRender?.();
+    if (config.clear) {
+      if (typeof config.clear === "function")
+        config.clear(config.stack);
+      else
+        config.stack.clear();
+    }
+    for (const event of context.events.onResize) {
+      event();
+    }
     config.stack.render();
+    config.onAfterRender?.();
   };
+  const scheduled = createScheduled((fn) => throttle(fn, 1e3 / 120));
   let past;
   const animate = () => {
     if (!config.animate)
@@ -572,7 +592,10 @@ var createRenderLoop = (config) => {
     if (config.animate) {
       setTimeout(animate);
     } else {
-      createEffect(render);
+      createEffect(() => {
+        if (scheduled())
+          render();
+      });
       past = void 0;
     }
   });
@@ -580,7 +603,8 @@ var createRenderLoop = (config) => {
 var Canvas = (props) => {
   const [childrenProps, rest] = splitProps(props, ["children"]);
   const merged = mergeProps({
-    clear: true
+    clear: true,
+    background: [0, 0, 0, 1]
   }, rest);
   const canvas = (() => {
     const _el$ = _tmpl$();
@@ -616,14 +640,15 @@ var Canvas = (props) => {
           }
         },
         get children() {
-          return (() => {
+          return [memo(() => (() => {
             const childs = children(() => childrenProps.children);
             const programs = createMemo(() => filterGLPrograms(childs()));
+            const other = createMemo(() => filterNonGLPrograms(childs()));
             onMount(() => {
               try {
                 const stack = new GLStack({
                   canvas,
-                  background: props.background,
+                  background: merged.background,
                   get programs() {
                     return programs();
                   }
@@ -635,8 +660,8 @@ var Canvas = (props) => {
                 console.error(error2);
               }
             });
-            return canvas;
-          })();
+            return memo(other);
+          })()), canvas];
         }
       });
     }
@@ -670,17 +695,14 @@ var RenderTexture = (props) => {
     });
     createRenderLoop(mergeProps(merged, {
       stack,
-      onRender: () => {
-        props.onTextureUpdate(stack.texture);
-        props.onRender?.();
-      }
+      onAfterRender: () => props.onTextureUpdate(stack.texture)
     }));
   } catch (error2) {
     console.error(error2);
   }
   return () => props.passthrough ? props.children : [];
 };
-var DEBUG = false;
+var DEBUG = true;
 var nameCacheMap = /* @__PURE__ */ new WeakMap();
 var glsl = function(template, ...holes) {
   const hasNameCache = nameCacheMap.has(template);
@@ -821,4 +843,4 @@ var compileStrings = (strings, tokens) => {
   };
 };
 
-export { Canvas, GLProgram, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, GLStack, GLTexture, Program, RenderTexture, attribute, buffer, compileStrings, filterGLPrograms, glsl, isGLProgram, uniform, useSignalGL };
+export { Canvas, GLProgram, GLRenderBuffer, GLRenderTexture, GLRenderTextureStack, GLStack, GLTexture, Program, RenderTexture, attribute, buffer, compileStrings, filterGLPrograms, filterNonGLPrograms, glsl, isGLProgram, uniform, useSignalGL };

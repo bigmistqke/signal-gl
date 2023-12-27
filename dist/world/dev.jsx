@@ -1,47 +1,194 @@
-// src/world/loaders.tsx
-import { createMemo, createResource } from "solid-js";
-var loadOBJ = (url) => {
-  const [resource] = createResource(() => fetch(url).then((v) => v.text()));
-  const obj = createMemo(() => {
-    const data = resource();
-    if (!data)
-      return void 0;
-    const result = {
-      vertices: [],
-      indices: []
-    };
-    data.split("\n").forEach((line) => {
-      const [prefix, ..._data] = line.split(" ");
-      const data2 = _data.map((v) => +v);
-      switch (prefix) {
-        case "v":
-          return result.vertices.push(...data2);
-        case "f":
-          return result.indices.push(...data2.map((v) => v - 1));
-      }
-    });
-    return {
-      vertices: new Float32Array(result.vertices),
-      indices: result.indices
-    };
-  });
-  return obj;
+// src/world/colliders.tsx
+import { mat4 as mat42, vec3 as vec32 } from "gl-matrix";
+import {
+  Show,
+  createContext,
+  createEffect,
+  createSignal,
+  mapArray,
+  mergeProps,
+  onCleanup,
+  untrack,
+  useContext
+} from "solid-js";
+
+// src/world/utils.tsx
+import { mat4, vec3 } from "gl-matrix";
+var directionFromCursor = ({
+  cursor,
+  projection,
+  view
+}) => {
+  const direction = vec3.create();
+  const viewProjection = mat4.create();
+  mat4.multiply(viewProjection, projection, view);
+  mat4.invert(viewProjection, viewProjection);
+  vec3.transformMat4(direction, [...cursor, 1], viewProjection);
+  return vec3.normalize(direction, direction);
 };
 
-// src/world/index.tsx
-import { mat4, vec3 } from "gl-matrix";
+// src/world/colliders.tsx
+var collidersContext = createContext();
+var useColliders = () => useContext(collidersContext);
+var ColliderProvider = (props) => {
+  const [colliders, setColliders] = createSignal(/* @__PURE__ */ new Set());
+  return <collidersContext.Provider
+    value={{
+      get colliders() {
+        return colliders();
+      },
+      addCollider: (collider) => {
+        setColliders((c) => c.add(collider));
+        return () => untrack(() => colliders().delete(collider));
+      }
+    }}
+  >
+    {(() => {
+      createEffect(
+        mapArray(
+          () => props.plugins || [],
+          (plugin) => plugin.initialize()
+        )
+      );
+      return null;
+    })()}
+    {props.children}
+  </collidersContext.Provider>;
+};
+var createRaycaster = () => {
+  const [_colliders, setColliders] = createSignal(/* @__PURE__ */ new Set());
+  const [_spaces, setSpaces] = createSignal();
+  let scene;
+  const cursor = [0, 0];
+  const cast = (origin, direction) => {
+    const colliders = _colliders();
+    if (!colliders)
+      return;
+    let hit = false;
+    for (const collider of colliders) {
+      if (collider.intersects(origin, direction)) {
+        collider.onEvent?.({ type: "raycast", hit: true });
+        hit = true;
+      } else {
+        collider.onEvent?.({ type: "raycast", hit: false });
+      }
+    }
+  };
+  return {
+    initialize() {
+      const scene2 = useScene();
+      const colliders = useColliders();
+      if (!scene2)
+        throw "scene is undefined";
+      if (!colliders)
+        throw "colliders is undefined";
+      setSpaces(scene2);
+      setColliders(colliders.colliders);
+      scene2.canvas.addEventListener("mousemove", (e) => {
+        cursor[0] = 2 * e.clientX / scene2.canvas.width - 1;
+        cursor[1] = 1 - 2 * e.clientY / scene2.canvas.height;
+      });
+    },
+    cast,
+    castCenter() {
+      const colliders = _colliders();
+      const spaces = _spaces();
+      if (!colliders || !spaces)
+        return;
+      const view = spaces.view.matrix;
+      const direction = vec32.fromValues(-view[2], -view[6], -view[10]);
+      vec32.normalize(direction, direction);
+      const origin = vec32.transformMat4(
+        vec32.create(),
+        [0, 0, 0],
+        spaces.view.invertedMatrix
+      );
+      cast(origin, direction);
+    },
+    castCursor() {
+      const spaces = _spaces();
+      if (!spaces)
+        return void 0;
+      const direction = directionFromCursor({
+        cursor,
+        projection: spaces.projection.matrix,
+        view: spaces.view.matrix
+      });
+      const origin = vec32.transformMat4(
+        vec32.create(),
+        [0, 0, 0],
+        spaces.view.invertedMatrix
+      );
+      cast(origin, direction);
+    }
+  };
+};
+var AxisAlignedBoxCollider = (props) => {
+  const scene = useScene();
+  if (!scene)
+    throw "scene undefined";
+  const colliders = useColliders();
+  if (!colliders)
+    throw "collidersContext undefined";
+  const merged = mergeProps(
+    {
+      scale: [1, 1, 1],
+      position: [0, 0, 0]
+    },
+    props
+  );
+  const tMin = [0, 0, 0];
+  const tMax = [0, 0, 0];
+  let boxMin = [0, 0, 0];
+  let boxMax = [0, 0, 0];
+  const unsubscribe = colliders.addCollider({
+    intersects: (position, direction) => {
+      for (let i = 0; i < 3; i++) {
+        boxMin[i] = merged.position[i] - 0.5 * merged.scale[i];
+        boxMax[i] = merged.position[i] + 0.5 * merged.scale[i];
+      }
+      const origin = mat42.getTranslation(vec32.create(), scene.model.matrix);
+      vec32.add(boxMax, boxMax, origin);
+      vec32.add(boxMin, boxMin, origin);
+      for (let i = 0; i < 3; i++) {
+        const invDir = 1 / direction[i];
+        const t1 = (boxMin[i] - position[i]) * invDir;
+        const t2 = (boxMax[i] - position[i]) * invDir;
+        tMin[i] = Math.min(t1, t2);
+        tMax[i] = Math.max(t1, t2);
+      }
+      const tNear = Math.max(tMin[0], tMin[1], tMin[2]);
+      const tFar = Math.min(tMax[0], tMax[1], tMax[2]);
+      if (tNear > tFar || tFar < 0) {
+        return false;
+      }
+      return true;
+    },
+    get onEvent() {
+      return props.onEvent;
+    }
+  });
+  onCleanup(unsubscribe);
+  return <>
+    <Show when={props.color}><Cube mode={props.mode || "LINES"} color={props.color} /></Show>
+    <Group {...merged}>{props.children}</Group>
+  </>;
+};
+
+// src/world/components.tsx
+import { mat4 as mat43 } from "gl-matrix";
 import {
-  createContext as createContext2,
-  createMemo as createMemo4,
-  createRenderEffect as createRenderEffect2,
-  createSignal as createSignal2,
-  mergeProps as mergeProps6,
-  splitProps as splitProps2,
-  useContext as useContext2
+  createContext as createContext3,
+  createEffect as createEffect3,
+  createMemo as createMemo3,
+  createSignal as createSignal3,
+  mergeProps as mergeProps7,
+  onCleanup as onCleanup2,
+  useContext as useContext3
 } from "solid-js";
 
 // src/core/classes.ts
-import { createSignal, mergeProps as mergeProps3 } from "solid-js";
+import { createSignal as createSignal2, mergeProps as mergeProps4 } from "solid-js";
 
 // src/core/internalUtils.ts
 var castToArray = (value) => typeof value === "object" && Array.isArray(value) ? value : [value];
@@ -82,7 +229,7 @@ function createWebGLShader(gl, src, type) {
 }
 
 // src/core/template/bindings.ts
-import { createRenderEffect, mergeProps, untrack } from "solid-js";
+import { createRenderEffect, mergeProps as mergeProps2, untrack as untrack2 } from "solid-js";
 var bindUniformToken = ({
   token,
   gl,
@@ -169,7 +316,7 @@ var bindSampler2DToken = ({
     } = token.options;
     gl.activeTexture(gl[`TEXTURE${token.textureIndex}`]);
     gl.bindTexture(gl.TEXTURE_2D, texture());
-    if (!untrack(() => isGLRenderTexture(token.value))) {
+    if (!untrack2(() => isGLRenderTexture(token.value))) {
       gl.texImage2D(
         gl.TEXTURE_2D,
         0,
@@ -192,7 +339,7 @@ var bindSampler2DToken = ({
 };
 
 // src/core/template/tokens.ts
-import { mergeProps as mergeProps2 } from "solid-js";
+import { mergeProps as mergeProps3 } from "solid-js";
 import zeptoid from "zeptoid";
 var dataTypeToFunctionName = (dataType) => {
   switch (dataType) {
@@ -224,7 +371,7 @@ var uniform = new Proxy({}, {
           get value() {
             return typeof value === "function" ? value() : value;
           },
-          options: mergeProps2(
+          options: mergeProps3(
             {
               border: 0,
               dataType: "UNSIGNED_BYTE",
@@ -258,7 +405,7 @@ var uniform = new Proxy({}, {
 var attribute = new Proxy({}, {
   get(target, dataType) {
     return (...[value, _options]) => {
-      const options = mergeProps2({ stride: 0, offset: 0 }, _options);
+      const options = mergeProps3({ stride: 0, offset: 0 }, _options);
       const size = typeof dataType === "string" ? +dataType[dataType.length - 1] : void 0;
       return {
         buffer: buffer(value, { target: "ARRAY_BUFFER" }),
@@ -286,7 +433,7 @@ var Base = class {
   canvas;
   config;
   constructor(_config) {
-    const config = mergeProps3(
+    const config = mergeProps4(
       {
         background: [0, 0, 0, 1]
       },
@@ -358,7 +505,7 @@ var GLProgram = class extends Base {
   program;
   constructor(_config) {
     super(_config);
-    const config = mergeProps3(
+    const config = mergeProps4(
       {
         mode: "TRIANGLES",
         cacheEnabled: false,
@@ -391,7 +538,7 @@ var GLProgram = class extends Base {
         }
       );
       bindBufferToken(
-        mergeProps3(this, {
+        mergeProps4(this, {
           token
         })
       );
@@ -400,16 +547,19 @@ var GLProgram = class extends Base {
   /* Map of all uniforms/attributes in this program. Gets added to during bind-stage with `addToQueue`. */
   renderQueue = /* @__PURE__ */ new Map();
   addToRenderQueue = (location, fn) => (this.renderQueue.set(location, fn), () => this.renderQueue.delete(location));
-  renderRequestSignal = createSignal(0);
+  renderRequestSignal = createSignal2(0);
   getRenderRequest = this.renderRequestSignal[0];
   setRenderRequest = this.renderRequestSignal[1];
   requestRender = () => {
-    this.setRenderRequest((number) => (number + 1) % Number.MAX_SAFE_INTEGER);
+    this.setRenderRequest((number) => (number + 1) % 1e8);
   };
   render = () => {
     this.getRenderRequest();
     this.gl.useProgram(this.program);
-    this.renderQueue.forEach((update) => update());
+    const values = this.renderQueue.values();
+    for (const update of values) {
+      update();
+    }
     this.config.onRender?.(this.gl, this.program);
     if ("indices" in this.config && this.config.indices) {
       this.gl.drawElements(
@@ -432,6 +582,7 @@ var GLProgram = class extends Base {
 };
 var isGLProgram = (value) => value instanceof GLProgram;
 var filterGLPrograms = (value) => castToArray(value).filter(isGLProgram);
+var filterNonGLPrograms = (value) => castToArray(value).filter((v) => !isGLProgram(v));
 var programCache = /* @__PURE__ */ new WeakMap();
 var getProgramCache = (config) => programCache.get(config.vertex.template)?.get(config.fragment.template);
 var setProgramCache = ({
@@ -456,7 +607,10 @@ var GLStack = class extends Base {
     this.config = config;
   }
   render() {
-    this.programs.forEach((program) => program.render());
+    const programs = this.programs;
+    for (const program of programs) {
+      program.render();
+    }
     return this;
   }
 };
@@ -523,7 +677,7 @@ var GLRenderBuffer = class extends UtilityBase {
     const depthbuffer = gl.createRenderbuffer();
     if (!framebuffer || !renderbuffer || !depthbuffer)
       throw "could not create framebuffer or renderbuffer";
-    this.config = mergeProps3({ color: true, depth: true }, config);
+    this.config = mergeProps4({ color: true, depth: true }, config);
     this.framebuffer = framebuffer;
     this.colorbuffer = renderbuffer;
     this.depthbuffer = depthbuffer;
@@ -569,34 +723,47 @@ var GLRenderBuffer = class extends UtilityBase {
 };
 
 // src/core/components.tsx
+import { createScheduled, throttle } from "@solid-primitives/scheduled";
 import {
   children,
-  createContext,
-  createEffect,
-  createMemo as createMemo2,
-  mergeProps as mergeProps4,
+  createContext as createContext2,
+  createEffect as createEffect2,
+  createMemo,
+  mergeProps as mergeProps5,
   onMount,
   splitProps,
-  useContext
+  useContext as useContext2
 } from "solid-js";
-var internalContext = createContext();
-var useInternal = () => useContext(internalContext);
-var signalGLContext = createContext();
-var useSignalGL = () => useContext(signalGLContext);
+var internalContext = createContext2();
+var useInternal = () => useContext2(internalContext);
+var signalGLContext = createContext2();
+var useSignalGL = () => useContext2(signalGLContext);
 var createRenderLoop = (config) => {
   const context = useInternal();
   if (!context)
     return;
   config.stack.autosize(() => {
     config.onResize?.(config.stack);
-    context.events.onResize.forEach((fn) => fn());
+    for (const event of context.events.onResize) {
+      event();
+    }
   });
+  let last = performance.now();
   const render = () => {
-    config.stack.clear();
-    config.onRender?.();
-    context.events.onRender.forEach((fn) => fn());
+    config.onBeforeRender?.();
+    if (config.clear) {
+      if (typeof config.clear === "function")
+        config.clear(config.stack);
+      else
+        config.stack.clear();
+    }
+    for (const event of context.events.onResize) {
+      event();
+    }
     config.stack.render();
+    config.onAfterRender?.();
   };
+  const scheduled = createScheduled((fn) => throttle(fn, 1e3 / 120));
   let past;
   const animate = () => {
     if (!config.animate)
@@ -612,18 +779,24 @@ var createRenderLoop = (config) => {
     }
     requestAnimationFrame(animate);
   };
-  createEffect(() => {
+  createEffect2(() => {
     if (config.animate) {
       setTimeout(animate);
     } else {
-      createEffect(render);
+      createEffect2(() => {
+        if (scheduled())
+          render();
+      });
       past = void 0;
     }
   });
 };
 var Canvas = (props) => {
   const [childrenProps, rest] = splitProps(props, ["children"]);
-  const merged = mergeProps4({ clear: true }, rest);
+  const merged = mergeProps5(
+    { clear: true, background: [0, 0, 0, 1] },
+    rest
+  );
   const canvas = <canvas {...rest} />;
   const gl = canvas.getContext("webgl2");
   const events = {
@@ -652,31 +825,35 @@ var Canvas = (props) => {
         return () => events.onResize.delete(callback);
       }
     }}
-  >{(() => {
-    const childs = children(() => childrenProps.children);
-    const programs = createMemo2(() => filterGLPrograms(childs()));
-    onMount(() => {
-      try {
-        const stack = new GLStack({
-          canvas,
-          background: props.background,
-          get programs() {
-            return programs();
-          }
-        });
-        createRenderLoop(mergeProps4(merged, { stack }));
-      } catch (error2) {
-        console.error(error2);
-      }
-    });
-    return canvas;
-  })()}</signalGLContext.Provider></internalContext.Provider>;
+  >
+    {(() => {
+      const childs = children(() => childrenProps.children);
+      const programs = createMemo(() => filterGLPrograms(childs()));
+      const other = createMemo(() => filterNonGLPrograms(childs()));
+      onMount(() => {
+        try {
+          const stack = new GLStack({
+            canvas,
+            background: merged.background,
+            get programs() {
+              return programs();
+            }
+          });
+          createRenderLoop(mergeProps5(merged, { stack }));
+        } catch (error2) {
+          console.error(error2);
+        }
+      });
+      return <>{other()}</>;
+    })()}
+    {canvas}
+  </signalGLContext.Provider></internalContext.Provider>;
 };
 var Program = (props) => {
   const context = useInternal();
   if (!context)
     throw "no context";
-  const config = mergeProps4(
+  const config = mergeProps5(
     {
       canvas: context.canvas
     },
@@ -686,7 +863,7 @@ var Program = (props) => {
 };
 
 // src/core/template/glsl.ts
-import { createMemo as createMemo3, mergeProps as mergeProps5 } from "solid-js";
+import { createMemo as createMemo2, mergeProps as mergeProps6 } from "solid-js";
 import zeptoid2 from "zeptoid";
 var DEBUG = true;
 var nameCacheMap = /* @__PURE__ */ new WeakMap();
@@ -696,7 +873,7 @@ var glsl = function(template, ...holes) {
     nameCacheMap.set(template, []);
   const nameCache = nameCacheMap.get(template);
   const scopedNames = /* @__PURE__ */ new Map();
-  const tokens = createMemo3(
+  const tokens = createMemo2(
     () => holes.map((hole, index) => {
       if (typeof hole === "function") {
         return hole();
@@ -728,7 +905,7 @@ var glsl = function(template, ...holes) {
           index
         );
       }
-      return mergeProps5(hole, { name });
+      return mergeProps6(hole, { name });
     }).filter((hole) => hole !== void 0)
   );
   const bind = ({
@@ -832,80 +1009,83 @@ var compileStrings = (strings, tokens) => {
 // src/core/types.ts
 var error = Symbol();
 
-// src/world/index.tsx
+// src/world/components.tsx
 var matrixFromPose = (matrix, pose) => {
   if (pose.position)
-    mat4.translate(matrix, matrix, pose.position);
+    mat43.translate(matrix, matrix, pose.position);
   if (pose.rotation) {
-    mat4.rotate(matrix, matrix, pose.rotation[0], [1, 0, 0]);
-    mat4.rotate(matrix, matrix, pose.rotation[1], [0, 1, 0]);
-    mat4.rotate(matrix, matrix, pose.rotation[2], [0, 0, 1]);
+    mat43.rotate(matrix, matrix, pose.rotation[0], [1, 0, 0]);
+    mat43.rotate(matrix, matrix, pose.rotation[1], [0, 1, 0]);
+    mat43.rotate(matrix, matrix, pose.rotation[2], [0, 0, 1]);
   }
   if (pose.scale)
-    mat4.scale(matrix, matrix, pose.scale);
+    mat43.scale(matrix, matrix, pose.scale);
   return matrix;
 };
-var modelView = (props) => {
-  const gl = useSignalGL();
-  if (!gl)
-    throw "gl not defined";
-  let modelView2 = mat4.create();
-  return uniform.mat4(() => matrixFromPose(mat4.identity(modelView2), props));
-};
-var sceneContext = createContext2();
-var useScene = () => useContext2(sceneContext);
+var sceneContext = createContext3();
+var useScene = () => useContext3(sceneContext);
 var Scene = (props) => {
-  const [projection, setProjection] = createSignal2(mat4.create(), {
+  const [projection, setProjection] = createSignal3(mat43.create(), {
     equals: false
   });
-  const [camera, setCamera] = createSignal2({
-    position: [0, 0, 0],
-    rotation: [0, 0.1, 0],
-    scale: [1, 1, 1]
-  });
-  const cameraPerspectiveScratch = mat4.create();
-  const projectedScene = createMemo4(
-    () => matrixFromPose(projection(), camera())
-  );
-  return <><Canvas
-    {...props}
-    onResize={({ canvas }) => {
-      setProjection(
-        mat4.perspective(
-          cameraPerspectiveScratch,
-          (camera().fov || 45) * Math.PI / 180,
-          canvas.clientWidth / canvas.clientHeight,
-          camera().near || 0.1,
-          camera().far || 1e4
-        )
-      );
-    }}
-  ><sceneContext.Provider
-    value={{
-      projection: uniform.mat4(projectedScene),
-      setCamera
-    }}
-  >{props.children}</sceneContext.Provider></Canvas></>;
+  const [view, setView] = createSignal3(mat43.create(), { equals: false });
+  const model = mat43.create();
+  const _invertedProjection = mat43.create();
+  const _invertedView = mat43.create();
+  return <><Canvas {...props}>{(() => {
+    const signalgl = useSignalGL();
+    if (!signalgl)
+      throw `signalgl is undefined`;
+    return <sceneContext.Provider
+      value={mergeProps7(signalgl, {
+        projection: {
+          uniform: uniform.mat4(projection),
+          get matrix() {
+            return projection();
+          },
+          get invertedMatrix() {
+            return mat43.invert(_invertedProjection, projection());
+          }
+        },
+        view: {
+          uniform: uniform.mat4(view),
+          get matrix() {
+            return view();
+          },
+          get invertedMatrix() {
+            return mat43.invert(_invertedView, view());
+          }
+        },
+        model: {
+          uniform: uniform.mat4(model),
+          matrix: model
+        },
+        setView,
+        setProjection
+      })}
+    >{props.children}</sceneContext.Provider>;
+  })()}</Canvas></>;
 };
 var Group = (props) => {
   const scene = useScene();
   if (!scene)
     throw "scene was not defined";
-  const projection = uniform.mat4(
-    () => matrixFromPose(mat4.clone(scene.projection.value), props)
+  const matrix = createMemo3(
+    () => props.matrix ? props.matrix : matrixFromPose(mat43.clone(scene.model.matrix), props)
   );
   return <sceneContext.Provider
-    value={{
-      ...scene,
-      get projection() {
-        return projection;
+    value={mergeProps7(scene, {
+      model: {
+        uniform: uniform.mat4(matrix),
+        get matrix() {
+          return matrix();
+        }
       }
-    }}
+    })}
   >{props.children}</sceneContext.Provider>;
 };
 var Shape = (props) => {
-  const [pose] = splitProps2(props, ["position", "rotation", "scale"]);
-  return <Group {...pose}>
+  return <Group {...props}>
     {props.children}
     {(() => {
       const scene = useScene();
@@ -914,18 +1094,22 @@ var Shape = (props) => {
       return <Program
         vertex={props.vertex || glsl`#version 300 es
           precision mediump float;
-          out vec4 position;
+          out vec4 model;
+          out vec4 view;
+          out vec4 clip;
           void main(void) {
-            position = ${scene.projection} * vec4(${attribute.vec3(props.vertices)}, 1.);
-            gl_Position = position;
+            model = ${scene.model.uniform} * vec4(${attribute.vec3(props.vertices)}, 1.);
+            view = ${scene.view.uniform} * model;
+            clip = ${scene.projection.uniform} * view;
+            gl_Position = clip;
           }`}
         fragment={props.fragment || glsl`#version 300 es
           precision mediump float;
           out vec4 color_out;
           void main(void) {
-            color_out = vec4(${uniform.vec3(() => props.color)}, ${uniform.float(() => props.opacity)});
+            color_out = vec4(${uniform.vec3(() => props.color || [0, 0, 0])}, ${uniform.float(() => props.opacity)});
           }`}
-        mode="TRIANGLES"
+        mode={props.mode || "TRIANGLES"}
         indices={props.indices}
         cacheEnabled
       />;
@@ -933,7 +1117,7 @@ var Shape = (props) => {
   </Group>;
 };
 var Cube = (props) => {
-  const merged = mergeProps6({
+  const merged = mergeProps7({
     vertices: new Float32Array([
       // Front face
       -0.5,
@@ -1059,7 +1243,8 @@ var Cube = (props) => {
       23
     ],
     color: [1, 1, 1],
-    opacity: 1
+    opacity: 1,
+    mode: "TRIANGLES"
   }, props);
   return <Shape {...merged} />;
 };
@@ -1067,33 +1252,262 @@ var Camera = (props) => {
   const scene = useScene();
   if (!scene)
     throw "scene is undefined";
-  const position = vec3.create();
-  const rotation = vec3.create();
-  const cameraProps = mergeProps6(props, {
-    get position() {
-      if (!props.position)
-        return void 0;
-      return vec3.negate(position, props.position);
+  const projection = mat43.create();
+  const view = mat43.create();
+  const perspective = mergeProps7(
+    {
+      fov: 45,
+      near: 0.1,
+      far: 1e4
     },
-    get rotation() {
-      if (!props.rotation)
-        return void 0;
-      return vec3.negate(rotation, props.rotation);
-    }
-  });
-  createRenderEffect2(() => {
+    props
+  );
+  const updatePerspective = () => {
     if (!props.active)
       return;
-    scene.setCamera(cameraProps);
+    scene.setProjection(
+      mat43.perspective(
+        projection,
+        perspective.fov * Math.PI / 180,
+        scene.canvas.clientWidth / scene.canvas.clientHeight,
+        perspective.near,
+        perspective.far
+      )
+    );
+  };
+  createEffect3(() => {
+    if (!props.active)
+      return;
+    window.addEventListener("resize", updatePerspective);
+    updatePerspective();
+    onCleanup2(() => window.removeEventListener("resize", updatePerspective));
+  });
+  createEffect3(() => {
+    if (!props.active)
+      return;
+    mat43.identity(view);
+    mat43.multiply(view, scene.model.matrix, matrixFromPose(view, props));
+    if (props.matrix)
+      mat43.multiply(view, view, props.matrix);
+    mat43.invert(view, view);
+    if (props.realMatrix)
+      mat43.multiply(view, view, props.realMatrix);
+    scene.setView(view);
   });
   return <Group {...props} />;
 };
+
+// src/world/controls.tsx
+import { mat4 as mat44, quat, vec3 as vec34 } from "gl-matrix";
+import {
+  batch,
+  createMemo as createMemo4,
+  createSignal as createSignal4,
+  mergeProps as mergeProps8,
+  onCleanup as onCleanup3
+} from "solid-js";
+import { createStore } from "solid-js/store";
+var orbit = (_config) => {
+  const config = mergeProps8(
+    {
+      target: [0, 0, 0],
+      up: [0, 1, 0],
+      near: 0,
+      far: 50
+    },
+    _config
+  );
+  const [rotation, setRotation] = createSignal4([0, 0], {
+    equals: false
+  });
+  const [radius, setRadius] = createSignal4(10);
+  const _matrix = mat44.create();
+  const matrix = () => {
+    const [theta, phi] = rotation();
+    const eye = [
+      radius() * Math.sin(theta) * Math.cos(phi),
+      radius() * Math.sin(phi),
+      radius() * Math.cos(theta) * Math.cos(phi)
+    ];
+    const target = config.target;
+    const up = [0, 1, 0];
+    mat44.lookAt(_matrix, eye, target, up);
+    return _matrix;
+  };
+  let start;
+  const onMouseDown = (e) => {
+    start = {
+      x: e.clientX,
+      y: e.clientY
+    };
+    const onMouseUp = (e2) => window.removeEventListener("mousemove", onMouseMove);
+    const onMouseMove = (e2) => {
+      const now = {
+        x: e2.clientX,
+        y: e2.clientY
+      };
+      const delta = {
+        x: start.x - now.x,
+        y: start.y - now.y
+      };
+      start = now;
+      setRotation((rotation2) => [
+        rotation2[0] + delta.x / 200,
+        rotation2[1] - delta.y / 200
+      ]);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+  window.addEventListener("mousedown", onMouseDown);
+  const onWheel = (e) => {
+    setRadius(
+      (radius2) => Math.min(config.far, Math.max(config.near, radius2 + e.deltaY / 10))
+    );
+    e.preventDefault();
+  };
+  window.addEventListener("wheel", onWheel, { passive: false });
+  onCleanup3(() => {
+    window.removeEventListener("mousedown", onMouseDown);
+    window.removeEventListener("wheel", onWheel);
+  });
+  return {
+    get realMatrix() {
+      return matrix();
+    }
+  };
+};
+var fly = () => {
+  const scene = useScene();
+  if (!scene)
+    throw "scene is undefined";
+  const [position, setPosition] = createSignal4([0, 0, 6], {
+    equals: false
+  });
+  const [rotation, setRotation] = createSignal4(quat.create(), {
+    equals: false
+  });
+  const [keys, setKeys] = createStore({});
+  let keysPressed = createMemo4(() => Object.values(keys).find((v) => v));
+  let last;
+  {
+    const speed = 0.05;
+    const front = vec34.create();
+    const right = vec34.create();
+    const up = vec34.create();
+    const moveDirection = vec34.create();
+    const direction = {
+      x: 0,
+      y: 0
+    };
+    const temp = quat.create();
+    const pitch = quat.create();
+    const yaw = quat.create();
+    const xAxis = [1, 0, 0];
+    const yAxis = [0, 1, 0];
+    const sensitivity = 0.0125;
+    const loop = (now) => {
+      batch(() => {
+        if (keysPressed()) {
+          if (last) {
+            const delta = now - last;
+            setPosition((position2) => {
+              vec34.set(front, 0, 0, -1);
+              vec34.transformQuat(front, front, rotation());
+              vec34.set(right, 1, 0, 0);
+              vec34.transformQuat(right, right, rotation());
+              vec34.set(up, -1, 0, 0);
+              vec34.transformQuat(up, up, rotation());
+              vec34.set(moveDirection, 0, 0, 0);
+              if (keys.KeyW)
+                vec34.add(moveDirection, moveDirection, front);
+              if (keys.KeyS)
+                vec34.subtract(moveDirection, moveDirection, front);
+              if (keys.KeyA)
+                vec34.subtract(moveDirection, moveDirection, right);
+              if (keys.KeyD)
+                vec34.add(moveDirection, moveDirection, right);
+              vec34.normalize(moveDirection, moveDirection);
+              vec34.scale(moveDirection, moveDirection, speed * delta / 10);
+              vec34.add(position2, position2, moveDirection);
+              return position2;
+            });
+          }
+          last = now;
+        } else {
+          last = void 0;
+        }
+        setRotation((rotation2) => {
+          quat.identity(pitch);
+          quat.setAxisAngle(pitch, xAxis, -direction.y * sensitivity);
+          quat.identity(yaw);
+          quat.setAxisAngle(yaw, yAxis, -direction.x * sensitivity);
+          quat.identity(temp);
+          quat.multiply(temp, yaw, temp);
+          quat.multiply(temp, temp, pitch);
+          quat.normalize(temp, temp);
+          return quat.multiply(rotation2, rotation2, temp);
+        });
+      });
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+    document.addEventListener("mousemove", (event) => {
+      direction.x = event.clientX / scene.canvas.width - 0.5;
+      direction.y = event.clientY / scene.canvas.height - 0.5;
+    });
+    document.addEventListener("keydown", (event) => setKeys(event.code, true));
+    document.addEventListener("keyup", (event) => setKeys(event.code, false));
+  }
+  const matrix = mat44.create();
+  return {
+    get matrix() {
+      return mat44.fromRotationTranslation(matrix, rotation(), position());
+    }
+  };
+};
+
+// src/world/loaders.tsx
+import { createMemo as createMemo5, createResource } from "solid-js";
+var loadOBJ = (url) => {
+  const [resource] = createResource(() => fetch(url).then((v) => v.text()));
+  const obj = createMemo5(() => {
+    const data = resource();
+    if (!data)
+      return void 0;
+    const result = {
+      vertices: [],
+      indices: []
+    };
+    data.split("\n").forEach((line) => {
+      const [prefix, ..._data] = line.split(" ");
+      const data2 = _data.map((v) => +v);
+      switch (prefix) {
+        case "v":
+          return result.vertices.push(...data2);
+        case "f":
+          return result.indices.push(...data2.map((v) => v - 1));
+      }
+    });
+    return {
+      vertices: new Float32Array(result.vertices),
+      indices: result.indices
+    };
+  });
+  return obj;
+};
 export {
+  AxisAlignedBoxCollider,
   Camera,
+  ColliderProvider,
   Cube,
   Group,
   Scene,
   Shape,
+  createRaycaster,
+  directionFromCursor,
+  fly,
   loadOBJ,
-  modelView
+  orbit,
+  useScene
 };
