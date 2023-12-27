@@ -41,11 +41,8 @@ export const ColliderProvider: ParentComponent<{
         },
         addCollider: (collider) => {
           setColliders((c) => c.add(collider))
-          return () =>
-            setColliders((c) => {
-              c.delete(collider)
-              return c
-            })
+          // remove collider without triggering effects
+          return () => untrack(() => colliders().delete(collider))
         },
       }}
     >
