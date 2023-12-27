@@ -86,12 +86,6 @@ return (
 )
 ```
 
-#### Signature
-
-```ts
-(props: CameraProps) => JSXElement
-```
-
 #### type `CameraProps`
 
 ```ts

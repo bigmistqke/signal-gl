@@ -517,12 +517,6 @@ import { Canvas } from '@bigmistqke/solid-gl'
 </Canvas>
 ```
 
-#### Signature
-
-```ts
-(props: CanvasProps) => JSXElement
-```
-
 #### type `CanvasProps`
 
 ```ts
@@ -543,12 +537,6 @@ type CanvasProps = ComponentProps<'canvas'> & {
 ```tsx
 import { Program } from '@bigmistqke/solid-gl'
 <Program fragment={glsl`...`} vertex={glsl`...`} mode="TRIANGLES" />
-```
-
-#### Signature
-
-```ts
-(props: ProgramProps) => JSXElement
 ```
 
 #### type `ProgramProps
