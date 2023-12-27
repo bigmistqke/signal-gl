@@ -8,10 +8,11 @@ import {
   mapArray,
   mergeProps,
   onCleanup,
+  untrack,
   useContext,
 } from 'solid-js'
 import { Cube, Group, Spaces, useScene } from '.'
-import { Vector2 } from '..'
+import { RenderMode, Vector2 } from '..'
 import { Vector3 } from './types'
 import { directionFromCursor } from './utils'
 
@@ -143,10 +144,11 @@ export const createRaycaster = () => {
 
 export const AxisAlignedBoxCollider: ParentComponent<
   Partial<{
-    scale?: Vector3 | vec3
+    scale: Vector3 | vec3
     position: Vector3 | vec3
-    color?: Vector3 | vec3
-    onEvent?: (event: { type: string; value: boolean }) => void
+    color: Vector3 | vec3
+    onEvent: (event: { type: string; hit: boolean }) => void
+    mode: RenderMode
   }>
 > = (props) => {
   const scene = useScene()
@@ -206,7 +208,7 @@ export const AxisAlignedBoxCollider: ParentComponent<
   return (
     <>
       <Show when={props.color}>
-        <Cube mode="LINES" />
+        <Cube mode={props.mode || 'LINES'} color={props.color} />
       </Show>
       <Group {...merged}>{props.children}</Group>
     </>
