@@ -1,0 +1,38 @@
+body {
+  font-family: Gordita, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
+    'Helvetica Neue', sans-serif;
+  margin: 0px;
+  padding: 0px;
+}
+
+main {
+  margin: 0 auto;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 20px 1fr; /* 250px fixed and rest flexible */
+  gap: 10px; /* Adjust the gap between the elements as needed */
+}
+
+h1 {
+  all: unset;
+}
+
+header {
+  display: flex;
+  padding: 5px;
+  gap: 5px;
+}
+
+h1 {
+  flex: 1;
+}
+
+nav {
+  display: flex;
+  gap: 5px;
+}
+
+canvas {
+  height: 100%;
+  width: 100%;
+}
