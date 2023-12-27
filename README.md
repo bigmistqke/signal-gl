@@ -86,6 +86,9 @@ return (
 
 ## API
 
+- [`signal-gl`](/src/core/CORE.md) _low level abstraction around webgl_
+- [`signal-gl/world`](/src/world/WORLD.md)  _game engine built on top of `signal-gl`_
+
 ## Syntax Highlighting
 
 _use in combination with tag template literal syntax highlighting: see [glsl-literal syntax higlighting](https://marketplace.visualstudio.com/items?itemName=boyswan.glsl-literal) for `vs-code`_
