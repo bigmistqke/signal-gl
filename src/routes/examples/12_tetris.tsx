@@ -455,7 +455,7 @@ const App: Component = () => {
 
 export default function () {
   return (
-    <Scene style={{ width: '100vw', height: '100vh' }}>
+    <Scene>
       <Camera position={[5, 10, 90]} rotation={[0, 0, 0]} active fov={15} />
       <App />
     </Scene>
