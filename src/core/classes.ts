@@ -49,11 +49,11 @@ class Base {
     return this
   }
   clear() {
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
     this.gl.clearColor(...this.config.background!)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
     this.gl.depthMask(true)
     this.gl.enable(this.gl.BLEND)
-    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
     return this
   }
   autosize(onResize?: (token: Base) => void) {

@@ -9,6 +9,7 @@ import {
   createSignal,
   mergeProps,
   onCleanup,
+  splitProps,
   useContext,
 } from 'solid-js'
 import { Pose } from '.'
@@ -52,9 +53,13 @@ export type Spaces = {
     matrix: mat4
   }
 }
-/**
- * SCENE
- */
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                       SCENE                                    */
+/*                                                                                */
+/**********************************************************************************/
+
 const sceneContext = createContext<
   Spaces &
     SignalGLContext & {
@@ -118,18 +123,18 @@ export const Scene: Component<ComponentProps<typeof Canvas>> = (props) => {
   )
 }
 
-/**
- * GROUP
- */
+/**********************************************************************************/
+/*                                                                                */
+/*                                       GROUP                                    */
+/*                                                                                */
+/**********************************************************************************/
 
 export const Group: Component<ParentProps<Pose>> = (props) => {
   const scene = useScene()
   if (!scene) throw 'scene was not defined'
 
-  const matrix = createMemo(() =>
-    props.matrix
-      ? props.matrix
-      : matrixFromPose(mat4.clone(scene.model.matrix), props)
+  const matrix = createMemo(
+    () => props.matrix || matrixFromPose(mat4.clone(scene.model.matrix), props)
   )
 
   return (
@@ -148,54 +153,78 @@ export const Group: Component<ParentProps<Pose>> = (props) => {
   )
 }
 
-/**
- * SHAPE
- */
+/**********************************************************************************/
+/*                                                                                */
+/*                                       SHAPE                                    */
+/*                                                                                */
+/**********************************************************************************/
+
+type Variables = {
+  a_vertices: ReturnType<typeof attribute.vec3>
+  a_uv: ReturnType<typeof attribute.vec2>
+  u_color: ReturnType<typeof uniform.vec3>
+  u_opacity: ReturnType<typeof uniform.float>
+}
 
 type ShapeProps = Pose & {
-  /** in vec4 position */
-  fragment?: ShaderToken
-  vertex?: ShaderToken
-  indices: number[]
   color?: Vector3 | vec3
-  opacity: number
-  vertices: Float32Array
+  /** varying from vertex: `vec4 model`, `vec4 view`, `vec4 clip` */
+  fragment?: ShaderToken | ((variables: Variables) => ShaderToken)
+  indices: number[]
   mode: RenderMode
+  opacity: number
+  uv: Float32Array | Uint16Array
+  vertex?: ShaderToken | ((variables: Variables) => ShaderToken)
+  vertices: Float32Array | Uint16Array
 }
 
 export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
+  const a_vertices = attribute.vec3(props.vertices)
+  const a_uv = attribute.vec2(props.uv)
+  const u_color = uniform.vec3(() => props.color || ([0, 0, 0] as Vector3))
+  const u_opacity = uniform.float(() => props.opacity)
+  const variables = { a_vertices, a_uv, u_color, u_opacity }
   return (
     <Group {...props}>
       {props.children}
       {(() => {
         const scene = useScene()
         if (!scene) throw 'scene not defined'
-
         return (
           <Program
-            // prettier-ignore
             vertex={
-          props.vertex ||
-          glsl`#version 300 es
-          precision mediump float;
-          out vec4 model;
-          out vec4 view;
-          out vec4 clip;
-          void main(void) {
-            model = ${scene.model.uniform} * vec4(${attribute.vec3(props.vertices)}, 1.);
-            view = ${scene.view.uniform} * model;
-            clip = ${scene.projection.uniform} * view;
-            gl_Position = clip;
-          }`}
-            // prettier-ignore
+              props.vertex
+                ? typeof props.vertex === 'function'
+                  ? props.vertex(variables)
+                  : props.vertex
+                : // prettier-ignore
+                  glsl`#version 300 es
+                    precision highp float;
+                    out vec4 model;
+                    out vec4 view;
+                    out vec4 clip;
+                    out vec2 uv;
+                    void main(void) {
+                      uv = ${a_uv};
+                      model = ${scene.model.uniform} * vec4(${a_vertices}, 1.);
+                      view = ${scene.view.uniform} * model;
+                      clip = ${scene.projection.uniform} * view;
+                      gl_Position = clip;
+                    }`
+            }
             fragment={
-          props.fragment ||
-          glsl`#version 300 es
-          precision mediump float;
-          out vec4 color_out;
-          void main(void) {
-            color_out = vec4(${uniform.vec3(() => props.color || [0,0,0] as Vector3)}, ${uniform.float(() => props.opacity)});
-          }`}
+              props.fragment
+                ? typeof props.fragment === 'function'
+                  ? props.fragment(variables)
+                  : props.fragment
+                : // prettier-ignore
+                  glsl`#version 300 es
+                    precision mediump float;
+                    out vec4 color_out;
+                    void main(void) {
+                      color_out = vec4(${u_color}, ${u_opacity});
+                    }`
+            }
             mode={props.mode || 'TRIANGLES'}
             indices={props.indices}
             cacheEnabled
@@ -206,9 +235,11 @@ export const Shape: Component<ParentProps<ShapeProps>> = (props) => {
   )
 }
 
-/**
- * CUBE
- */
+/**********************************************************************************/
+/*                                                                                */
+/*                                        CUBE                                    */
+/*                                                                                */
+/**********************************************************************************/
 
 export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
   // prettier-ignore
@@ -226,6 +257,38 @@ export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
       0.5, -0.5, -0.5,    0.5,  0.5,  -0.5,    0.5,  0.5,  0.5,    0.5, -0.5,  0.5,
       // Left face
       -0.5, -0.5, -0.5,   -0.5, -0.5,  0.5,   -0.5,  0.5,  0.5,   -0.5,  0.5, -0.5,
+    ]),
+    uv: new Float32Array([
+      // Front face
+      0.0, 1.0,  // Vertex 0
+      1.0, 1.0,  // Vertex 1
+      1.0, 0.0,  // Vertex 2
+      0.0, 0.0,  // Vertex 3
+      // Back face
+      0.0, 1.0,  // Vertex 4
+      1.0, 1.0,  // Vertex 5
+      1.0, 0.0,  // Vertex 6
+      0.0, 0.0,  // Vertex 7
+      // Top face
+      0.0, 1.0,  // Vertex 8
+      1.0, 1.0,  // Vertex 9
+      1.0, 0.0,  // Vertex 10
+      0.0, 0.0,  // Vertex 11
+      // Bottom face
+      0.0, 1.0,  // Vertex 12
+      1.0, 1.0,  // Vertex 13
+      1.0, 0.0,  // Vertex 14
+      0.0, 0.0,  // Vertex 15
+      // Right face
+      0.0, 1.0,  // Vertex 16
+      1.0, 1.0,  // Vertex 17
+      1.0, 0.0,  // Vertex 18
+      0.0, 0.0,  // Vertex 19
+      // Left face
+      0.0, 1.0,  // Vertex 20
+      1.0, 1.0,  // Vertex 21
+      1.0, 0.0,  // Vertex 22
+      0.0, 0.0   // Vertex 23
     ]),
     indices:  [
       // Front face
@@ -247,6 +310,91 @@ export const Cube: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
   }, props)
   return <Shape {...merged} />
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                       PLANE                                    */
+/*                                                                                */
+/**********************************************************************************/
+
+export const Plane: Component<ParentProps<Partial<ShapeProps>>> = (props) => {
+  // prettier-ignore
+  const merged = mergeProps({
+    color: [1,1,1] as Vector3,
+    indices:  [
+      0, 1, 2,  // Triangle 1
+      1, 3, 2   // Triangle 2
+    ],
+    mode: "TRIANGLES" as RenderMode,
+    opacity: 1,
+    uv: new Float32Array([
+      0.0, 1.0,
+      1.0, 1.0,
+      0.0, 0.0,
+      1.0, 0.0,
+    ]),
+    vertices: new Float32Array([
+      // Vertex positions (x, y, z)
+      -0.5, -0.5, 0.0,
+      0.5, -0.5, 0.0,
+      -0.5,  0.5, 0.0,
+      0.5,  0.5, 0.0,
+    ]),    
+  }, props)
+  return <Shape {...merged} />
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     BILLBOARD                                  */
+/*                                                                                */
+/**********************************************************************************/
+
+export const Billboard = (
+  props: Omit<ComponentProps<typeof Plane>, 'rotation'>
+) => (
+  <Group {...props}>
+    {(() => {
+      const [, other] = splitProps(props, ['scale', 'position'])
+      const merged = mergeProps(
+        {
+          scale: [1, 1, 1] as Vector3,
+          color: [1, 1, 1] as Vector3,
+        },
+        props
+      )
+      const scene = useScene()
+      if (!scene) throw 'scene is undefined'
+      const _cameraPosition = vec3.create()
+      const currentPosition = vec3.create()
+
+      const _matrix = mat4.create()
+      const matrix = () => {
+        mat4.getTranslation(_cameraPosition, scene.view.invertedMatrix)
+        mat4.getTranslation(currentPosition, scene.model.matrix)
+
+        const up = vec3.fromValues(
+          scene.view.invertedMatrix[4],
+          scene.view.invertedMatrix[5],
+          scene.view.invertedMatrix[6]
+        )
+        return mat4.scale(
+          _matrix,
+          mat4.targetTo(_matrix, currentPosition, _cameraPosition, up),
+          merged.scale
+        )
+      }
+
+      return <Plane {...other} matrix={matrix()} scale={[0.1, 0.1, 0.1]} />
+    })()}
+  </Group>
+)
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                       CAMERA                                   */
+/*                                                                                */
+/**********************************************************************************/
 
 export type CameraProps = Partial<
   Pose & {
